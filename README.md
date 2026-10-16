@@ -4,9 +4,9 @@
 
 ## 协作入口
 
-财务应用固定使用 `china_finance` 分支，从该分支更新后开发，PR 目标也选择 `china_finance`。
+财务应用独立仓库为 [yueweiit/deeplinkerp-china_finance](https://github.com/yueweiit/deeplinkerp-china_finance)，从 `main` 分支更新后开发，PR 目标也选择 `main`。Frappe App 名保持 `china_finance`。
 2026-10-16 的应用基线与线上 `b73f17138fdf8235e91a687b8a113cbb33e7031c` 完全一致，生产源码标签为 `production/2026-10-16/china_finance`。
-整理前的主线保存在合并历史及 `archive/2026-10-16/china_finance-before-production-alignment`。跨应用对接见[统一分支说明](https://github.com/yueweiit/DeepLinkERP/blob/deeplinkerp_branding/docs/contributing/erp-branches.md)。
+整理前的主线保存在合并历史；上述生产标签及 `archive/2026-10-16/china_finance-before-production-alignment` 标签继续保留于原仓库 `yueweiit/DeepLinkERP`。跨应用对接见[独立仓库说明](https://github.com/yueweiit/deeplinkerp-deeplinkerp_branding/blob/main/docs/contributing/erp-branches.md)。
 本次仅整理源码基线，没有执行部署、迁移或财务数据操作；后续发布仍按现有流程验收。
 
 ## 已实现模块

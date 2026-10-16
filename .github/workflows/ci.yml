@@ -2,7 +2,7 @@ name: China Finance CI
 
 on:
   push:
-    branches: [main, china_finance]
+    branches: [main]
   pull_request:
   workflow_dispatch:
 
@@ -56,9 +56,9 @@ jobs:
         env:
           CI: "Yes"
         run: |
-          # The China CoA JSON lives in the DeepLinkERP fork. Testing against upstream
+          # The China CoA JSON lives in the DeeplinkERP fork. Testing against upstream
           # would silently omit the template that production images contain.
-          bench get-app --branch erpnext erpnext https://github.com/yueweiit/DeepLinkERP.git
+          bench get-app --branch main erpnext https://github.com/yueweiit/deeplinkerp-erpnext.git
           test -f apps/erpnext/erpnext/accounts/doctype/account/chart_of_accounts/unverified/cn_l10n_chart_china.json
           bench get-app china_finance "$GITHUB_WORKSPACE"
           bench setup requirements --dev
