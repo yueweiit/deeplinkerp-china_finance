@@ -14,6 +14,55 @@ class ChinaCashFlowAssignment(Document):
 		"revision",
 		"assignment_key",
 	)
+	ALLOCATION_FIELDS = (
+		"gl_entry",
+		"cash_account",
+		"cash_direction",
+		"cash_amount",
+		"counterpart_accounts",
+		"cash_flow_row_code",
+		"assigned_amount",
+		"remarks",
+	)
+	LOCKED_ITEM_FIELDS = (
+		"name",
+		"idx",
+		*ALLOCATION_FIELDS,
+		"suggested_row_code",
+		"suggested_row_label",
+		"cash_flow_row_label",
+	)
+
+	def _item_snapshot(self, fields):
+		def value(row, field):
+			if field in ("cash_amount", "assigned_amount"):
+				return flt(row.get(field), 2)
+			if field == "idx":
+				return int(row.get(field) or 0)
+			return row.get(field) or ""
+
+		# Frappe loads old and new child rows as different Document instances.
+		# Compare persisted values instead of child-object identity. Allocation
+		# order and row IDs do not change who last specified the business values.
+		return sorted(tuple(value(row, field) for field in fields) for row in self.items)
+
+	def _allocation_has_changed(self, old):
+		previous = old
+		if {row.gl_entry for row in self.items} != {row.gl_entry for row in old.items}:
+			from china_finance.services.cash_flow_assignment import (
+				_get_voucher,
+				_refresh_draft_cash_legs,
+				get_cash_legs_for_voucher,
+			)
+
+			# Bind every allocation to its GL leg. Only normalize a changed GL
+			# identity through the established repair, on a copy: the native old
+			# document must remain intact for version and audit generation.
+			previous = frappe.get_doc(old.as_dict())
+			_refresh_draft_cash_legs(
+				previous, get_cash_legs_for_voucher(_get_voucher(self.china_accounting_voucher))
+			)
+		return self._item_snapshot(self.ALLOCATION_FIELDS) != previous._item_snapshot(self.ALLOCATION_FIELDS)
 
 	def before_insert(self):
 		if not self.revision:
@@ -33,12 +82,22 @@ class ChinaCashFlowAssignment(Document):
 			frappe.throw(_("现金流量指定单状态只能通过指定服务变更"))
 		# A draft becomes Confirmed in the same save operation. Only records that
 		# were already locked before this save must reject item changes.
-		if old and old.status != "Draft" and self.has_value_changed("items"):
+		if (
+			old
+			and old.status != "Draft"
+			and self._item_snapshot(self.LOCKED_ITEM_FIELDS) != old._item_snapshot(self.LOCKED_ITEM_FIELDS)
+		):
 			frappe.throw(_("已确认或已作废的现金流量指定单不能修改明细"))
 		if self.status == "Draft":
-			if not old or self.has_value_changed("items") or self.has_value_changed("remarks"):
+			if not old or self._allocation_has_changed(old) or self.has_value_changed("remarks"):
 				self.assigned_by = frappe.session.user
 				self.assigned_on = now_datetime()
+			else:
+				# Refreshing labels, suggestions or a repaired GL link is a system
+				# update, not a new manual allocation. Preserve the trusted audit
+				# fields as well as the preparer when another user only confirms.
+				self.assigned_by = old.assigned_by
+				self.assigned_on = old.assigned_on
 		for row in self.items:
 			row.cash_amount = flt(row.cash_amount, 2)
 			row.assigned_amount = flt(row.assigned_amount, 2)
