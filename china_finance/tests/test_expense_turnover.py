@@ -2,6 +2,7 @@
 
 import io
 import unittest
+from itertools import product
 from unittest.mock import patch
 
 import frappe
@@ -14,10 +15,6 @@ from china_finance.services.expense_turnover import get_expense_turnover_offsets
 
 class TestExpenseTurnover(unittest.TestCase):
 	def setUp(self):
-		# These legacy report fixtures identify the native English total row.
-		language = frappe.local.lang
-		frappe.local.lang = "en"
-		self.addCleanup(setattr, frappe.local, "lang", language)
 		self.prefix = "CF_Turnover_" + frappe.generate_hash(length=8)
 		frappe.db.savepoint(self.prefix)
 		self.addCleanup(frappe.db.rollback, save_point=self.prefix)
@@ -83,31 +80,34 @@ class TestExpenseTurnover(unittest.TestCase):
 		)
 
 	def test_signed_expenses_always_include_closing_with_or_without_party_details(self):
-		for statement_type in ("Account Activity and Balance", "Trial Balance"):
-			for closing in (0, 1):
-				for expand in (0, 1):
-					with self.subTest(statement=statement_type, closing=closing, expand=expand):
-						filters = self.filters()
-						filters.update(statement_type=statement_type, include_period_closing_entries=closing, expand_party=expand)
-						rows = report.execute(filters)[1]
-						by_number = {row.get("acc_number"): row for row in rows if row.get("acc_number")}
-						finance, interest = by_number["6603"], by_number["660302"]
-						self.assertAlmostEqual(finance["debit"], 104.39)
-						self.assertAlmostEqual(finance["credit"], 104.39)
-						self.assertAlmostEqual(finance["closing_debit"], 0)
-						self.assertAlmostEqual(interest["debit"], -0.48)
-						self.assertAlmostEqual(interest["credit"], -0.48)
-						self.assertAlmostEqual(interest["closing_credit"], 0)
-						self.assertAlmostEqual(by_number["1002"]["debit"], 0.48)
-						self.assertAlmostEqual(by_number["1002"]["credit"], 104.87)
-						total = next(row for row in rows if row.get("account") == f"'{_('Total')}'")
-						self.assertAlmostEqual(total["debit"], total["credit"])
-						self.assertAlmostEqual(total["debit"], 209.74)
-						if expand:
-							interest_detail = rows[rows.index(interest) + 1]
-							self.assertEqual(interest_detail["account"], "")
-							self.assertAlmostEqual(interest_detail["debit"], -0.48)
-							self.assertAlmostEqual(interest_detail["credit"], -0.48)
+		for language, statement_type, closing, expand in product(
+			("en", "zh"), ("Account Activity and Balance", "Trial Balance"), (0, 1), (0, 1),
+		):
+			with self.subTest(language=language, statement=statement_type, closing=closing, expand=expand), \
+				patch.object(frappe.local, "lang", language):
+				filters = self.filters()
+				filters.update(statement_type=statement_type, include_period_closing_entries=closing, expand_party=expand)
+				rows = report.execute(filters)[1]
+				by_number = {row.get("acc_number"): row for row in rows if row.get("acc_number")}
+				finance, interest = by_number["6603"], by_number["660302"]
+				self.assertAlmostEqual(finance["debit"], 104.39)
+				self.assertAlmostEqual(finance["credit"], 104.39)
+				self.assertAlmostEqual(finance["closing_debit"], 0)
+				self.assertAlmostEqual(interest["debit"], -0.48)
+				self.assertAlmostEqual(interest["credit"], -0.48)
+				self.assertAlmostEqual(interest["closing_credit"], 0)
+				self.assertAlmostEqual(by_number["1002"]["debit"], 0.48)
+				self.assertAlmostEqual(by_number["1002"]["credit"], 104.87)
+				total = next(row for row in rows if row.get("account") == f"'{_('Total')}'")
+				self.assertAlmostEqual(total["debit"], total["credit"])
+				self.assertAlmostEqual(total["debit"], 209.74)
+				for field in ("opening_debit", "opening_credit", "closing_debit", "closing_credit"):
+					self.assertAlmostEqual(total[field], 104.39 if field.startswith("closing_") else 0)
+				if expand:
+					interest_detail = rows[rows.index(interest) + 1]
+					self.assertEqual(interest_detail["account"], "")
+					self.assertAlmostEqual(interest_detail["debit"], -0.48)
+					self.assertAlmostEqual(interest_detail["credit"], -0.48)
 		# The report must not rewrite either the ordinary credit or the closing debit.
 		values = frappe.db.sql(
 			"SELECT SUM(debit), SUM(credit) FROM `tabGL Entry` WHERE company=%s AND account=%s",
@@ -164,20 +164,26 @@ class TestExpenseTurnover(unittest.TestCase):
 			self.assertAlmostEqual(interest[field], 0)
 
 	def test_excel_and_pdf_use_the_same_signed_values(self):
-		with patch.object(report, "save_file", return_value=frappe._dict(file_url="test.xlsx")) as save:
-			report.export_current_report_xlsx(self.filters())
-			workbook = openpyxl.load_workbook(io.BytesIO(save.call_args.args[1]), data_only=True)
-			values = list(workbook.active.values)
-			headers = values[3]
-			debit, credit = headers.index(_("本期借方")), headers.index(_("本期贷方"))
-			finance = next(row for row in values[4:] if str(row[0]).startswith("6603 -"))
-			interest = next(row for row in values[4:] if str(row[0]).startswith("660302 -"))
-			self.assertAlmostEqual(finance[debit], 104.39)
-			self.assertAlmostEqual(finance[credit], 104.39)
-			self.assertAlmostEqual(interest[debit], -0.48)
-			self.assertAlmostEqual(interest[credit], -0.48)
-		with patch.object(report, "get_pdf", return_value=b"pdf") as pdf, \
-			patch.object(report, "save_file", return_value=frappe._dict(file_url="test.pdf")):
-			report.export_current_report_pdf(self.filters())
-			self.assertIn("104.39", pdf.call_args.args[0])
-			self.assertIn("-0.48", pdf.call_args.args[0])
+		for language in ("en", "zh"):
+			with self.subTest(language=language), patch.object(frappe.local, "lang", language):
+				with patch.object(report, "save_file", return_value=frappe._dict(file_url="test.xlsx")) as save:
+					report.export_current_report_xlsx(self.filters())
+					workbook = openpyxl.load_workbook(io.BytesIO(save.call_args.args[1]), data_only=True)
+					values = list(workbook.active.values)
+					headers = values[3]
+					debit, credit = headers.index(_("本期借方")), headers.index(_("本期贷方"))
+					finance = next(row for row in values[4:] if str(row[0]).startswith("6603 -"))
+					interest = next(row for row in values[4:] if str(row[0]).startswith("660302 -"))
+					self.assertAlmostEqual(finance[debit], 104.39)
+					self.assertAlmostEqual(finance[credit], 104.39)
+					self.assertAlmostEqual(interest[debit], -0.48)
+					self.assertAlmostEqual(interest[credit], -0.48)
+					total = next(row for row in values[4:] if row[0] == f"'{_('Total')}'")
+					self.assertAlmostEqual(total[debit], 209.74)
+					self.assertAlmostEqual(total[credit], 209.74)
+				with patch.object(report, "get_pdf", return_value=b"pdf") as pdf, \
+					patch.object(report, "save_file", return_value=frappe._dict(file_url="test.pdf")):
+					report.export_current_report_pdf(self.filters())
+					self.assertIn("104.39", pdf.call_args.args[0])
+					self.assertIn("-0.48", pdf.call_args.args[0])
+					self.assertIn("209.74", pdf.call_args.args[0])
