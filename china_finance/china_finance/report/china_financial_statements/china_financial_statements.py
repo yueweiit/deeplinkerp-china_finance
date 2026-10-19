@@ -191,7 +191,7 @@ def _apply_expense_turnover_presentation(rows, native_filters):
 	account_names = [
 		row["account"] for row in rows or []
 		if row.get("account") and row.get("is_group_account") == 0
-		and row["account"] not in ("'Total'", "Total")
+		and not row.get("warn_if_negative")
 	]
 	offsets = get_expense_turnover_offsets(native_filters, account_names)
 	adjust_account_expense_turnover(rows or [], offsets)
@@ -287,7 +287,7 @@ def _adjust_opening_entries_by_posting_date(rows, filters):
 	)
 	account_index = {account.name: account for account in accounts}
 	for row in rows:
-		if row.get("warn_if_negative") or row.get("account") in ("'Total'", "Total"):
+		if row.get("warn_if_negative"):
 			row["opening_debit"] = max(flt(row.get("opening_debit")) - total_debit, 0)
 			row["opening_credit"] = max(flt(row.get("opening_credit")) - total_credit, 0)
 			row["closing_debit"] = max(flt(row.get("closing_debit")) - total_closing_debit, 0)
@@ -618,14 +618,16 @@ def _keep_numbered_group_accounts(rows):
 	rows[:] = [
 		row
 		for row in rows
-		if not row.get("is_group_account") or row.get("acc_number") or row.get("account") in ("'Total'", "Total")
+		if not row.get("is_group_account") or row.get("acc_number") or row.get("warn_if_negative")
 	]
 
 	# ERPNext's grouped total is based on the root rows after netting them by
 	# account type. For this report the footer must remain the debit/credit
 	# total of actual accounts, as it was before parent rows were displayed.
+	# Native Trial Balance marks its translated footer with warn_if_negative;
+	# the localized account label is not a stable row identifier.
 	total_row = next(
-		(row for row in rows if row.get("account") in ("'Total'", "Total")),
+		(row for row in rows if row.get("warn_if_negative")),
 		None,
 	)
 	if total_row:
@@ -633,7 +635,7 @@ def _keep_numbered_group_accounts(rows):
 			row
 			for row in rows
 			if row.get("account")
-			and row.get("account") not in ("'Total'", "Total")
+			and not row.get("warn_if_negative")
 			and not row.get("is_group_account")
 		]
 		for fieldname in ("opening_debit", "opening_credit", "debit", "credit", "closing_debit", "closing_credit"):
