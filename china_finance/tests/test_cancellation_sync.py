@@ -12,6 +12,9 @@ from china_finance.services.voucher import _ensure_cancellation_sync_issue, on_g
 
 class TestCancellationSync(unittest.TestCase):
 	def setUp(self):
+		language = frappe.local.lang
+		frappe.local.lang = "zh"
+		self.addCleanup(setattr, frappe.local, "lang", language)
 		self.prefix = "CF_CANCEL_" + frappe.generate_hash(length=10)
 		frappe.db.savepoint(self.prefix)
 		self.addCleanup(frappe.db.rollback, save_point=self.prefix)
@@ -110,8 +113,9 @@ class TestCancellationSync(unittest.TestCase):
 	def test_regular_draft_save_still_rejects_cancelled_source(self):
 		doc = frappe.get_doc("China Cash Flow Assignment", self.assignment(missing_gl=False))
 		doc.flags.ignore_permissions = True
-		with self.assertRaisesRegex(frappe.CancelledLinkError, "Cannot link cancelled document"):
+		with self.assertRaises(frappe.CancelledLinkError) as rejected:
 			doc.save()
+		self.assertIn(self.source, str(rejected.exception))
 
 	def test_process_creates_its_own_issue_for_cancelled_source(self):
 		self.snapshot_entries()

@@ -426,6 +426,190 @@ class TestCashFlowAssignmentList(unittest.TestCase):
 		self.assertEqual(doc.status, "Draft")
 		self.assertNotEqual(doc.remarks, payload["remarks"])
 
+	def separated_users(self):
+		users = []
+		for label, role in (("preparer", "Accounts User"), ("manager", "China Finance Manager")):
+			username = self.prefix.lower() + "-" + label + "@example.invalid"
+			frappe.get_doc(
+				{
+					"doctype": "User",
+					"email": username,
+					"first_name": label,
+					"send_welcome_email": 0,
+					"roles": [{"role": role}],
+				}
+			).insert(ignore_permissions=True)
+			users.append(username)
+		frappe.db.set_value("China Finance Settings", self.company, "enforce_role_separation", 1)
+		frappe.clear_document_cache("China Finance Settings", self.company)
+		return users
+
+	def save_as_preparer(self, doc, preparer):
+		frappe.set_user(preparer)
+		payload = self.payload(doc)
+		payload["remarks"] = "prepared allocation"
+		result = self.process([payload])[0]
+		self.assertTrue(result["ok"], result)
+		doc.reload()
+		self.assertEqual(doc.assigned_by, preparer)
+		return doc
+
+	def test_separated_preparer_save_then_other_manager_confirmation_preserves_preparer(self):
+		doc = self.assignment()
+		preparer, manager = self.separated_users()
+		self.save_as_preparer(doc, preparer)
+		assigned_on = doc.assigned_on
+		frappe.set_user(manager)
+		result = self.process([self.payload(doc)], action="confirm")[0]
+		self.assertTrue(result["ok"], result)
+		doc.reload()
+		self.assertEqual((doc.status, doc.docstatus), ("Confirmed", 1))
+		self.assertEqual(doc.assigned_by, preparer)
+		self.assertEqual(doc.assigned_on, assigned_on)
+		self.assertEqual(doc.confirmed_by, manager)
+
+	def test_separated_manager_real_project_or_split_edit_rejected_with_full_rollback(self):
+		doc = self.assignment()
+		preparer, manager = self.separated_users()
+		self.save_as_preparer(doc, preparer)
+		before = doc.as_json()
+		frappe.set_user(manager)
+		for edit in ("project", "split"):
+			payload = self.payload(doc)
+			if edit == "project":
+				payload["items"][0]["cash_flow_row_code"] = "OTHER_OPERATING_RECEIPTS"
+			else:
+				payload["items"][0]["assigned_amount"] = 40
+				payload["items"].append(
+					{
+						"gl_entry": doc.items[0].gl_entry,
+						"cash_flow_row_code": "OTHER_OPERATING_RECEIPTS",
+						"assigned_amount": 60,
+					}
+				)
+			result = self.process([payload], action="confirm")[0]
+			self.assertFalse(result["ok"], (edit, result))
+			self.assertIn("不能为同一用户", result["error"])
+			doc.reload()
+			self.assertEqual(doc.as_json(), before)
+
+	def test_separated_manager_cannot_swap_projects_between_equal_cash_gl_legs(self):
+		doc = self.assignment(directions=("收款", "收款"))
+		doc.items[1].cash_flow_row_code = "OTHER_OPERATING_RECEIPTS"
+		preparer, manager = self.separated_users()
+		self.save_as_preparer(doc, preparer)
+		self.assertNotEqual(doc.items[0].gl_entry, doc.items[1].gl_entry)
+		self.assertEqual(doc.items[0].cash_account, doc.items[1].cash_account)
+		self.assertEqual(doc.items[0].cash_amount, doc.items[1].cash_amount)
+		before = doc.as_json()
+		frappe.set_user(manager)
+		payload = self.payload(doc)
+		payload["items"][0]["cash_flow_row_code"], payload["items"][1]["cash_flow_row_code"] = (
+			payload["items"][1]["cash_flow_row_code"],
+			payload["items"][0]["cash_flow_row_code"],
+		)
+		result = self.process([payload], action="confirm")[0]
+		self.assertFalse(result["ok"], result)
+		self.assertIn("不能为同一用户", result["error"])
+		doc.reload()
+		self.assertEqual(doc.as_json(), before)
+
+	def test_native_metadata_save_and_submit_preserve_preparer_but_real_edit_updates_it(self):
+		doc, changed = self.assignment(), self.assignment("changed")
+		preparer, manager = self.separated_users()
+		self.save_as_preparer(doc, preparer)
+		self.save_as_preparer(changed, preparer)
+		assigned_on = doc.assigned_on
+		frappe.set_user(manager)
+		doc.items[0].suggested_row_label = "refreshed read-only suggestion"
+		doc.items[0].cash_flow_row_label = "refreshed read-only label"
+		doc.assigned_by = manager
+		doc.assigned_on = frappe.utils.now_datetime()
+		doc.save()
+		doc.reload()
+		self.assertEqual(doc.assigned_by, preparer)
+		self.assertEqual(doc.assigned_on, assigned_on)
+		doc.submit()
+		doc.reload()
+		self.assertEqual(doc.assigned_by, preparer)
+		self.assertEqual(doc.confirmed_by, manager)
+		changed.items[0].cash_flow_row_code = "OTHER_OPERATING_RECEIPTS"
+		changed.save()
+		changed.reload()
+		self.assertEqual(changed.assigned_by, manager)
+
+	def test_separated_confirmation_gl_repair_preserves_actual_preparer(self):
+		doc = self.assignment()
+		preparer, manager = self.separated_users()
+		self.save_as_preparer(doc, preparer)
+		old_gl = doc.items[0].gl_entry
+		frappe.db.set_value("GL Entry", old_gl, "is_cancelled", 1)
+		new_gl = self.insert(
+			"GL Entry",
+			"replacement-gl",
+			company=self.company,
+			posting_date=doc.posting_date,
+			account=self.cash,
+			voucher_type="Payment Entry",
+			voucher_no=doc.source_name,
+			debit=100,
+			credit=0,
+			is_cancelled=0,
+			is_opening="No",
+		)
+		frappe.set_user(manager)
+		result = self.process([self.payload(doc)], action="confirm")[0]
+		self.assertTrue(result["ok"], result)
+		doc.reload()
+		self.assertEqual(doc.assigned_by, preparer)
+		self.assertEqual(doc.confirmed_by, manager)
+		self.assertEqual(doc.items[0].gl_entry, new_gl)
+
+	def test_native_gl_rebind_preserves_preparer_without_mutating_old_document_snapshot(self):
+		doc = self.assignment()
+		preparer, manager = self.separated_users()
+		self.save_as_preparer(doc, preparer)
+		old_gl = doc.items[0].gl_entry
+		frappe.db.set_value("GL Entry", old_gl, "is_cancelled", 1)
+		new_gl = self.insert(
+			"GL Entry",
+			"replacement-gl",
+			company=self.company,
+			posting_date=doc.posting_date,
+			account=self.cash,
+			voucher_type="Payment Entry",
+			voucher_no=doc.source_name,
+			debit=100,
+			credit=0,
+			is_cancelled=0,
+			is_opening="No",
+		)
+		frappe.set_user(manager)
+		doc.items[0].gl_entry = new_gl
+		doc.save()
+		self.assertEqual(doc.assigned_by, preparer)
+		self.assertEqual(doc.get_doc_before_save().items[0].gl_entry, old_gl)
+		doc.submit()
+		doc.reload()
+		self.assertEqual(doc.assigned_by, preparer)
+		self.assertEqual(doc.confirmed_by, manager)
+
+	def test_locked_confirmed_and_cancelled_items_reject_content_or_evidence_changes(self):
+		for status, docstatus in (("Confirmed", 1), ("Cancelled", 2)):
+			doc = self.assignment(status)
+			frappe.db.set_value(doc.doctype, doc.name, {"status": status, "docstatus": docstatus})
+			for field, value in (
+				("cash_flow_row_code", "OTHER_OPERATING_RECEIPTS"),
+				("gl_entry", "forged-gl"),
+				("suggested_row_label", "changed label"),
+			):
+				doc.reload()
+				doc.load_doc_before_save()
+				doc.validate()
+				doc.items[0].set(field, value)
+				with self.assertRaisesRegex(frappe.ValidationError, "不能修改明细"):
+					doc.validate()
+
 	def test_company_user_permission_filters_list_counts_and_process(self):
 		doc = self.assignment()
 		other_company = self.insert(

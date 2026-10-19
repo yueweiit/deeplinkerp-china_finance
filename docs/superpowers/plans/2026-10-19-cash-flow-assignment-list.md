@@ -21,28 +21,28 @@
 
 Files: `china_finance/services/cash_flow_assignment.py`（必要时提取紧邻的列表模块）、`china_finance/tests/test_cash_flow_assignment_list.py`。
 
-- [ ] 先运行新增测试，记录缺少列表接口的 RED。
-- [ ] `get_cash_flow_assignment_list(company, from_date, to_date, status, search, direction, start, page_length)` 返回完整单据/子行、逐单项目选项、读写/确认权限、阻塞原因、总数及状态计数。查询使用文档和公司权限；收付方向过滤命中单据但返回该单全部现金行。
-- [ ] `process_cash_flow_assignments(assignments, action)` 接收 `name/modified/items/remarks`；项目/金额/备注是允许修改的字段。子行 name 和 GL 必须属于本单；新增拆分从本单权威现金行复制证据字段。
-- [ ] 每单加锁、比较 `modified`，使用保存点；调用原生 `save/submit`，职责分离保持有效，失败回滚本单并保留其他逐单结果。禁止 `ignore_permissions`、手工 commit 或直接写状态。
-- [ ] 运行真实数据库测试，覆盖拆分、整单多行、分页/搜索/方向、公司与角色权限、版本冲突、伪造字段、失败回滚和人工值保留。
+- [x] 先运行新增测试，记录缺少列表接口的 RED。
+- [x] `get_cash_flow_assignment_list(company, from_date, to_date, status, search, direction, start, page_length)` 返回完整单据/子行、逐单项目选项、读写/确认权限、阻塞原因、总数及状态计数。查询使用文档和公司权限；收付方向过滤命中单据但返回该单全部现金行。
+- [x] `process_cash_flow_assignments(assignments, action)` 接收 `name/modified/items/remarks`；项目/金额/备注是允许修改的字段。子行 name 和 GL 必须属于本单；新增拆分从本单权威现金行复制证据字段。
+- [x] 每单加锁、比较 `modified`，使用保存点；调用原生 `save/submit`，职责分离保持有效，失败回滚本单并保留其他逐单结果。禁止 `ignore_permissions`、手工 commit 或直接写状态。
+- [x] 运行真实数据库测试，覆盖拆分、整单多行、分页/搜索/方向、公司与角色权限、版本冲突、伪造字段、失败回滚和人工值保留。
 
 ## Task 2: 现有列表处理界面
 
 Files: `china_finance/public/js/china_cash_flow_assignment_list.js`、列表 CSS、`china_finance/hooks.py`、`china_finance/tests/test_cash_flow_assignment_list.js`。
 
-- [ ] 对编辑模型、去重现金发生额、按整数分校验拆分、空白建议保留人工值、版本/异步响应和整单选择先运行 RED。
-- [ ] 仅挂载本 DocType 的 ListView 实例，保持现有路由与 Frappe shell；统一刷新入口，避免原生增量刷新重写编辑区。
-- [ ] 依已确认原型完成列表筛选、状态页签、行内项目、金额拆分、批量建议/统一指定、草稿保存、整单确认和侧边详情。
-- [ ] 保存可容纳未配平但字段完整的草稿；确认必须整单配平。按服务端 `can_write/can_confirm` 控制；已确认及作废只读。原生表单仍可打开。
-- [ ] 防止筛选、分页、实时刷新和导航静默丢失未保存内容；请求进行时禁止重复处理，陈旧响应不得覆盖新编辑。
+- [x] 对编辑模型、去重现金发生额、按整数分校验拆分、空白建议保留人工值、版本/异步响应和整单选择先运行 RED。
+- [x] 仅挂载本 DocType 的 ListView 实例，保持现有路由与 Frappe shell；统一刷新入口，避免原生增量刷新重写编辑区。
+- [x] 依已确认原型完成列表筛选、状态页签、行内项目、金额拆分、批量建议/统一指定、草稿保存、整单确认和侧边详情。
+- [x] 保存可容纳未配平但字段完整的草稿；确认必须整单配平。按服务端 `can_write/can_confirm` 控制；已确认及作废只读。原生表单仍可打开。
+- [x] 防止筛选、分页、实时刷新和导航静默丢失未保存内容；请求进行时禁止重复处理，陈旧响应不得覆盖新编辑。
 
 ## Task 3: 集成验收和评审
 
-- [ ] 新建独立 MySQL/Redis/站点，挂载最新 Finance 工作区；不改旧 QA 或线上数据。
+- [x] 新建独立 MariaDB/Redis/站点，挂载最新 Finance 工作区；不改旧 QA 或线上数据。
 - [ ] 跑现有相关 Node 测试及原生应用测试，执行重复迁移、资产构建和部署健康检查。
 - [ ] 在真实 Frappe 页面验证行内编辑、保存、拆分、批量部分失败、整单确认、只读和公司/权限；测试仅使用合成凭证。
-- [ ] 先需求符合性、再代码质量评审；修复明确问题并复核。
+- [x] 先需求符合性、再代码质量评审；修复明确问题并复核。
 
 ## Task 4: 冻结发布与线上验收
 
@@ -54,8 +54,14 @@ Files: `china_finance/public/js/china_cash_flow_assignment_list.js`、列表 CSS
 ## 已取得证据
 
 - 现有前端基线 40 项通过；本轮前端现共 59 项通过，新增 19 项业务/交互场景。
-- 列表服务原生模块 16 项通过，包含真实 Journal Entry 提交生成 GL、凭证快照及指定单，再拆分保存确认而不重记来源的集成场景。
+- 列表服务原生模块 23 项通过，包含真实 Journal Entry 提交生成 GL、凭证快照及指定单，再拆分保存确认而不重记来源的集成场景。
 - 新增摘要读取和检索遵守中国会计凭证自身权限，拒绝借指定单权限泄露摘要；只读查询零持久化。
-- 独立需求评审通过；代码质量、完整回归与真实页面验收继续进行。
+- 独立需求、代码质量评审通过；修复原有子行对象比较误改指定人，并验证项目修改、拆分及等额 GL 腿交换均不能绕过职责分离。完整回归与真实页面验收继续进行。
 - 原 CI 基线失败于缺少 pytest；完整本地回归又发现既有中文断言在默认英文环境下失败。CI 已显式安装测试依赖并指定 `lang=zh`，未改业务规则或删减测试。
 - 独立 QA 资产构建通过；站点使用独立 MariaDB 11.8.6、Redis、sites volume，不改旧 QA 记录。
+- 旧取消同步测试显式选择其断言使用的中文；旧费用周转测试保持原英文上下文并按翻译定位导出列，保留所有数值校验。
+
+## 后续技术债
+
+- 列表按完整单据分页，但筛选和计数仍需读取符合条件的父单身份；大数据量性能尚未压测。
+- 原费用周转报表以英文 Total 字符串识别合计行；中文上下文的历史合计处理需要独立修复。本轮未改无关报表，也未降低原数值断言。

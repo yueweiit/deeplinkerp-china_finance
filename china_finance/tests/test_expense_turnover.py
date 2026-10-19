@@ -6,6 +6,7 @@ from unittest.mock import patch
 
 import frappe
 import openpyxl
+from frappe import _
 
 from china_finance.china_finance.report.china_financial_statements import china_financial_statements as report
 from china_finance.services.expense_turnover import get_expense_turnover_offsets
@@ -13,6 +14,10 @@ from china_finance.services.expense_turnover import get_expense_turnover_offsets
 
 class TestExpenseTurnover(unittest.TestCase):
 	def setUp(self):
+		# These legacy report fixtures identify the native English total row.
+		language = frappe.local.lang
+		frappe.local.lang = "en"
+		self.addCleanup(setattr, frappe.local, "lang", language)
 		self.prefix = "CF_Turnover_" + frappe.generate_hash(length=8)
 		frappe.db.savepoint(self.prefix)
 		self.addCleanup(frappe.db.rollback, save_point=self.prefix)
@@ -95,7 +100,7 @@ class TestExpenseTurnover(unittest.TestCase):
 						self.assertAlmostEqual(interest["closing_credit"], 0)
 						self.assertAlmostEqual(by_number["1002"]["debit"], 0.48)
 						self.assertAlmostEqual(by_number["1002"]["credit"], 104.87)
-						total = next(row for row in rows if row.get("account") == "'Total'")
+						total = next(row for row in rows if row.get("account") == f"'{_('Total')}'")
 						self.assertAlmostEqual(total["debit"], total["credit"])
 						self.assertAlmostEqual(total["debit"], 209.74)
 						if expand:
@@ -164,7 +169,7 @@ class TestExpenseTurnover(unittest.TestCase):
 			workbook = openpyxl.load_workbook(io.BytesIO(save.call_args.args[1]), data_only=True)
 			values = list(workbook.active.values)
 			headers = values[3]
-			debit, credit = headers.index("本期借方"), headers.index("本期贷方")
+			debit, credit = headers.index(_("本期借方")), headers.index(_("本期贷方"))
 			finance = next(row for row in values[4:] if str(row[0]).startswith("6603 -"))
 			interest = next(row for row in values[4:] if str(row[0]).startswith("660302 -"))
 			self.assertAlmostEqual(finance[debit], 104.39)
