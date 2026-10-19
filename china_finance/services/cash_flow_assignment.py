@@ -2,7 +2,6 @@ from collections import defaultdict
 
 import frappe
 from frappe import _
-from frappe.query_builder.functions import Max
 from frappe.utils import flt, getdate, now_datetime
 
 from china_finance.services.financial_statement import get_mappings, get_template
@@ -41,11 +40,105 @@ def _require_roles(roles):
 	frappe.only_for(roles)
 
 
-def _get_voucher(voucher_name):
-	voucher = frappe.get_doc("China Accounting Voucher", voucher_name)
+def lock_assignment_sources(assignments):
+	"""Acquire every source gate before any assignment locks, including native saves.
+
+	The identity lookup may use an older read view: these source identities are
+	immutable. Status, voucher and GL evidence must use current reads afterwards.
+	"""
+	from china_finance.services.voucher import GL_SOURCE_DOCTYPES
+
+	sources = set()
+	for assignment in assignments:
+		if isinstance(assignment, str):
+			identity = frappe.db.get_value("China Cash Flow Assignment", assignment,
+				["china_accounting_voucher", "source_doctype", "source_name"], as_dict=True)
+			if not identity:
+				frappe.throw(_("现金流量指定单的来源身份不可见，请刷新后重试"), frappe.TimestampMismatchError)
+		else:
+			identity = None
+			if assignment.get("name") and not assignment.is_new():
+				identity = frappe.db.get_value("China Cash Flow Assignment", assignment.name,
+					["china_accounting_voucher", "source_doctype", "source_name"], as_dict=True)
+				if not identity:
+					frappe.throw(_("现金流量指定单的来源身份不可见，请刷新后重试"), frappe.TimestampMismatchError)
+			identity = identity or assignment
+		voucher_source = frappe.db.get_value("China Accounting Voucher", identity.china_accounting_voucher,
+			["source_doctype", "source_name"], as_dict=True) if identity.china_accounting_voucher else None
+		source = voucher_source or identity
+		if source.source_doctype in GL_SOURCE_DOCTYPES and source.source_name:
+			sources.add((source.source_doctype, source.source_name))
+	for doctype, name in sorted(sources):
+		frappe.db.get_value(doctype, name, "name", for_update=True)
+
+
+def _get_voucher(voucher_name, for_update=False):
+	voucher = frappe.get_doc("China Accounting Voucher", voucher_name, for_update=for_update)
 	if voucher.docstatus != 1:
 		frappe.throw(_("仅已提交的中国会计凭证可以指定现金流量项目"))
 	return voucher
+
+
+def get_assignment_cash_legs(doc, for_update=True):
+	"""Read authoritative evidence after the caller owns the early source gate."""
+	from china_finance.services.voucher import GL_SOURCE_DOCTYPES
+
+	voucher = _get_voucher(doc.china_accounting_voucher, for_update=for_update)
+	if voucher.source_event != "Posting" or voucher.source_doctype not in GL_SOURCE_DOCTYPES:
+		frappe.throw(_("现金流量指定必须来自有效的过账凭证"))
+	if any(doc.get(field) != voucher.get(field) for field in ("company", "source_doctype", "source_name")) or getdate(doc.posting_date) != getdate(voucher.posting_date):
+		frappe.throw(_("现金流量指定单的来源信息与凭证不一致"))
+	status = frappe.db.get_value(voucher.source_doctype, voucher.source_name, "docstatus", for_update=for_update)
+	if status != 1:
+		frappe.throw(_("来源单据 {0} 已取消或未提交，不能修改或确认现金流量指定").format(voucher.source_name),
+			frappe.CancelledLinkError if status == 2 else frappe.ValidationError)
+	return get_cash_legs_for_voucher(voucher, for_update=for_update)
+
+
+def validate_cash_evidence(doc, legs, old=None):
+	"""Read-only UI metadata is not a server trust boundary, including native APIs."""
+	by_gl = {leg.gl_entry: leg for leg in legs}
+	old_rows = {}
+	stored_rows = {}
+	if old:
+		stored_rows = {row.name: row for row in old.items}
+		previous = frappe.get_doc(old.as_dict())
+		_refresh_draft_cash_legs(previous, legs)
+		old_rows = {row.name: row for row in previous.items}
+	for row in doc.items:
+		previous = old_rows.get(row.name)
+		stored = stored_rows.get(row.name)
+		if stored is None and row.gl_entry not in by_gl:
+			# Native split_row creates a fresh child name while copying its old GL
+			# evidence. Bind that row to this document's locked historical leg only.
+			candidates = [
+				candidate for candidate in stored_rows.values()
+				if candidate.gl_entry == row.gl_entry
+				and old_rows[candidate.name].gl_entry in by_gl
+				and all(row.get(field) == candidate.get(field) for field in ("cash_account", "cash_direction", "counterpart_accounts"))
+				and abs(flt(row.cash_amount) - flt(candidate.cash_amount)) <= EPSILON
+			]
+			if len({old_rows[candidate.name].gl_entry for candidate in candidates}) == 1:
+				stored = candidates[0]
+				previous = old_rows[stored.name]
+		# Repair only the exact stored historical link, from the uniquely repaired
+		# locked snapshot. Never normalize a forged change to a valid stored GL or
+		# cash evidence. Manual allocations and the native old snapshot stay intact.
+		if (
+			previous and stored
+			and row.gl_entry == stored.gl_entry
+			and stored.gl_entry not in by_gl
+			and previous.gl_entry in by_gl
+			and all(row.get(field) == stored.get(field) for field in ("cash_account", "cash_direction", "counterpart_accounts"))
+			and abs(flt(row.cash_amount) - flt(stored.cash_amount)) <= EPSILON
+		):
+			for field in ("gl_entry", "cash_account", "cash_direction", "cash_amount", "counterpart_accounts", "suggested_row_code", "suggested_row_label"):
+				row.set(field, previous.get(field))
+		leg = by_gl.get(row.gl_entry)
+		if not leg or (previous and row.gl_entry != previous.gl_entry) or any(
+			row.get(field) != leg.get(field) for field in ("cash_account", "cash_direction", "counterpart_accounts")
+		) or abs(flt(row.cash_amount) - flt(leg.cash_amount)) > EPSILON:
+			frappe.throw(_("现金分录证据与来源总账不一致，不能修改现金科目、收付方向或发生额"))
 
 
 def _get_cash_template(company, posting_date):
@@ -76,13 +169,13 @@ def get_cash_flow_row_options(name):
 	]
 
 
-def _get_voucher_gl_rows(voucher):
+def _get_voucher_gl_rows(voucher, for_update=False):
 	# ERPNext can assign the final GL Entry name after a source document's submit
 	# hooks have run. Prefer the source document's current GL rows over the audit
 	# snapshot's historical link so a cash-flow draft never relies on a temporary
 	# GL name.
 	if voucher.source_event == "Posting" and voucher.source_doctype and voucher.source_name:
-		source_rows = frappe.get_all(
+		source_rows = frappe.db.get_values(
 			"GL Entry",
 			filters={
 				"voucher_type": voucher.source_doctype,
@@ -90,8 +183,10 @@ def _get_voucher_gl_rows(voucher):
 				"is_cancelled": 0,
 				"is_opening": "No",
 			},
-			fields=["name", "account", "debit", "credit", "voucher_type", "voucher_no", "remarks"],
+			fieldname=["name", "account", "debit", "credit", "voucher_type", "voucher_no", "remarks"],
 			order_by="creation asc, name asc",
+			as_dict=True,
+			for_update=for_update,
 		)
 		if source_rows:
 			return source_rows
@@ -99,11 +194,13 @@ def _get_voucher_gl_rows(voucher):
 	entry_ids = [row.gl_entry for row in voucher.entries if row.gl_entry]
 	if not entry_ids:
 		return []
-	return frappe.get_all(
+	return frappe.db.get_values(
 		"GL Entry",
 		filters={"name": ["in", entry_ids], "is_cancelled": 0, "is_opening": "No"},
-		fields=["name", "account", "debit", "credit", "voucher_type", "voucher_no", "remarks"],
+		fieldname=["name", "account", "debit", "credit", "voucher_type", "voucher_no", "remarks"],
 		order_by="creation asc, name asc",
+		as_dict=True,
+		for_update=for_update,
 	)
 
 
@@ -115,9 +212,9 @@ def _suggestion_by_account(company, posting_date):
 	}
 
 
-def get_cash_legs_for_voucher(voucher):
+def get_cash_legs_for_voucher(voucher, for_update=False):
 	"""Return eligible cash GL rows. Pure cash/bank transfers are intentionally excluded."""
-	gl_rows = _get_voucher_gl_rows(voucher)
+	gl_rows = _get_voucher_gl_rows(voucher, for_update=for_update)
 	if not gl_rows:
 		return []
 	from china_finance.services.cash_equivalent_scope import get_cash_scope_accounts
@@ -188,12 +285,13 @@ def _refresh_draft_cash_legs(doc, legs):
 			row.suggested_row_label = leg.suggested_row_label
 
 
-def _get_active_assignment(voucher_name):
+def _get_active_assignment(voucher_name, for_update=False):
 	return frappe.db.get_value(
 		"China Cash Flow Assignment",
 		{"china_accounting_voucher": voucher_name, "status": ["in", ["Draft", "Confirmed"]]},
 		"name",
 		order_by="revision desc, creation desc",
+		for_update=for_update,
 	)
 
 
@@ -213,18 +311,19 @@ def get_cash_flow_assignment_for_voucher(voucher_name):
 
 
 def _next_revision(voucher_name):
-	assignment = frappe.qb.DocType("China Cash Flow Assignment")
-	maximum = (
-		frappe.qb.from_(assignment)
-		.select(Max(assignment.revision))
-		.where(assignment.china_accounting_voucher == voucher_name)
-		.run(pluck=True)[0]
-	)
+	maximum = frappe.db.get_value("China Cash Flow Assignment", {"china_accounting_voucher": voucher_name},
+		"revision", order_by="revision desc", for_update=True)
 	return (flt(maximum) or 0) + 1
 
 
-def _create_cash_flow_assignment(voucher):
-	legs = get_cash_legs_for_voucher(voucher)
+def _create_cash_flow_assignment(voucher, ignore_permissions=True):
+	probe = frappe.get_doc({"doctype": "China Cash Flow Assignment", "company": voucher.company,
+		"posting_date": voucher.posting_date, "china_accounting_voucher": voucher.name,
+		"source_doctype": voucher.source_doctype, "source_name": voucher.source_name})
+	lock_assignment_sources([probe])
+	if _get_active_assignment(voucher.name, for_update=True):
+		frappe.throw(_("该凭证已有有效的现金流量指定单"))
+	legs = get_assignment_cash_legs(probe)
 	if not legs:
 		return None
 	revision = int(_next_revision(voucher.name))
@@ -243,16 +342,34 @@ def _create_cash_flow_assignment(voucher):
 			"items": legs,
 		}
 	)
-	doc.flags.ignore_permissions = True
+	doc.flags.ignore_permissions = ignore_permissions
 	doc.insert()
 	return doc.name
 
 
-def create_cash_flow_assignment(voucher_name):
-	voucher = _get_voucher(voucher_name)
+def create_cash_flow_assignment(voucher_name, *, source=None):
+	from china_finance.services.voucher import GL_SOURCE_DOCTYPES
+
+	# Only server callers can supply this context; the public source API obtains
+	# it from its authorized, current source document. Otherwise probe immutable
+	# voucher identity without locking, before any voucher/assignment locks.
+	if source is None:
+		identity = frappe.db.get_value("China Accounting Voucher", voucher_name,
+			["source_doctype", "source_name"], as_dict=True)
+		if not identity:
+			frappe.throw(_("中国会计凭证的来源身份不可见，请刷新后重试"), frappe.TimestampMismatchError)
+		source = (identity.source_doctype, identity.source_name)
+	if source[0] not in GL_SOURCE_DOCTYPES or not source[1]:
+		frappe.throw(_("现金流量指定必须来自有效的过账凭证"))
+	probe = frappe.get_doc({"doctype": "China Cash Flow Assignment",
+		"source_doctype": source[0], "source_name": source[1]})
+	lock_assignment_sources([probe])
+	voucher = _get_voucher(voucher_name, for_update=True)
+	if (voucher.source_doctype, voucher.source_name) != source:
+		frappe.throw(_("现金流量指定单的来源信息与凭证不一致"))
 	if voucher.source_event != "Posting":
 		return None
-	existing = _get_active_assignment(voucher.name)
+	existing = _get_active_assignment(voucher.name, for_update=True)
 	if existing:
 		return existing
 	return _create_cash_flow_assignment(voucher)
@@ -266,7 +383,8 @@ def create_assignment_if_required(voucher_name):
 
 
 def _ensure_draft(name):
-	doc = frappe.get_doc("China Cash Flow Assignment", name)
+	lock_assignment_sources([name])
+	doc = frappe.get_doc("China Cash Flow Assignment", name, for_update=True)
 	if doc.status != "Draft" or doc.docstatus != 0:
 		frappe.throw(_("只有草稿现金流量指定单可执行此操作"))
 	return doc
@@ -276,8 +394,7 @@ def _ensure_draft(name):
 def reload_cash_flow_assignment_suggestions(name):
 	_require_roles(DRAFT_ROLES)
 	doc = _ensure_draft(name)
-	voucher = _get_voucher(doc.china_accounting_voucher)
-	legs = get_cash_legs_for_voucher(voucher)
+	legs = get_assignment_cash_legs(doc)
 	if not legs:
 		frappe.throw(_("该凭证不包含需要指定的外部现金流"))
 	doc.set("items", legs)
@@ -287,9 +404,9 @@ def reload_cash_flow_assignment_suggestions(name):
 	return {"name": doc.name, "item_count": len(doc.items)}
 
 
-def _validate_assignment_rows(doc):
+def _validate_assignment_rows(doc, legs=None):
 	valid_rows, _template = _valid_cash_flow_rows(doc.company, doc.posting_date)
-	legs = {row.gl_entry: row for row in get_cash_legs_for_voucher(_get_voucher(doc.china_accounting_voucher))}
+	legs = {row.gl_entry: row for row in (legs if legs is not None else get_cash_legs_for_voucher(_get_voucher(doc.china_accounting_voucher)))}
 	allocated = defaultdict(float)
 	for row in doc.items:
 		if row.gl_entry not in legs:
@@ -313,15 +430,16 @@ def _validate_assignment_rows(doc):
 			)
 
 
-def prepare_cash_flow_assignment_confirmation(doc):
+def prepare_cash_flow_assignment_confirmation(doc, for_update=True):
 	_require_roles(CONFIRM_ROLES)
 	# Frappe sets docstatus=1 before calling before_submit. Validate the
 	# business status here and only reject an already cancelled document.
 	if doc.status != "Draft" or doc.docstatus == 2:
 		frappe.throw(_("只有草稿现金流量指定单可执行此操作"))
-	voucher = _get_voucher(doc.china_accounting_voucher)
-	_refresh_draft_cash_legs(doc, get_cash_legs_for_voucher(voucher))
-	_validate_assignment_rows(doc)
+	legs = get_assignment_cash_legs(doc, for_update=for_update)
+	_refresh_draft_cash_legs(doc, legs)
+	validate_cash_evidence(doc, legs)
+	_validate_assignment_rows(doc, legs)
 	valid_rows, template = _valid_cash_flow_rows(doc.company, doc.posting_date)
 	labels = {row.row_code: row.label for row in template.rows if row.row_code in valid_rows}
 	labels[INTERNAL_TRANSFER] = INTERNAL_TRANSFER_LABEL
@@ -349,7 +467,10 @@ def cancel_cash_flow_assignment(name, reason):
 	_require_roles(CONFIRM_ROLES)
 	if not reason:
 		frappe.throw(_("请填写作废原因"))
-	doc = frappe.get_doc("China Cash Flow Assignment", name)
+	lock_assignment_sources([name])
+	doc = frappe.get_doc("China Cash Flow Assignment", name, for_update=True)
+	doc.check_permission("read")
+	doc.check_permission("write")
 	if doc.status == "Cancelled":
 		return {"name": doc.name, "status": doc.status}
 	doc.status = "Cancelled"
@@ -367,17 +488,21 @@ def cancel_cash_flow_assignment(name, reason):
 @frappe.whitelist()
 def recreate_cash_flow_assignment(name):
 	_require_roles(DRAFT_ROLES)
-	previous = frappe.get_doc("China Cash Flow Assignment", name)
+	lock_assignment_sources([name])
+	previous = frappe.get_doc("China Cash Flow Assignment", name, for_update=True)
+	previous.check_permission("read")
+	previous.check_permission("write")
 	if previous.status != "Cancelled":
 		frappe.throw(_("只有已作废的现金流量指定单可以重新创建"))
-	voucher = _get_voucher(previous.china_accounting_voucher)
+	voucher = _get_voucher(previous.china_accounting_voucher, for_update=True)
+	frappe.has_permission("Company", "read", voucher.company, throw=True)
 	if voucher.source_event != "Posting":
 		frappe.throw(_("仅过账凭证可以重新创建现金流量指定单"))
-	if not frappe.db.get_value(voucher.source_doctype, {"name": voucher.source_name, "docstatus": 1}, "name"):
+	if not frappe.db.get_value(voucher.source_doctype, {"name": voucher.source_name, "docstatus": 1}, "name", for_update=True):
 		frappe.throw(_("来源单据已取消，不能重新创建现金流量指定单"))
-	if _get_active_assignment(voucher.name):
+	if _get_active_assignment(voucher.name, for_update=True):
 		frappe.throw(_("该凭证已有有效的现金流量指定单"))
-	assignment = _create_cash_flow_assignment(voucher)
+	assignment = _create_cash_flow_assignment(voucher, ignore_permissions=False)
 	if not assignment:
 		frappe.throw(_("该凭证不包含需要指定的外部现金流"))
 	return {"name": assignment, "revision": frappe.db.get_value("China Cash Flow Assignment", assignment, "revision")}

@@ -94,7 +94,7 @@ def _confirmation_issue(doc):
 	except (frappe.ValidationError, frappe.PermissionError, frappe.DoesNotExistError) as exc:
 		return {"message": str(exc), "scope": "document"}
 	try:
-		core.prepare_cash_flow_assignment_confirmation(probe)
+		core.prepare_cash_flow_assignment_confirmation(probe, for_update=False)
 	except (frappe.ValidationError, frappe.PermissionError, frappe.DoesNotExistError) as exc:
 		message = str(exc)
 		if any(row.gl_entry not in {leg.gl_entry for leg in legs} for row in probe.items):
@@ -262,7 +262,7 @@ def _apply_allocations(doc, payload):
 	stored_gl = {row.name: row.gl_entry for row in doc.items}
 	# Use the established repair before native save so historical temporary GL
 	# links do not prevent submission. Editable allocations remain untouched.
-	legs = core.get_cash_legs_for_voucher(core._get_voucher(doc.china_accounting_voucher))
+	legs = core.get_assignment_cash_legs(doc)
 	core._refresh_draft_cash_legs(doc, legs)
 	valid_gl = {leg.gl_entry for leg in legs}
 	canonical_by_gl = {}
@@ -312,6 +312,16 @@ def process_assignments(assignments, action):
 		frappe.throw(_("请选择保存草稿或确认指定"))
 	if not isinstance(assignments, list) or not 1 <= len(assignments) <= 100:
 		frappe.throw(_("请选择 1 至 100 张现金流量指定单"))
+	names = [payload.get("name") for payload in assignments if isinstance(payload, dict) and payload.get("name")]
+	if any(not isinstance(name, str) for name in names):
+		frappe.throw(_("请指定有效的现金流量指定单编号"))
+	if len(set(names)) != len(names):
+		frappe.throw(_("同一批次不能重复提交现金流量指定单"))
+	# Keep the same hierarchy as native saves and source-cancellation sync. All
+	# source gates precede every assignment lock, even across multiple sources.
+	core.lock_assignment_sources(names)
+	for name in sorted(names):
+		frappe.db.get_value(DOCTYPE, name, "name", for_update=True)
 	results = []
 	for payload in assignments:
 		name = payload.get("name") if isinstance(payload, dict) else None
@@ -336,18 +346,23 @@ def process_assignments(assignments, action):
 					)
 				if action == "confirm" and doc.status == "Confirmed" and doc.docstatus == 1:
 					results.append({"name": name, "ok": True, "document": serialize_assignment(doc)})
-					continue
-				if doc.status != "Draft" or doc.docstatus != 0:
-					frappe.throw(_("只有草稿现金流量指定单可执行此操作"))
-				_apply_allocations(doc, payload)
-				doc.save()
-				if action == "confirm":
-					doc.submit()
-				doc.reload()
-				results.append({"name": name, "ok": True, "document": serialize_assignment(doc)})
+				else:
+					if doc.status != "Draft" or doc.docstatus != 0:
+						frappe.throw(_("只有草稿现金流量指定单可执行此操作"))
+					_apply_allocations(doc, payload)
+					doc.save()
+					if action == "confirm":
+						doc.submit()
+					doc.reload()
+					results.append({"name": name, "ok": True, "document": serialize_assignment(doc)})
+			except (frappe.QueryDeadlockError, frappe.QueryTimeoutError):
+				# Deadlock victims may already have lost all writes/savepoints. Only
+				# the transaction owner can safely retry the entire operation.
+				raise
 			except Exception as exc:
 				frappe.db.rollback(save_point=point)
 				results.append(
 					{"name": name, "ok": False, "error": str(exc), "error_type": type(exc).__name__}
 				)
+			frappe.db.release_savepoint(point)
 	return {"results": results}

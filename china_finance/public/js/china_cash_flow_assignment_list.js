@@ -185,7 +185,7 @@
 		if (listview.cash_flow_workbench) return listview.cash_flow_workbench;
 		const frappe = root.frappe, $ = root.$;
 		const context = root.china_finance?.company_context;
-		let context_company = context?.get_company() || "", collapsed = new Set(), month = "", notice = "";
+		let context_company = context?.get_company() || "", expanded = new Set(), month = "", notice = "";
 		const own_route = ["List", "China Cash Flow Assignment", "List"];
 		const active = () => { const route = frappe.get_route() || []; return route[0] === "List" && route[1] === own_route[1]; };
 		const session = new Session({ call: (method, args) => frappe.xcall(method, args), onchange: (event, name) => {
@@ -200,6 +200,7 @@
 		listview.page.page_form.hide();
 		const $root = $('<section class="cf-assignment-list" aria-label="现金流量指定工作区"></section>').appendTo(listview.$frappe_list);
 		const editor = { session, refresh, render, discard, active };
+		let view_scroll = { left: 0, top: 0 };
 		listview.cash_flow_workbench = editor;
 		listview.before_refresh = () => Promise.resolve();
 		listview.refresh = () => refresh(false);
@@ -214,6 +215,13 @@
 		$root.on("change", "[data-select]", selection_change);
 		$root.on("input", "[data-edit]", field_change);
 		$root.on("change", "[data-edit]", field_change);
+		$root.on("input", "[data-horizontal-scroll]", horizontal_input);
+		$root.on("keydown", "[data-horizontal-scroll]", horizontal_keydown);
+		root.addEventListener("resize", () => { if (active()) layout_viewport(); });
+		if (root.ResizeObserver && $root.get?.(0)) {
+			const resize = new root.ResizeObserver(() => { if (active()) layout_viewport(); });
+			resize.observe($root.get(0));
+		}
 		install_navigation_guard();
 		frappe.realtime?.on("list_update", (data) => {
 			if (data?.doctype !== own_route[1] || !active()) return;
@@ -267,88 +275,164 @@
 		}
 		function render_toolbar() {
 			const selected = [...session.selected].map((name) => session.doc(name)).filter(Boolean);
-			$root.find("[data-toolbar]").html(`<div class="cf-tabs" role="tablist" aria-label="指定单状态">${[["Draft", "待处理"], ["Confirmed", "已确认"], ["All", "全部"]].map(([value, label]) => `<button type="button" class="cf-tab ${session.filters.status === value ? "active" : ""}" role="tab" aria-selected="${session.filters.status === value}" data-action="tab" data-status="${value}"${disabled(session.busy)}>${label}<span>${session.counts[value] ?? "—"}</span></button>`).join("")}</div>
-			<div class="cf-toolbar"><span class="cf-selection-status">${selection_status()}</span><div class="cf-tools">${button("suggest", "填入系统建议", "", !selected.some(editable))}${button("bulk", "统一指定项目", "", !selected.some(editable))}${button("confirm", `确认所选${selected.length ? `（${selected.length}）` : ""}`, "", !selected.length, "btn-primary")}</div></div>
-			<div class="cf-notice" role="status">${escape(notice_text())}</div>`);
+			$root.find("[data-toolbar]").html(`<div class="cf-toolbar"><div class="cf-tabs" role="tablist" aria-label="指定单状态">${[["Draft", "待处理"], ["Confirmed", "已确认"], ["All", "全部"]].map(([value, label]) => `<button type="button" class="cf-tab ${session.filters.status === value ? "active" : ""}" role="tab" aria-selected="${session.filters.status === value}" data-action="tab" data-status="${value}"${disabled(session.busy)}>${label}<span>${session.counts[value] ?? "—"}</span></button>`).join("")}</div>
+			<span class="cf-selection-status">${selection_status()}</span><div class="cf-tools">${button("suggest", "填入系统建议", "", !selected.some(editable))}${button("bulk", "统一指定项目", "", !selected.some(editable))}${button("save", `保存更改${session.dirty.size ? `（${session.dirty.size}）` : ""}`, "", !session.dirty.size)}${button("confirm", `确认所选${selected.length ? `（${selected.length}）` : ""}`, "", !selected.length, "btn-primary")}</div></div>
+			<div class="cf-notice" role="status"${notice_text() ? "" : " hidden"}>${escape(notice_text())}</div>`);
 			update_save_button();
 			if (session.busy) $root.find("button, input, select, textarea").prop("disabled", true);
 			else {
-				// Reapply permission locks after releasing a previous batch.
 				$root.find("[data-readonly='1']").prop("disabled", true);
 				$root.find("[data-filter]").prop("disabled", session.loading);
 			}
+			layout_viewport();
 		}
 		function selection_status() { return `已选 ${session.selected.size} 张${session.dirty.size ? ` · <strong>${session.dirty.size} 张未保存</strong>` : ""}`; }
-		function notice_text() { return session.loading ? "正在加载指定单…" : session.busy ? "正在逐单处理，请等待结果…" : notice || "明细直接指定，按整张单据确认。已确认与已取消的单据只读。"; }
+		function notice_text() { return session.loading ? "正在加载指定单…" : session.busy ? "正在逐单处理，请等待结果…" : notice; }
 		function update_loading_feedback() {
-			$root.find(".cf-notice").text(notice_text());
+			const text = notice_text();
+			$root.find(".cf-notice").text(text).prop("hidden", !text);
 			$root.find("[data-filter]").prop("disabled", session.loading || session.busy);
 			$root.find("[data-action='previous']").prop("disabled", session.loading || session.busy || !session.filters.start);
 			$root.find("[data-action='next']").prop("disabled", session.loading || session.busy || session.filters.start + session.filters.page_length >= session.total);
+			layout_viewport();
 		}
 		function update_save_button() {
 			listview.page.btn_primary?.prop("disabled", session.busy || !session.dirty.size).text(session.busy ? "处理中…" : `保存更改${session.dirty.size ? `（${session.dirty.size} 张）` : ""}`);
+			$root.find("[data-action='save']").prop("disabled", session.busy || !session.dirty.size).text(session.busy ? "处理中…" : `保存更改${session.dirty.size ? `（${session.dirty.size}）` : ""}`);
+		}
+		function document_state(doc) {
+			return session.dirty.has(doc.name) ? "未保存" : doc.status === "Draft" ? (doc.assigned_by ? "已保存 · 待确认" : "待指定") : status_label(doc.status);
 		}
 		function update_edit_feedback(name) {
-			// Keep every input and action button attached during input/blur/change.
-			// Replacing them here can swallow the click or Tab that caused the blur.
+			// Never replace inputs or buttons during input/blur/change: the next click
+			// or Tab must still target the same attached element.
 			$root.find(".cf-selection-status").html(selection_status()); update_save_button();
 			const doc = session.doc(name); if (!doc) return;
 			const $doc = $root.find(".cf-document").filter((_, element) => element.dataset.document === name);
 			$doc.toggleClass("is-dirty", session.dirty.has(name));
-			$doc.find(".cf-doc-foot").html(document_feedback(doc));
+			$doc.find("[data-document-state]").text(document_state(doc));
+			$doc.find("[data-document-feedback]").html(document_feedback(doc));
 			cash_groups(doc).forEach((group, index) => {
 				$doc.find(`[data-summary-group='${index}']`).html(group_summary(group));
 				$doc.find(`[data-origin-group='${index}']`).html(group_origin(group));
 			});
 		}
+		function viewport_node() { return $root.find(".cf-table-scroll").get?.(0); }
+		function capture_scroll() {
+			const viewport = viewport_node();
+			if (viewport) view_scroll = { left: Number(viewport.scrollLeft) || 0, top: Number(viewport.scrollTop) || 0 };
+		}
+		function update_horizontal_control() {
+			const viewport = viewport_node(), control = $root.find("[data-horizontal-scroll]").get?.(0);
+			if (!viewport || !control) return;
+			const max = Math.max(0, (viewport.scrollWidth || 0) - (viewport.clientWidth || 0));
+			viewport.scrollLeft = Math.min(max, Math.max(0, viewport.scrollLeft || 0));
+			control.max = String(max); control.value = String(viewport.scrollLeft); control.disabled = max === 0;
+			control.setAttribute?.("aria-valuetext", `${Math.round(viewport.scrollLeft)} / ${Math.round(max)}`);
+			const width = control.clientWidth || viewport.clientWidth || 0;
+			control.style?.setProperty("--cf-scroll-thumb-width", `${Math.min(width, Math.max(42, Math.round(width * (viewport.clientWidth || 0) / Math.max(1, viewport.scrollWidth || 0))))}px`);
+			view_scroll = { left: viewport.scrollLeft, top: viewport.scrollTop || 0 };
+		}
+		function layout_viewport() {
+			const viewport = viewport_node(); if (!viewport) return;
+			const top = viewport.getBoundingClientRect?.().top;
+			if (Number.isFinite(top) && root.innerHeight) {
+				const height = (selector) => $root.find(selector).get?.(0)?.getBoundingClientRect?.().height || 0;
+				const reserved = height(".cf-scroll-dock") + height(".cf-footer") + height(".cf-results") + 12;
+				viewport.style?.setProperty("height", `${Math.max(140, Math.floor(root.innerHeight - top - reserved))}px`);
+			}
+			update_horizontal_control();
+		}
+		function horizontal_input(event) {
+			const viewport = viewport_node(); if (!viewport) return;
+			viewport.scrollLeft = Number(event.currentTarget.value) || 0; update_horizontal_control();
+		}
+		function horizontal_keydown(event) {
+			const viewport = viewport_node(); if (!viewport) return;
+			const keys = { ArrowRight: (viewport.scrollLeft || 0) + 80, ArrowLeft: (viewport.scrollLeft || 0) - 80, Home: 0, End: viewport.scrollWidth || 0 };
+			if (!(event.key in keys)) return;
+			event.preventDefault(); viewport.scrollLeft = keys[event.key]; update_horizontal_control();
+		}
+		function restore_viewport() {
+			const viewport = viewport_node(); if (!viewport) return;
+			const position = { ...view_scroll };
+			// Set the final height before restoring scrollTop. The temporary CSS
+			// height can otherwise clamp a deep position while replacing the table.
+			layout_viewport();
+			viewport.scrollLeft = position.left; viewport.scrollTop = position.top;
+			viewport.addEventListener?.("scroll", update_horizontal_control, { passive: true });
+			update_horizontal_control();
+			// Font/layout and native sidebar changes can settle after this render.
+			root.requestAnimationFrame?.(() => { if (active()) layout_viewport(); });
+		}
 		function render() {
+			capture_scroll();
+			const position = { ...view_scroll };
 			const filters = session.filters;
 			const drafts = session.documents.filter((doc) => doc.status === "Draft" && (doc.can_write || doc.can_confirm));
-			$root.html(`<div class="cf-context"><div><strong>${escape(filters.company || "请选择公司")}</strong><span>现金流量指定单</span></div>${button("company", filters.company ? "切换公司" : "选择公司", "", !context?.select_company)}</div>
-			<div class="cf-filters">${input("month", month, "记账月份", "month")}${input("from_date", filters.from_date, "开始日期", "date")}${input("to_date", filters.to_date, "结束日期", "date")}${input("search", filters.search, "搜索摘要 / 凭证 / 科目", "search", 'placeholder="输入后按回车或离开输入框查询"')}
-			<label class="cf-filter"><span>收付方向</span><select class="form-control input-sm" data-filter="direction"${disabled(session.busy)}>${[["", "全部方向"], ["收款", "收款"], ["付款", "付款"]].map(([value, label]) => `<option value="${value}"${filters.direction === value ? " selected" : ""}>${label}</option>`).join("")}</select></label></div>
-			<div data-toolbar></div>${session.error ? `<div class="cf-error" role="alert">${escape(session.error)}</div>` : ""}
-			<div class="cf-select-all"><label><input type="checkbox" data-select="all"${drafts.length && drafts.every((doc) => session.selected.has(doc.name)) ? " checked" : ""}${disabled(!drafts.length || session.busy)}> 选择本页可处理指定单</label><span>按整张指定单选择 · ${session.total} 张符合条件</span></div>
-			<div class="cf-documents">${!filters.company ? '<div class="cf-empty">选择公司后查看现金流量指定单。</div>' : session.documents.length ? session.documents.map(render_document).join("") : `<div class="cf-empty">${session.loading ? "正在加载…" : "当前条件下没有指定单"}</div>`}</div>
+			$root.html(`<div data-toolbar></div><div class="cf-filters"><div class="cf-company" title="${escape(filters.company)}">${button("company", escape(filters.company || "选择公司"), `title="切换公司"`, !context?.select_company)}</div>${input("month", month, "记账月份", "month")}${input("from_date", filters.from_date, "开始日期", "date")}${input("to_date", filters.to_date, "结束日期", "date")}${input("search", filters.search, "搜索摘要 / 凭证 / 科目", "search", 'placeholder="搜索摘要 / 凭证 / 科目"')}
+			<label class="cf-filter"><span>收付方向</span><select class="form-control input-sm" data-filter="direction" aria-label="收付方向"${disabled(session.busy)}>${[["", "全部方向"], ["收款", "收款"], ["付款", "付款"]].map(([value, label]) => `<option value="${value}"${filters.direction === value ? " selected" : ""}>${label}</option>`).join("")}</select></label></div>${session.error ? `<div class="cf-error" role="alert">${escape(session.error)}</div>` : ""}
+			<div class="cf-table-scroll" tabindex="0" aria-label="现金流量指定明细，可横向滚动"><table class="cf-cash-table"><colgroup><col style="width:32px"><col style="width:180px"><col style="width:96px"><col style="width:240px"><col style="width:58px"><col style="width:128px"><col style="width:280px"><col style="width:126px"><col style="width:224px"></colgroup><thead><tr><th class="cf-checkbox-cell"><input type="checkbox" data-select="all" aria-label="选择本页可处理指定单"${drafts.length && drafts.every((doc) => session.selected.has(doc.name)) ? " checked" : ""}${disabled(!drafts.length || session.busy)}></th><th class="cf-identity">凭证 / 指定状态</th><th>记账日期</th><th>现金 / 银行科目</th><th>方向</th><th class="cf-number">现金发生额</th><th>现金流量项目</th><th class="cf-number">指定金额</th><th>操作</th></tr></thead>${session.documents.length ? session.documents.map(render_document).join("") : `<tbody><tr><td colspan="9" class="cf-empty">${!filters.company ? "选择公司后查看现金流量指定单。" : session.loading ? "正在加载…" : "当前条件下没有指定单"}</td></tr></tbody>`}</table></div>
+			<div class="cf-scroll-dock"><input type="range" data-horizontal-scroll="1" class="cf-scroll-range" min="0" max="0" value="0" step="1" aria-label="横向滚动指定明细"></div>
 			<div class="cf-footer"><span>第 ${session.total ? filters.start + 1 : 0}–${Math.min(filters.start + session.documents.length, session.total)} 张，共 ${session.total} 张 · 每页 ${filters.page_length} 张</span><div class="cf-tools">${button("previous", "上一页", "", !filters.start || session.loading)}${button("next", "下一页", "", filters.start + filters.page_length >= session.total || session.loading)}</div></div>
-			<div class="cf-results" aria-live="polite">${session.results.length ? `<strong>逐单处理结果</strong>${session.results.map((result) => `<div class="cf-result ${result.ok && result.document ? "success" : "failure"}"><span>${escape(result.name)}</span><span>${result.ok && result.document ? `处理成功 · ${status_label(result.document.status)}` : escape(result.error || "未收到有效单据，请刷新核对")}</span></div>`).join("")}` : ""}</div>`);
-			render_toolbar();
+			<div class="cf-results" aria-live="polite"${session.results.length ? "" : " hidden"}>${session.results.length ? `<strong>逐单处理结果</strong>${session.results.map((result) => `<div class="cf-result ${result.ok && result.document ? "success" : "failure"}"><span>${escape(result.name)}</span><span>${result.ok && result.document ? (result.document.status === "Draft" ? "已保存 · 待确认" : status_label(result.document.status)) : escape(result.error || "未收到有效单据，请刷新核对")}</span></div>`).join("")}` : ""}</div>`);
+			render_toolbar(); view_scroll = position; restore_viewport();
 		}
 		function status_label(status) { return ({ Draft: "草稿", Confirmed: "已确认", Cancelled: "已取消" })[status] || status; }
 		function render_document(doc) {
-			const groups = cash_groups(doc), locked = !editable(doc), closed = collapsed.has(doc.name);
+			const groups = cash_groups(doc), locked = !editable(doc), open = expanded.has(doc.name);
+			const span = Math.max(1, doc.items?.length || 0) + (open ? 1 : 0);
+			const identity = render_identity(doc, span);
+			let first = true;
+			const rows = groups.map((group, group_index) => group.rows.map(({ row, index }, allocation_index) => {
+				const is_first = first; first = false;
+				return `<tr class="cf-allocation-row" data-allocation-index="${index}">
+					${is_first ? identity : ""}${allocation_index === 0 ? render_cash_leg(doc, group, group_index) : ""}
+					${render_allocation(doc, row, index, locked, group)}<td>${render_row_actions(doc, group, index, locked, is_first, open)}</td></tr>`;
+			}).join("")).join("");
+			return `<tbody class="cf-document${session.dirty.has(doc.name) ? " is-dirty" : ""}${session.selected.has(doc.name) ? " is-selected" : ""}" data-document="${escape(doc.name)}">
+				${rows || `<tr>${identity}<td colspan="7">没有现金明细</td></tr>`}${open ? render_expanded_document(doc, groups, locked) : ""}</tbody>`;
+		}
+		function render_identity(doc, span) {
+			const selectable = doc.status === "Draft" && (doc.can_write || doc.can_confirm);
+			return `<td class="cf-checkbox-cell" rowspan="${span}"><input type="checkbox" data-select="${escape(doc.name)}" aria-label="选择指定单 ${escape(doc.name)}"${session.selected.has(doc.name) ? " checked" : ""}${disabled(!selectable || session.busy)} data-readonly="${selectable ? "0" : "1"}"></td>
+				<td class="cf-identity" rowspan="${span}" title="${escape(doc.name)} · ${escape(doc.voucher_summary || "")} · 修订 ${escape(doc.revision || 1)}">${button("details", escape(doc.china_accounting_voucher || doc.name), `data-name="${escape(doc.name)}"`, false, "cf-voucher-link")}<span class="cf-document-state" data-document-state>${escape(document_state(doc))}</span></td>`;
+		}
+		function render_cash_leg(doc, group, group_index) {
+			const row = group.rows[0].row, span = group.rows.length;
+			return `<td rowspan="${span}">${escape(doc.posting_date || "—")}</td><td class="cf-account" rowspan="${span}">${escape(row.cash_account || "—")}</td>
+				<td class="cf-direction" rowspan="${span}">${escape(group.direction)}</td><td class="cf-number" rowspan="${span}">${money(row.cash_amount)}<span data-summary-group="${group_index}">${group_summary(group)}</span></td>`;
+		}
+		function render_row_actions(doc, group, index, locked, first, open) {
 			const extra = `data-name="${escape(doc.name)}"`;
-			return `<article class="cf-document ${session.dirty.has(doc.name) ? "is-dirty" : ""}" data-document="${escape(doc.name)}">
-			<header class="cf-doc-head"><label><input type="checkbox" data-select="${escape(doc.name)}"${session.selected.has(doc.name) ? " checked" : ""}${disabled(doc.status !== "Draft" || (!doc.can_write && !doc.can_confirm) || session.busy)} data-readonly="${doc.status !== "Draft" || (!doc.can_write && !doc.can_confirm) ? "1" : "0"}"> <strong>${escape(doc.china_accounting_voucher || doc.name)}</strong></label><span class="indicator-pill ${doc.status === "Confirmed" ? "green" : doc.status === "Cancelled" ? "gray" : "orange"}">${status_label(doc.status)}</span><span class="cf-muted">${escape(doc.posting_date)} · ${groups.length} 笔现金明细 · ${escape(doc.currency || "")}</span><div class="cf-doc-actions">${button("toggle", closed ? "展开明细" : "收起明细", extra)}${button("details", "详情", extra)}${button("confirm-one", "确认整单", extra + ` data-readonly="${doc.status === "Draft" && doc.can_confirm ? "0" : "1"}"`, doc.status !== "Draft" || !doc.can_confirm)}</div></header>
-			<div class="cf-voucher-summary"><span>凭证摘要</span>${escape(doc.voucher_summary || "—")}</div>
-			${!closed ? `<div class="cf-table-scroll"><table class="cf-cash-table"><thead><tr><th>现金科目 / 对方科目</th><th>方向与发生额</th><th>现金流量项目与指定金额</th><th>指定说明</th></tr></thead><tbody>${groups.map((group, index) => render_group(doc, group, locked, index)).join("")}</tbody></table></div>` : ""}
-			<footer class="cf-doc-foot">${document_feedback(doc)}</footer></article>`;
+			return `<div class="cf-row-actions">
+				${!locked ? button("split", "拆分", `${extra} data-index="${index}"`, false, "cf-text-action") : ""}
+				${!locked && group.rows.length > 1 ? button("remove", "移除", `${extra} data-index="${index}"`, false, "cf-text-action") : ""}
+				${first ? button("toggle", open ? "收起" : "展开", `${extra} aria-expanded="${open}"`, false, "cf-text-action") : ""}
+				${first ? button("confirm-one", "确认整单", `${extra} data-readonly="${doc.status === "Draft" && doc.can_confirm ? "0" : "1"}"`, doc.status !== "Draft" || !doc.can_confirm, "cf-text-action") : ""}</div>`;
+		}
+		function render_expanded_document(doc, groups, locked) {
+			return `<tr class="cf-expanded"><td colspan="7"><div class="cf-expanded-summary"><span>凭证摘要：${escape(doc.voucher_summary || "—")}</span><span data-document-feedback>${document_feedback(doc)}</span></div>
+				${groups.map((group, group_index) => `<div class="cf-expanded-group"><span class="cf-muted">对方科目：${escape(group.rows[0].row.counterpart_accounts || "—")} · ${escape(group.gl_entry)}</span><span class="cf-muted" data-origin-group="${group_index}">${group_origin(group)}</span>
+					${group.rows.map(({ row, index }) => `<label class="cf-note-label">第 ${index + 1} 项说明<textarea rows="2" class="form-control input-sm cf-row-note" data-edit="remarks" data-name="${escape(doc.name)}" data-index="${index}" data-readonly="${locked ? "1" : "0"}" aria-label="${escape(doc.name)} 第 ${index + 1} 项指定说明" placeholder="指定依据或拆分说明"${disabled(locked || session.busy)}>${escape(row.remarks)}</textarea></label>`).join("")}</div>`).join("")}</td></tr>`;
 		}
 		function document_feedback(doc) {
 			const issues = doc.status === "Draft" ? confirmation_issues(doc) : [];
-			return `<span>${escape(doc.name)} · 修订 ${escape(doc.revision || 1)}${session.dirty.has(doc.name) ? " · 未保存" : ""}</span>${issues.length ? `<span class="cf-warning">${escape(issues.slice(0, 2).join("；"))}${issues.length > 2 ? ` 等 ${issues.length} 项` : ""}</span>` : `<span>${!editable(doc) ? "只读" : "项目与金额已配平，确认时由服务器再次校验"}</span>`}`;
+			return `${escape(doc.name)} · 修订 ${escape(doc.revision || 1)} · ${document_state(doc)}${issues.length ? ` · <span class="cf-warning">${escape(issues.join("；"))}</span>` : ` · ${!editable(doc) ? "只读" : "项目与金额已配平"}`}`;
 		}
 		function group_summary(group) {
 			const total = group.rows.reduce((sum, entry) => sum + (to_minor(entry.row.assigned_amount) || 0), 0);
-			return `${group.rows.length > 1 || total !== group.cash_minor ? `<div class="cf-muted">指定合计 ${money(amount(total))}</div>` : ""}${total !== group.cash_minor ? `<div class="cf-warning">差额 ${money(amount((group.cash_minor || 0) - total))}</div>` : ""}`;
+			return total !== group.cash_minor ? `<span class="cf-warning cf-difference">差额 ${money(amount((group.cash_minor || 0) - total))}</span>` : "";
 		}
 		function group_origin(group) {
 			const row = group.rows[0].row;
 			return group.rows.length > 1 ? "拆分指定" : row.cash_flow_row_code ? "已有指定" : row.suggested_row_code ? `系统建议：${escape(row.suggested_row_label || row.suggested_row_code)}` : "无系统建议";
 		}
-		function render_group(doc, group, locked, group_index) {
-			const row = group.rows[0].row, split = group.rows.length > 1;
-			return `<tr><td><div>${escape(row.cash_account)}</div><div class="cf-muted">${escape(row.counterpart_accounts || "—")}</div><div class="cf-muted cf-gl">${escape(row.gl_entry)}</div></td>
-			<td><div class="cf-direction">${escape(group.direction)}</div><strong class="cf-amount">${money(row.cash_amount)}</strong><div data-summary-group="${group_index}">${group_summary(group)}</div></td>
-			<td>${group.rows.map(({ row: allocation, index }) => {
-				const attrs = `data-name="${escape(doc.name)}" data-index="${index}" data-readonly="${locked ? "1" : "0"}"`;
-				const options = (doc.options || []).filter((option) => option.direction === "all" || option.direction === allocation.cash_direction);
-				const known = options.some((option) => option.value === allocation.cash_flow_row_code);
-				return `<div class="cf-allocation">${locked ? `<div class="cf-readonly">${escape(allocation.cash_flow_row_label || allocation.cash_flow_row_code || "未指定")}</div>` : `<select class="form-control input-sm" data-edit="cash_flow_row_code" ${attrs} aria-label="${escape(doc.name)} 第 ${index + 1} 项现金流量项目"${disabled(session.busy)}><option value="">请选择现金流量项目</option>${!known && allocation.cash_flow_row_code ? `<option selected value="${escape(allocation.cash_flow_row_code)}">${escape(allocation.cash_flow_row_label || allocation.cash_flow_row_code)}（请重新核对）</option>` : ""}${options.map((option) => `<option value="${escape(option.value)}"${option.value === allocation.cash_flow_row_code ? " selected" : ""}>${escape(option.label)}</option>`).join("")}</select>`}
-				<div class="cf-amount-editor"><span>指定金额</span><input type="number" class="form-control input-sm" min="0.01" step="0.01" data-edit="assigned_amount" ${attrs} aria-label="${escape(doc.name)} 第 ${index + 1} 项指定金额" value="${escape(allocation.assigned_amount)}"${disabled(locked || session.busy)}>${!locked && split ? button("remove", "移除", attrs) : ""}</div></div>`;
-			}).join("")}<div class="cf-row-bottom"><span class="cf-muted" data-origin-group="${group_index}">${group_origin(group)}</span>${!locked ? button("split", "＋ 拆分", `data-name="${escape(doc.name)}" data-index="${group.rows.at(-1).index}"`) : ""}</div></td>
-			<td>${group.rows.map(({ row: allocation, index }) => `<textarea rows="2" class="form-control input-sm cf-row-note" data-edit="remarks" data-name="${escape(doc.name)}" data-index="${index}" data-readonly="${locked ? "1" : "0"}" aria-label="${escape(doc.name)} 第 ${index + 1} 项指定说明" placeholder="指定依据或拆分说明"${disabled(locked || session.busy)}>${escape(allocation.remarks)}</textarea>`).join("")}</td></tr>`;
+		function render_allocation(doc, row, index, locked, group) {
+			const attrs = `data-name="${escape(doc.name)}" data-index="${index}" data-readonly="${locked ? "1" : "0"}"`;
+			const options = (doc.options || []).filter((option) => option.direction === "all" || option.direction === row.cash_direction);
+			const known = options.some((option) => option.value === row.cash_flow_row_code);
+			return `<td>${locked ? `<span class="cf-readonly">${escape(row.cash_flow_row_label || row.cash_flow_row_code || "未指定")}</span>` : `<select class="form-control input-sm cf-project${row.cash_flow_row_code ? "" : " is-empty"}" data-edit="cash_flow_row_code" ${attrs} aria-label="${escape(doc.name)} 第 ${index + 1} 项现金流量项目" title="${escape(group_origin(group))}"${disabled(session.busy)}><option value="">请选择现金流量项目</option>${!known && row.cash_flow_row_code ? `<option selected value="${escape(row.cash_flow_row_code)}">${escape(row.cash_flow_row_label || row.cash_flow_row_code)}（请重新核对）</option>` : ""}${options.map((option) => `<option value="${escape(option.value)}"${option.value === row.cash_flow_row_code ? " selected" : ""}>${escape(option.label)}</option>`).join("")}</select>`}</td><td class="cf-number"><input type="number" class="form-control input-sm cf-assigned-amount" min="0.01" step="0.01" data-edit="assigned_amount" ${attrs} aria-label="${escape(doc.name)} 第 ${index + 1} 项指定金额" value="${escape(row.assigned_amount)}"${disabled(locked || session.busy)}></td>`;
 		}
 		function selection_change(event) {
 			if (session.busy) return;
@@ -361,7 +445,10 @@
 			session.edit(target.dataset.name, (doc) => {
 				const row = doc.items[Number(target.dataset.index)];
 				row[target.dataset.edit] = target.value;
-				if (target.dataset.edit === "cash_flow_row_code") row.cash_flow_row_label = valid_option(doc, target.value, row.cash_direction)?.label || "";
+				if (target.dataset.edit === "cash_flow_row_code") {
+					row.cash_flow_row_label = valid_option(doc, target.value, row.cash_direction)?.label || "";
+					$(target).toggleClass("is-empty", !target.value);
+				}
 			});
 		}
 		async function filter_change(event) {
@@ -385,13 +472,14 @@
 				if (company) { await session.change_filters({ company }, async () => true); context_company = company; }
 			} else if (action === "tab") await session.change_filters({ status: target.dataset.status }, discard);
 			else if (action === "previous" || action === "next") await session.change_filters({ start: session.filters.start + (action === "next" ? 1 : -1) * session.filters.page_length }, discard);
-			else if (action === "toggle") { collapsed.has(name) ? collapsed.delete(name) : collapsed.add(name); render(); }
+			else if (action === "toggle") { expanded.has(name) ? expanded.delete(name) : expanded.add(name); render(); }
 			else if (action === "split" || action === "remove") { session.edit(name, (doc) => (action === "split" ? split_item : remove_item)(doc, Number(target.dataset.index))); render(); }
 			else if (action === "suggest") {
 				let count = 0;
 				session.selected.forEach((id) => session.edit(id, (doc) => { count += fill_suggestions(doc); }));
 				notice = `已填入 ${count} 笔空白且未拆分行的系统建议，请核对后保存。`; render();
-			} else if (action === "bulk") show_bulk();
+			} else if (action === "save") await save();
+			else if (action === "bulk") show_bulk();
 			else if (action === "details") show_details(name);
 			else if (action === "confirm" || action === "confirm-one") show_confirmation(action === "confirm-one" ? [name] : [...session.selected]);
 		}

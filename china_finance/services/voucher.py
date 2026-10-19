@@ -718,10 +718,16 @@ def get_source_snapshot_status(source_doctype, source_name):
 def create_cash_flow_assignment_from_source(source_doctype, source_name):
 	frappe.only_for(("Accounts User", "China Finance User", "Accounts Manager", "China Finance Manager", "System Manager"))
 	doc = _get_source_document(source_doctype, source_name)
+	# The public missing-snapshot path can create a voucher before cash-flow
+	# creation acquires its gate. Lock the source first, as cancellation does,
+	# and recheck current state/permission after waiting for another writer.
+	doc = frappe.get_doc(source_doctype, source_name, for_update=True)
+	doc.check_permission("read")
 	if doc.docstatus != 1:
 		frappe.throw(_("仅已提交来源单据可以指定现金流量"))
 	voucher_name = frappe.db.get_value(
-		"China Accounting Voucher", {"source_key": f"Posting|{source_doctype}|{source_name}", "docstatus": 1}, "name"
+		"China Accounting Voucher", {"source_key": f"Posting|{source_doctype}|{source_name}", "docstatus": 1}, "name",
+		for_update=True,
 	)
 	if not voucher_name:
 		voucher_name = create_voucher_from_source(doc, "Posting", force=True)
@@ -729,7 +735,7 @@ def create_cash_flow_assignment_from_source(source_doctype, source_name):
 		frappe.throw(_("审计快照尚未生成，且来源单据没有可用总账分录"))
 	from china_finance.services.cash_flow_assignment import create_cash_flow_assignment
 
-	name = create_cash_flow_assignment(voucher_name)
+	name = create_cash_flow_assignment(voucher_name, source=(doc.doctype, doc.name))
 	if not name:
 		frappe.throw(_("该单据不包含需要指定的外部现金流"))
 	return {"name": name}
