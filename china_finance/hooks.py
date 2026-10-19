@@ -30,7 +30,7 @@ after_migrate = "china_finance.setup.install.after_migrate"
 # include js, css files in header of desk.html
 app_include_css = [
 	"/assets/china_finance/css/china_finance.css?v=receipt-tabs-2",
-	"/assets/china_finance/css/china_cash_flow_assignment_list.css?v=2",
+	"/assets/china_finance/css/china_cash_flow_assignment_list.css?v=3",
 ]
 # app_include_js = "/assets/china_finance/js/china_finance.js"
 
