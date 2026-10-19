@@ -223,7 +223,7 @@ class TestCurrencyContextIntegration(IntegrationTestCase):
 		self.assertEqual((row.currency, row.party_account_currency, row.allocation_currency), ("USD", "CNY", "EUR"))
 		self.assertEqual((row.grand_total, row.outstanding_amount, row.allocated_gross_amount), (100, 700, 113))
 		self.assertEqual(row.reconciliation_status, "Blocked")
-		self.assertIn("币种不一致", row.exception_reason)
+		self.assertIn(frappe._("销售发票与税票币种不一致，未进行汇率换算"), row.exception_reason)
 		chain_row = business_chain(filters)[1][0]
 		self.assertEqual((chain_row.currency, chain_row.party_account_currency), ("USD", "CNY"))
 		request = frappe.get_doc({"doctype": "China Tax Invoice Request", "company": self.company,
