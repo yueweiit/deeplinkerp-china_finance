@@ -62,7 +62,10 @@ jobs:
           test -f apps/erpnext/erpnext/accounts/doctype/account/chart_of_accounts/unverified/cn_l10n_chart_china.json
           bench get-app china_finance "$GITHUB_WORKSPACE"
           bench setup requirements --dev
+          bench pip install pytest
           bench new-site --db-root-password root --admin-password admin test_site
+          # Message/export assertions exercise the application's Chinese locale.
+          bench --site test_site set-config lang zh
           bench --site test_site install-app erpnext
           bench --site test_site install-app china_finance
 
@@ -75,6 +78,10 @@ jobs:
           for test_year in $(printf '%s\n' 2026 "$(date +%Y)" | sort -u); do
             bench --site test_site execute erpnext.setup.setup_wizard.operations.company_setup.create_fiscal_year_and_company --kwargs "{\"args\": {\"fy_start_date\": \"${test_year}-01-01\", \"fy_end_date\": \"${test_year}-12-31\"}}"
           done
+
+      - name: Run frontend contract tests
+        working-directory: /home/runner/frappe-bench/apps/china_finance
+        run: node --test china_finance/tests/*.js
 
       - name: Verify repeatable migration and assets
         working-directory: /home/runner/frappe-bench

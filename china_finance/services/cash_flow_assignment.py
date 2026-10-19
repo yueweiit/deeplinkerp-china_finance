@@ -530,3 +530,20 @@ def preview_cash_flow_assignment_coverage(company, from_date, to_date):
 	if not frappe.has_permission("Company", "read", company):
 		frappe.throw(_("无权查看该公司"), frappe.PermissionError)
 	return get_assignment_coverage(company, getdate(from_date), getdate(to_date))
+
+
+@frappe.whitelist()
+def get_cash_flow_assignment_list(
+	company=None, from_date=None, to_date=None, status="Draft", search=None, direction=None,
+	start=0, page_length=20,
+):
+	from china_finance.services.cash_flow_assignment_list import get_assignment_list
+
+	return get_assignment_list(company, from_date, to_date, status, search, direction, start, page_length)
+
+
+@frappe.whitelist(methods=["POST"])
+def process_cash_flow_assignments(assignments, action="save"):
+	from china_finance.services.cash_flow_assignment_list import process_assignments
+
+	return process_assignments(assignments, action)

@@ -28,7 +28,10 @@ after_migrate = "china_finance.setup.install.after_migrate"
 # ------------------
 
 # include js, css files in header of desk.html
-app_include_css = "/assets/china_finance/css/china_finance.css?v=receipt-tabs-2"
+app_include_css = [
+	"/assets/china_finance/css/china_finance.css?v=receipt-tabs-2",
+	"/assets/china_finance/css/china_cash_flow_assignment_list.css?v=1",
+]
 # app_include_js = "/assets/china_finance/js/china_finance.js"
 
 # include js, css files in header of web template
@@ -93,6 +96,7 @@ doctype_list_js = {
 	"Payment Entry": "public/js/source_voucher_number_list.js",
 	"Period Closing Voucher": "public/js/period_closing_voucher_list.js",
 	"China Accounting Voucher": "public/js/china_accounting_voucher_list.js",
+	"China Cash Flow Assignment": "public/js/china_cash_flow_assignment_list.js",
 	"China Financial Statement Template": "public/js/china_financial_statement_template_list.js",
 	"China Financial Statement Mapping": "public/js/china_financial_statement_mapping_list.js",
 	"China Sales Settlement": "public/js/china_sales_settlement_list.js",
