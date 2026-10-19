@@ -21,6 +21,9 @@ from china_finance.services.statutory_reporting import generate_statutory_report
 class TestClosingReportSnapshots(IntegrationTestCase):
 	def setUp(self):
 		super().setUp()
+		language = frappe.local.lang
+		frappe.local.lang = "zh"
+		self.addCleanup(setattr, frappe.local, "lang", language)
 		self.prefix = "_Test Closing Reports " + frappe.generate_hash(length=8)
 		frappe.db.savepoint("closing_report_test")
 		self.addCleanup(frappe.db.rollback, save_point="closing_report_test")
@@ -136,6 +139,53 @@ class TestClosingReportSnapshots(IntegrationTestCase):
 		self.assertTrue(all(json.loads(row.data_json)["comparison_status"] == "Missing Template" for row in snapshots))
 		self.assertEqual(getdate(frappe.db.get_value("Company", self.company, "accounts_frozen_till_date")), getdate("2026-01-31"))
 		self.assertTrue(enqueue.call_args.kwargs["enqueue_after_commit"])
+
+	def test_deferred_monthly_close_records_warning_and_retains_draft_cash_flow(self):
+		frappe.db.set_value("China Finance Settings", self.company,
+			"defer_cash_flow_confirmation_on_monthly_close", 1)
+		frappe.clear_document_cache("China Finance Settings", self.company)
+		self.addCleanup(frappe.clear_document_cache, "China Finance Settings", self.company)
+		for template in self.templates.values():
+			frappe.db.set_value("China Financial Statement Template", template, "effective_from", "2025-01-01")
+		pending = {"passed": False, "count": 10, "amount": 102464.41, "details": "10 pending"}
+		with (
+			patch("china_finance.services.cash_flow_assignment.get_assignment_coverage", return_value=pending),
+			patch("frappe.enqueue"),
+		):
+			result = submit_closing_run(self.run.name)
+			self.assertEqual(result["status"], "Closed")
+			self.run.reload()
+			check = next(row for row in self.run.checks if row.check_code == "CASH_FLOW_ASSIGNMENT")
+			self.assertFalse(check.passed)
+			self.assertEqual(check.severity, "Warning")
+			self.assertIn("10 pending", check.details)
+			name = frappe.db.get_value("China Report Snapshot", {
+				"closing_run": self.run.name, "statement_type": "Cash Flow",
+			})
+			snapshot = frappe.get_doc("China Report Snapshot", name)
+			self.assertEqual(snapshot.report_status, "草表")
+			payload = json.loads(snapshot.data_json)
+			self.assertEqual(payload["comparison_status"], "Available")
+			self.assertEqual(payload["cash_flow_assignment_coverage"]["count"], 10)
+			self.assertTrue(any(row["code"] == "CASH_FLOW_ASSIGNMENT" and not row["passed"]
+				for row in payload["checks"]))
+			frappe.db.set_value("China Finance Settings", self.company,
+				"defer_cash_flow_confirmation_on_monthly_close", 0)
+			frappe.clear_document_cache("China Finance Settings", self.company)
+			checks = run_closing_checks(self.company, self.run.from_date, self.run.to_date, self.pcv)
+			self.assertEqual(next(row for row in checks
+				if row["check_code"] == "CASH_FLOW_ASSIGNMENT")["severity"], "Blocking")
+
+	def test_cash_flow_policy_cannot_change_during_active_monthly_close(self):
+		frappe.db.set_value("China Closing Run", self.run.name, "preparation_state", "Checking")
+		settings = frappe.get_doc("China Finance Settings", self.company)
+		settings.load_doc_before_save()
+		# This fixture uses a private standard; validate only the policy-change guard.
+		settings.defer_cash_flow_confirmation_on_monthly_close = 1
+		with self.assertRaises(frappe.ValidationError):
+			settings.run_method("validate")
+		frappe.db.set_value("China Closing Run", self.run.name, "preparation_state", "Paused")
+		settings.run_method("validate")
 
 	def test_reverse_closing_includes_later_periods_and_cancels_latest_first(self):
 		frappe.db.set_value(

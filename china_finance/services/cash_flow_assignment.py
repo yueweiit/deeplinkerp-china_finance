@@ -502,6 +502,29 @@ def get_assignment_coverage(company, from_date, to_date):
 	}
 
 
+def get_closing_assignment_check(company, from_date, to_date, closing_type="Monthly"):
+	"""Keep actual coverage visible; only defer missing confirmations at monthly close."""
+	coverage = get_assignment_coverage(company, from_date, to_date)
+	settings = get_company_settings(company)
+	deferred = bool(
+		closing_type == "Monthly"
+		and settings
+		and settings.get("defer_cash_flow_confirmation_on_monthly_close")
+		and not coverage["passed"]
+		and coverage.get("count")
+	)
+	details = coverage["details"]
+	if deferred:
+		details += "；" + _("本次月结暂不强制确认，现金流量表仍待核对；年结和正式报表仍须完成确认。")
+	return {
+		"check_code": "CASH_FLOW_ASSIGNMENT",
+		"description": _("启用日后现金流量项目均已确认指定"),
+		"passed": int(bool(coverage["passed"])),
+		"severity": "Warning" if deferred else "Blocking",
+		"details": details,
+	}
+
+
 @frappe.whitelist()
 def preview_cash_flow_assignment_coverage(company, from_date, to_date):
 	if not frappe.has_permission("Company", "read", company):

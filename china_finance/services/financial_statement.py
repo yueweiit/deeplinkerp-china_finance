@@ -1435,6 +1435,17 @@ def snapshot_statement(closing_run, statement_type, validation_results=None, not
 	if statement_type == "Changes in Equity":
 		result["comparison_equity_matrix"] = comparison.get("equity_matrix") if comparison else None
 	result["report_status"] = "正式" if comparison else "草表"
+	if statement_type == "Cash Flow":
+		from china_finance.services.cash_flow_assignment import get_assignment_coverage
+
+		coverage = get_assignment_coverage(closing_run.company, closing_run.from_date, closing_run.to_date)
+		result["cash_flow_assignment_coverage"] = coverage
+		if not coverage["passed"]:
+			result["report_status"] = "草表"
+			result["checks"].append({
+				"code": "CASH_FLOW_ASSIGNMENT", "passed": False, "blocking": True,
+				"message": coverage["details"],
+			})
 	if validation_results:
 		if statement_type == "Balance Sheet":
 			result["validation"] = {"balance_sheet": validation_results["balance_sheet"]}

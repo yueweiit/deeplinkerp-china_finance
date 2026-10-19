@@ -1,5 +1,6 @@
 frappe.ui.form.on("China Finance Settings", {
 	refresh(frm) {
+		show_cash_flow_check_notice(frm);
 		if (frm.is_new() || !frm.doc.company) return;
 		frm.add_custom_button(__("同步科目配置"), () => sync_coa_profile(frm, false), __("中国科目模板"));
 		frm.add_custom_button(__("恢复模板默认科目"), () => {
@@ -11,7 +12,14 @@ frappe.ui.form.on("China Finance Settings", {
 		}, __("中国科目模板"));
 		load_configuration_readiness(frm);
 	},
+	defer_cash_flow_confirmation_on_monthly_close: show_cash_flow_check_notice,
 });
+
+function show_cash_flow_check_notice(frm) {
+	frm.set_intro(frm.doc.defer_cash_flow_confirmation_on_monthly_close
+		? __("月结暂不强制确认现金流项目；未确认事项仍需后续核对，年结和正式报表的确认要求不变。")
+		: "", "orange");
+}
 
 function sync_coa_profile(frm, repairDefaults) {
 	frappe.call({

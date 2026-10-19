@@ -232,7 +232,7 @@ def _post_one(doc, data):
 
 def _after_posting(doc, data):
 	from china_finance.services.bank_receipt_import import receipt_status, reconcile_receipt
-	from china_finance.services.cash_flow_assignment import get_assignment_coverage
+	from china_finance.services.cash_flow_assignment import get_closing_assignment_check
 	from china_finance.services.closing import create_period_closing_voucher
 
 	if _drafts(doc):
@@ -249,9 +249,11 @@ def _after_posting(doc, data):
 		receipt = frappe.get_doc("China Bank Receipt", row)
 		if receipt_status(receipt) == "已关联待核销":
 			reconcile_receipt(receipt.name)
-	coverage = get_assignment_coverage(doc.company, doc.from_date, doc.to_date)
-	if not coverage["passed"]:
-		frappe.throw(_("现金流项目需要核对：{0}").format(coverage["details"]))
+	cash_check = get_closing_assignment_check(doc.company, doc.from_date, doc.to_date, doc.closing_type)
+	if not cash_check["passed"] and cash_check["severity"] == "Blocking":
+		frappe.throw(_("现金流项目需要核对：{0}").format(cash_check["details"]))
+	data["checks"] = [r for r in data.get("checks", []) if r["check_code"] != "CASH_FLOW_ASSIGNMENT"]
+	data["checks"].append(cash_check)
 	if (
 		doc.period_closing_voucher
 		and frappe.db.get_value("Period Closing Voucher", doc.period_closing_voucher, "docstatus") == 2
@@ -262,7 +264,10 @@ def _after_posting(doc, data):
 			doc.company, doc.from_date, doc.to_date, allow_first_period=True
 		)
 		doc.db_set("period_closing_voucher", result["name"])
-	return _store(doc, "Closing", data, _("凭证已记账，开始损益结转"))
+	message = _("凭证已记账，开始损益结转")
+	if not cash_check["passed"]:
+		message += "；" + cash_check["details"]
+	return _store(doc, "Closing", data, message)
 
 
 def _close_profit(doc, data):

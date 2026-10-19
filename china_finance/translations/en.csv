@@ -2391,3 +2391,10 @@ records 必须是发票对象数组,records must be an array of invoice objects
 借贷不平衡，请把同一张凭证的相关金额修改完成后一起保存,Debits and credits do not balance. Complete the related amount changes for this voucher and save them together.
 关联回单或银行流水的银行收付款金额不能在此修改，请先核对原始回单和银行流水,Bank receipt and payment amounts linked to receipts or bank transactions cannot be edited here. Check the original receipts and bank transactions first.
 凭证内容,Voucher Contents
+月结暂不强制确认现金流项目,Temporarily allow monthly closing without cash flow confirmation
+临时启用后，月结只提示未确认的现金流项目，不阻止结账；不会自动确认指定单，年结和正式报表仍须完成确认。取消勾选后恢复强制检查。,"When enabled, unconfirmed cash flow items are shown as warnings during monthly closing. Assignments are not automatically confirmed. Confirmation remains required for year-end closing and official reports. Clear this option to restore enforcement."
+本次月结暂不强制确认，现金流量表仍待核对；年结和正式报表仍须完成确认。,Confirmation is temporarily deferred for this monthly close. The cash flow statement still requires review; confirmation remains required for year-end closing and official reports.
+请先暂停进行中的月末结账，再调整现金流检查设置,Pause the active monthly closing before changing cash flow check settings
+现金流检查设置,Cash Flow Check Settings
+月结暂不强制确认现金流项目；未确认事项仍需后续核对，年结和正式报表的确认要求不变。,Cash flow confirmation is temporarily deferred for monthly closing. Outstanding items still require review; confirmation requirements for year-end closing and official reports remain unchanged.
+本次结账包含草表快照；请处理快照中的未完成检查，并按结账修订流程生成完整的正式快照后再导出。,This closing contains draft report snapshots. Resolve their outstanding checks and generate complete official snapshots through the closing revision process before exporting.

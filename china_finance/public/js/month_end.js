@@ -50,6 +50,9 @@ frappe.provide("china_finance.month_end");
 			frappe.set_route("query-report", "China Financial Statements");
 		});
 		frm.add_custom_button(__("现金流量"), () => frappe.set_route("List", "China Cash Flow Assignment", {company: frm.doc.company}));
+		if (frappe.model.can_write("China Finance Settings")) {
+			frm.add_custom_button(__("现金流检查设置"), () => frappe.set_route("Form", "China Finance Settings", frm.doc.company));
+		}
 		if (frm.doc.docstatus === 1) {
 			frm.set_intro(frm.doc.archive_package ? __("已结账，结账档案已生成") : __("已结账，结账档案正在生成，可稍后刷新"), "green");
 			return;

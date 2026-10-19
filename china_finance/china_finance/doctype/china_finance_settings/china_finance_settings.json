@@ -8,7 +8,7 @@
   "company","currency", "enabled", "activation_date", "accounting_standard", "taxpayer_type", "coa_section", "coa_template", "coa_version", "coa_hash", "coa_initialized_on", "coa_last_checked_on", "coa_integrity_status", "coa_integrity_details",
   "voucher_section", "voucher_mode", "default_voucher_word", "sequence_reset", "enforce_role_separation", "enable_import_batch_posting", "enable_voucher_preparation", "preparation_from_date",
   "sales_settlement_section", "sales_settlement_mode", "sales_settlement_activation_date", "auto_submit_sales_invoice", "auto_submit_purchase_invoice",
-  "cash_flow_section", "cash_flow_assignment_activation_date", "statutory_reporting_section", "statutory_reporting_activation_date", "statement_mapping_activation_date", "report_amount_unit",
+  "cash_flow_section", "cash_flow_assignment_activation_date", "defer_cash_flow_confirmation_on_monthly_close", "statutory_reporting_section", "statutory_reporting_activation_date", "statement_mapping_activation_date", "report_amount_unit",
   "closing_section", "profit_loss_account", "retained_earnings_account", "freeze_on_close", "reconciliation_tolerance",
   "scope_section", "require_customer_reconciliation", "require_supplier_reconciliation", "require_bank_reconciliation",
   "archive_section", "archive_retention_years", "require_file_hash", "notes"
@@ -41,6 +41,7 @@
   {"default":"0","fieldname":"auto_submit_purchase_invoice","fieldtype":"Check","label":"自动提交采购应收单","description":"采购收货单提交后，自动生成并提交采购应收单。"},
   {"fieldname":"cash_flow_section","fieldtype":"Section Break","label":"现金流量直接指定"},
   {"fieldname":"cash_flow_assignment_activation_date","fieldtype":"Date","label":"现金流量直接指定启用日期","description":"该日期及以后含外部现金流的凭证须确认现金流量项目后才能月结；此前凭证继续按科目映射自动归类。"},
+  {"fieldname":"defer_cash_flow_confirmation_on_monthly_close","fieldtype":"Check","label":"月结暂不强制确认现金流项目","default":"0","description":"临时启用后，月结只提示未确认的现金流项目，不阻止结账；不会自动确认指定单，年结和正式报表仍须完成确认。取消勾选后恢复强制检查。"},
   {"fieldname":"statutory_reporting_section","fieldtype":"Section Break","label":"法定财务报表"},
   {"fieldname":"statutory_reporting_activation_date","fieldtype":"Date","label":"法定报表启用日期","description":"该日期起使用企业会计准则 3.0 模板及正式报表就绪度控制。"},
   {"fieldname":"statement_mapping_activation_date","fieldtype":"Date","label":"科目映射统一生效日期","description":"新建或调整的报表科目映射默认从该日期起生效。"},

@@ -7,6 +7,17 @@ from frappe.utils import getdate
 class ChinaFinanceSettings(Document):
 	def validate(self):
 		old = self.get_doc_before_save()
+		if old and any(self.get(f) != old.get(f) for f in (
+			"cash_flow_assignment_activation_date", "defer_cash_flow_confirmation_on_monthly_close",
+		)):
+			from china_finance.services.month_end import lock_company
+
+			lock_company(self.company)
+			if frappe.db.exists("China Closing Run", {
+				"company": self.company, "docstatus": 0,
+				"preparation_state": ["in", ["Posting", "Checking", "Closing"]],
+			}):
+				frappe.throw(_("请先暂停进行中的月末结账，再调整现金流检查设置"))
 		if old and any(self.get(f) != old.get(f) for f in ("enabled", "enable_voucher_preparation", "preparation_from_date")):
 			if frappe.db.has_column("China Closing Run", "preparation_state") and frappe.db.exists("China Closing Run", {
 				"company": self.company, "docstatus": 0, "preparation_state": ["in", ["Posting", "Checking", "Closing"]],

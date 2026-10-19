@@ -3119,3 +3119,10 @@ Unable to load statement mapping. Check the reported error and try again.,No se 
 借贷不平衡，请把同一张凭证的相关金额修改完成后一起保存,El debe y el haber no cuadran. Complete los cambios de los importes relacionados del mismo comprobante y guárdelos juntos.
 关联回单或银行流水的银行收付款金额不能在此修改，请先核对原始回单和银行流水,Los importes de cobros y pagos vinculados a recibos o movimientos bancarios no se pueden editar aquí. Revise primero los recibos y movimientos bancarios originales.
 凭证内容,Contenido del comprobante
+月结暂不强制确认现金流项目,Permitir temporalmente el cierre mensual sin confirmar el flujo de efectivo
+临时启用后，月结只提示未确认的现金流项目，不阻止结账；不会自动确认指定单，年结和正式报表仍须完成确认。取消勾选后恢复强制检查。,"Al activar esta opción, las partidas de flujo de efectivo sin confirmar se muestran como advertencias durante el cierre mensual. Las asignaciones no se confirman automáticamente. La confirmación sigue siendo obligatoria para el cierre anual y los informes oficiales. Desmarque la opción para restablecer el requisito."
+本次月结暂不强制确认，现金流量表仍待核对；年结和正式报表仍须完成确认。,La confirmación se aplaza temporalmente para este cierre mensual. El estado de flujos de efectivo sigue pendiente de revisión; la confirmación sigue siendo obligatoria para el cierre anual y los informes oficiales.
+请先暂停进行中的月末结账，再调整现金流检查设置,Pause el cierre mensual en curso antes de cambiar la configuración de las comprobaciones del flujo de efectivo
+现金流检查设置,Configuración de comprobaciones del flujo de efectivo
+月结暂不强制确认现金流项目；未确认事项仍需后续核对，年结和正式报表的确认要求不变。,La confirmación del flujo de efectivo se aplaza temporalmente para el cierre mensual. Las partidas pendientes aún requieren revisión; los requisitos para el cierre anual y los informes oficiales no cambian.
+本次结账包含草表快照；请处理快照中的未完成检查，并按结账修订流程生成完整的正式快照后再导出。,Este cierre contiene instantáneas de informes en borrador. Resuelva sus comprobaciones pendientes y genere instantáneas oficiales completas mediante el proceso de revisión del cierre antes de exportar.

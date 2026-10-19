@@ -528,7 +528,7 @@ def generate_statutory_report_package(closing_run, formats=None):
 		order_by="statement_type",
 	)
 	if any(row.report_status != "正式" for row in snapshots):
-		frappe.throw(_("本次结账包含草表快照；请补齐比较数据，并按结账修订流程生成完整的正式快照后再导出。"))
+		frappe.throw(_("本次结账包含草表快照；请处理快照中的未完成检查，并按结账修订流程生成完整的正式快照后再导出。"))
 	if len(snapshots) != 4:
 		frappe.throw(_("期末智能结转缺少完整四表快照"))
 	requested = set(frappe.parse_json(formats) if isinstance(formats, str) else (formats or ["PDF", "Excel"]))

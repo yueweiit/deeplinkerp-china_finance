@@ -19,7 +19,7 @@ from china_finance.services.purchase_reconciliation import get_blocked_purchase_
 from china_finance.services.tax_reconciliation import get_input_tax_closing_checks, get_output_tax_closing_checks
 from china_finance.services.disclosure import get_disclosure_closing_checks, get_notes_payload
 from china_finance.services.sales_settlement import MODE_SETTLEMENT, get_sales_settlement_closing_check
-from china_finance.services.cash_flow_assignment import get_assignment_coverage
+from china_finance.services.cash_flow_assignment import get_closing_assignment_check
 from china_finance.services.statutory_reporting import get_statutory_report_readiness_data
 from china_finance.services.prior_period_error import get_prior_period_error_readiness
 from china_finance.setup.china_coa_profile import (
@@ -233,6 +233,7 @@ def run_closing_checks(company, from_date, to_date, period_closing_voucher=None,
 		"AR_AP_LEDGER_MATCH", _("应收应付总账与付款台账一致"),
 		ledger_check["passed"], ledger_check["details"],
 	)
+	checks.append(get_closing_assignment_check(company, from_date, to_date, closing_type))
 
 	if closing_type == "Year End":
 		statement_checks = validate_statement_links(company, from_date, to_date, settings.reconciliation_tolerance)
@@ -248,12 +249,6 @@ def run_closing_checks(company, from_date, to_date, period_closing_voucher=None,
 			"CASH_FLOW_RECONCILIATION", _("现金流量表与现金及现金等价物变动衔接"),
 			statement_checks["cash_flow"]["passed"], statement_checks["cash_flow"]["details"],
 		)
-		cash_assignment = get_assignment_coverage(company, from_date, to_date)
-		add(
-			"CASH_FLOW_ASSIGNMENT", _("启用日后现金流量项目均已确认指定"),
-			cash_assignment["passed"], cash_assignment["details"],
-		)
-
 		disclosure_checks = get_disclosure_closing_checks(company, from_date, to_date, closing_type)
 		add(
 			"ACCOUNTING_POLICY_COVERAGE", _("核心会计政策已完整配置并生效"),
