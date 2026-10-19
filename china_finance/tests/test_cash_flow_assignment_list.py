@@ -2,6 +2,7 @@
 
 import json
 import unittest
+from unittest.mock import patch
 
 import frappe
 
@@ -400,6 +401,107 @@ class TestCashFlowAssignmentList(unittest.TestCase):
 		self.assertEqual(result["error_type"], "TimestampMismatchError")
 		self.assertEqual(frappe.db.get_value(doc.doctype, doc.name, "remarks"), "another browser")
 
+	def test_duplicate_documents_rejected_before_any_write(self):
+		doc = self.assignment()
+		payload = self.payload(doc)
+		payload["remarks"] = "must never save"
+		with self.assertRaisesRegex(frappe.ValidationError, "重复"):
+			self.process([payload, payload])
+		self.assertNotEqual(frappe.db.get_value(doc.doctype, doc.name, "remarks"), payload["remarks"])
+
+	def test_native_insert_cannot_create_a_second_active_assignment(self):
+		doc = self.assignment()
+		duplicate = frappe.copy_doc(doc)
+		duplicate.revision = None
+		duplicate.assignment_key = None
+		with self.assertRaisesRegex(frappe.ValidationError, "已有有效"):
+			duplicate.insert()
+		self.assertEqual(frappe.db.count(doc.doctype, {"china_accounting_voucher": doc.china_accounting_voucher}), 1)
+
+	def test_native_insert_cannot_forge_an_initial_confirmed_business_status(self):
+		doc = self.assignment()
+		frappe.db.set_value(doc.doctype, doc.name, "status", "Cancelled")
+		forged = frappe.copy_doc(doc)
+		forged.revision = None
+		forged.assignment_key = None
+		forged.status = "Confirmed"
+		forged.docstatus = 0
+		forged.items[0].cash_direction = "付款"
+		forged.items[0].cash_flow_row_code = "CASH_PAID_SUPPLIERS"
+		with self.assertRaisesRegex(frappe.ValidationError, "新建.*草稿"):
+			forged.insert()
+		self.assertEqual(dict(service.get_confirmed_cash_flow_values(self.company, "2026-07-01", "2026-07-01")[0]), {})
+
+	def test_database_deadlock_escapes_without_savepoint_recovery_or_partial_success(self):
+		self._assert_database_failure_escapes(frappe.QueryDeadlockError)
+
+	def test_database_timeout_escapes_without_savepoint_recovery_or_partial_success(self):
+		self._assert_database_failure_escapes(frappe.QueryTimeoutError)
+
+	def _assert_database_failure_escapes(self, failure_type):
+		first, second = self.assignment("first"), self.assignment("second")
+		from china_finance.china_finance.doctype.china_cash_flow_assignment.china_cash_flow_assignment import (
+			ChinaCashFlowAssignment,
+		)
+
+		save = ChinaCashFlowAssignment.save
+		def fail_second(doc, *args, **kwargs):
+			if doc.name == second.name:
+				raise failure_type("transaction owner must retry")
+			return save(doc, *args, **kwargs)
+		with patch.object(ChinaCashFlowAssignment, "save", fail_second), patch.object(
+			frappe.db, "rollback", wraps=frappe.db.rollback
+		) as rollback:
+			with self.assertRaises(failure_type):
+				self.process([self.payload(first), self.payload(second)])
+			rollback.assert_not_called()
+
+	def test_native_draft_rejects_forged_cash_evidence(self):
+		for field, forged in (
+			("cash_direction", "付款"),
+			("cash_account", self.other),
+			("cash_amount", 200),
+			("counterpart_accounts", "forged counterpart"),
+		):
+			with self.subTest(field=field):
+				doc = self.assignment("forged-" + field)
+				before = doc.items[0].get(field)
+				doc.items[0].set(field, forged)
+				if field == "cash_direction":
+					doc.items[0].cash_flow_row_code = "CASH_PAID_SUPPLIERS"
+				with self.assertRaisesRegex(frappe.ValidationError, "现金.*证据"):
+					doc.save()
+				self.assertEqual(frappe.db.get_value("China Cash Flow Assignment Item", doc.items[0].name, field), before)
+
+	def test_confirmation_rejects_previously_stored_forged_direction(self):
+		doc = self.assignment()
+		frappe.db.set_value("China Cash Flow Assignment Item", doc.items[0].name, {
+			"cash_direction": "付款", "cash_flow_row_code": "CASH_PAID_SUPPLIERS",
+		})
+		doc.reload()
+		with self.assertRaisesRegex(frappe.ValidationError, "现金.*证据"):
+			service.confirm_cash_flow_assignment(doc.name)
+		self.assertEqual(frappe.db.get_value(doc.doctype, doc.name, "docstatus"), 0)
+
+	def test_recreate_respects_company_user_permission(self):
+		doc = self.assignment()
+		self.insert("China Financial Statement Mapping", "recreate-mapping", company=self.company,
+			template=self.template, account=self.other, row_code="CASH_RECEIVED_SALES",
+			cash_inflow_row_code="CASH_RECEIVED_SALES", cash_outflow_row_code="CASH_PAID_SUPPLIERS",
+			effective_from="2026-01-01", sign_multiplier="1")
+		frappe.db.set_value(doc.doctype, doc.name, "status", "Cancelled")
+		other_company = self.insert("Company", "restricted", company_name=self.prefix + "restricted", abbr=self.prefix[-4:], default_currency="CNY")
+		username = self.prefix.lower() + "@example.invalid"
+		frappe.get_doc({"doctype": "User", "email": username, "first_name": "Restricted finance", "send_welcome_email": 0,
+			"roles": [{"role": "China Finance Manager"}]}).insert(ignore_permissions=True)
+		frappe.get_doc({"doctype": "User Permission", "user": username, "allow": "Company", "for_value": other_company,
+			"apply_to_all_doctypes": 1}).insert(ignore_permissions=True)
+		before = frappe.db.count(doc.doctype, {"china_accounting_voucher": doc.china_accounting_voucher})
+		frappe.set_user(username)
+		with self.assertRaises(frappe.PermissionError):
+			service.recreate_cash_flow_assignment(doc.name)
+		self.assertEqual(frappe.db.count(doc.doctype, {"china_accounting_voucher": doc.china_accounting_voucher}), before)
+
 	def test_rejects_foreign_row_foreign_gl_and_evidence_mutation(self):
 		doc, other = self.assignment("first"), self.assignment("other")
 		for field, value in (
@@ -594,6 +696,71 @@ class TestCashFlowAssignmentList(unittest.TestCase):
 		self.assertEqual(doc.assigned_by, preparer)
 		self.assertEqual(doc.confirmed_by, manager)
 
+	def test_native_submit_and_compat_confirm_repair_unique_historical_gl_without_changing_allocations(self):
+		preparer, manager = self.separated_users()
+		for method in ("native", "compatibility"):
+			with self.subTest(method=method):
+				doc = self.assignment(method)
+				doc.items[0].cash_flow_row_code = "OTHER_OPERATING_RECEIPTS"
+				doc.items[0].assigned_amount = 40
+				doc.items[0].remarks = "preserve manual first"
+				doc.append("items", {"gl_entry": doc.items[0].gl_entry, "cash_flow_row_code": "CASH_RECEIVED_SALES",
+					"assigned_amount": 60, "remarks": "preserve manual split"})
+				self.save_as_preparer(doc, preparer)
+				assigned_on = doc.assigned_on
+				old_gl = doc.items[0].gl_entry
+				frappe.db.set_value("GL Entry", old_gl, "is_cancelled", 1)
+				new_gl = self.insert("GL Entry", method + "-replacement", company=self.company,
+					posting_date=doc.posting_date, account=self.cash, voucher_type="Payment Entry", voucher_no=doc.source_name,
+					debit=100, credit=0, is_cancelled=0, is_opening="No")
+				frappe.set_user(manager)
+				tampered = frappe.get_doc(doc.doctype, doc.name)
+				tampered.items[0].cash_direction = "付款"
+				tampered.items[0].cash_flow_row_code = "CASH_PAID_SUPPLIERS"
+				with self.assertRaisesRegex(frappe.ValidationError, "现金.*证据"):
+					tampered.submit()
+				if method == "native":
+					doc.submit()
+					self.assertEqual(doc.get_doc_before_save().items[0].gl_entry, old_gl)
+				else:
+					service.confirm_cash_flow_assignment(doc.name)
+				doc.reload()
+				self.assertEqual((doc.status, doc.docstatus, doc.assigned_by, doc.confirmed_by), ("Confirmed", 1, preparer, manager))
+				self.assertEqual(doc.assigned_on, assigned_on)
+				self.assertTrue(all(row.gl_entry == new_gl for row in doc.items))
+				self.assertEqual([(row.cash_flow_row_code, row.assigned_amount, row.remarks) for row in doc.items],
+					[("OTHER_OPERATING_RECEIPTS", 40, "preserve manual first"), ("CASH_RECEIVED_SALES", 60, "preserve manual split")])
+
+	def test_new_native_split_on_unique_historical_gl_saves_then_confirms(self):
+		doc = self.assignment()
+		preparer, manager = self.separated_users()
+		self.save_as_preparer(doc, preparer)
+		old_gl = doc.items[0].gl_entry
+		frappe.db.set_value("GL Entry", old_gl, "is_cancelled", 1)
+		new_gl = self.insert("GL Entry", "native-new-split-replacement", company=self.company,
+			posting_date=doc.posting_date, account=self.cash, voucher_type="Payment Entry", voucher_no=doc.source_name,
+			debit=100, credit=0, is_cancelled=0, is_opening="No")
+		doc.items[0].cash_flow_row_code = "OTHER_OPERATING_RECEIPTS"
+		doc.items[0].assigned_amount = 40
+		doc.items[0].remarks = "new native first"
+		split = {field: doc.items[0].get(field) for field in (
+			"gl_entry", "cash_account", "cash_direction", "cash_amount", "counterpart_accounts",
+			"suggested_row_code", "suggested_row_label")}
+		doc.append("items", {**split, "cash_flow_row_code": "CASH_RECEIVED_SALES", "assigned_amount": 60,
+			"remarks": "new native split"})
+		doc.save()
+		self.assertEqual(doc.get_doc_before_save().items[0].gl_entry, old_gl)
+		doc.reload()
+		assigned_on = doc.assigned_on
+		frappe.set_user(manager)
+		doc.submit()
+		doc.reload()
+		self.assertEqual((doc.status, doc.docstatus, doc.assigned_by, doc.confirmed_by), ("Confirmed", 1, preparer, manager))
+		self.assertEqual(doc.assigned_on, assigned_on)
+		self.assertTrue(all(row.gl_entry == new_gl for row in doc.items))
+		self.assertEqual([(row.cash_flow_row_code, row.assigned_amount, row.remarks) for row in doc.items],
+			[("OTHER_OPERATING_RECEIPTS", 40, "new native first"), ("CASH_RECEIVED_SALES", 60, "new native split")])
+
 	def test_locked_confirmed_and_cancelled_items_reject_content_or_evidence_changes(self):
 		for status, docstatus in (("Confirmed", 1), ("Cancelled", 2)):
 			doc = self.assignment(status)
@@ -609,6 +776,38 @@ class TestCashFlowAssignmentList(unittest.TestCase):
 				doc.items[0].set(field, value)
 				with self.assertRaisesRegex(frappe.ValidationError, "不能修改明细"):
 					doc.validate()
+
+	def test_submitted_assignment_metadata_cannot_bypass_native_confirmation_or_cancellation(self):
+		doc = self.assignment()
+		self.assertTrue(self.process([self.payload(doc)], action="confirm")[0]["ok"])
+		doc.reload()
+		writer, manager = self.separated_users()
+		fields = ("status", "confirmed_by", "confirmed_on", "cancelled_by", "cancelled_on", "cancellation_reason")
+		original = {field: doc.get(field) for field in fields}
+		frappe.set_user(writer)
+		for field, value in (("status", "Cancelled"), ("confirmed_by", writer)):
+			with self.subTest(role="writer", field=field):
+				doc.reload()
+				doc.set(field, value)
+				with self.assertRaises(frappe.PermissionError):
+					doc.save()
+		frappe.set_user(manager)
+		for field, value in (
+			("status", "Cancelled"), ("status", "Draft"), ("confirmed_by", writer),
+			("confirmed_on", "2026-01-01 00:00:00"), ("cancelled_by", manager),
+			("cancelled_on", "2026-01-01 00:00:00"), ("cancellation_reason", "forged cancellation audit"),
+		):
+			with self.subTest(role="manager", field=field):
+				frappe.db.set_value(doc.doctype, doc.name, original, update_modified=False)
+				doc.reload()
+				doc.set(field, value)
+				with self.assertRaisesRegex(frappe.ValidationError, "已提交.*状态或审计"):
+					doc.save()
+				self.assertEqual(frappe.db.get_value(doc.doctype, doc.name, field), original[field])
+		frappe.db.set_value(doc.doctype, doc.name, original, update_modified=False)
+		service.cancel_cash_flow_assignment(doc.name, "authorized native cancellation")
+		doc.reload()
+		self.assertEqual((doc.status, doc.docstatus, doc.cancelled_by), ("Cancelled", 2, manager))
 
 	def test_company_user_permission_filters_list_counts_and_process(self):
 		doc = self.assignment()
@@ -774,6 +973,8 @@ class TestCashFlowAssignmentListNativePosting(unittest.TestCase):
 		)
 		self.assertTrue(name, "native posting must generate its cash-flow draft")
 		doc = frappe.get_doc("China Cash Flow Assignment", name)
+		self.assertEqual(dict(service.get_confirmed_cash_flow_values(self.company, "2026-08-15", "2026-08-15")[0]), {})
+		self.assertEqual(service.get_assignment_coverage(self.company, "2026-08-15", "2026-08-15")["count"], 1)
 		ledger = frappe.get_all(
 			"GL Entry",
 			filters={"voucher_type": "Journal Entry", "voucher_no": entry.name},
@@ -796,10 +997,17 @@ class TestCashFlowAssignmentListNativePosting(unittest.TestCase):
 		)
 		self.assertTrue(self.process([payload])[0]["ok"])
 		doc.reload()
+		self.assertEqual(dict(service.get_confirmed_cash_flow_values(self.company, "2026-08-15", "2026-08-15")[0]), {})
 		result = self.process([self.payload(doc)], action="confirm")[0]
 		self.assertTrue(result["ok"], result)
 		self.assertEqual((result["document"]["status"], result["document"]["docstatus"]), ("Confirmed", 1))
 		self.assertEqual([r["assigned_amount"] for r in result["document"]["items"]], [50, 75])
+		from china_finance.services.financial_statement import get_cash_flow_values
+
+		values, metadata = get_cash_flow_values(self.company, [], "2026-08-15", "2026-08-15")
+		self.assertEqual((values["OTHER_OPERATING_PAYMENTS"], values["CASH_PAID_SUPPLIERS"]), (50, 75))
+		self.assertEqual((metadata["manual_assignment_count"], metadata["automatic_transaction_count"]), (1, 0))
+		self.assertTrue(service.get_assignment_coverage(self.company, "2026-08-15", "2026-08-15")["passed"])
 		self.assertEqual(
 			ledger,
 			frappe.get_all(

@@ -5,6 +5,14 @@ from frappe.utils import flt, now_datetime
 
 
 class ChinaCashFlowAssignment(Document):
+	def load_doc_before_save(self, *, raise_exception=False):
+		from china_finance.services.cash_flow_assignment import lock_assignment_sources
+
+		# Frappe calls this before its native assignment FOR UPDATE, for inserts,
+		# saves, submits and cancels. before_validate/before_submit are too late.
+		lock_assignment_sources([self])
+		return super().load_doc_before_save(raise_exception=raise_exception)
+
 	IMMUTABLE_SOURCE_FIELDS = (
 		"company",
 		"posting_date",
@@ -60,14 +68,20 @@ class ChinaCashFlowAssignment(Document):
 			# document must remain intact for version and audit generation.
 			previous = frappe.get_doc(old.as_dict())
 			_refresh_draft_cash_legs(
-				previous, get_cash_legs_for_voucher(_get_voucher(self.china_accounting_voucher))
+				previous, get_cash_legs_for_voucher(_get_voucher(self.china_accounting_voucher, for_update=True), for_update=True)
 			)
 		return self._item_snapshot(self.ALLOCATION_FIELDS) != previous._item_snapshot(self.ALLOCATION_FIELDS)
 
 	def before_insert(self):
-		if not self.revision:
-			from china_finance.services.cash_flow_assignment import _next_revision
+		from china_finance.services.cash_flow_assignment import _get_active_assignment, _next_revision
 
+		if self.status != "Draft" or self.docstatus != 0:
+			frappe.throw(_("新建现金流量指定单必须为草稿，确认必须通过原生提交"))
+		# Native imports/API inserts share the early source gate too. A unique
+		# revision key alone does not prevent two effective assignments per voucher.
+		if _get_active_assignment(self.china_accounting_voucher, for_update=True):
+			frappe.throw(_("该凭证已有有效的现金流量指定单"))
+		if not self.revision:
 			self.revision = _next_revision(self.china_accounting_voucher)
 		if not self.assignment_key:
 			self.assignment_key = f"{self.china_accounting_voucher}|{int(self.revision)}"
@@ -89,6 +103,9 @@ class ChinaCashFlowAssignment(Document):
 		):
 			frappe.throw(_("已确认或已作废的现金流量指定单不能修改明细"))
 		if self.status == "Draft":
+			from china_finance.services.cash_flow_assignment import get_assignment_cash_legs, validate_cash_evidence
+
+			validate_cash_evidence(self, get_assignment_cash_legs(self), old)
 			if not old or self._allocation_has_changed(old) or self.has_value_changed("remarks"):
 				self.assigned_by = frappe.session.user
 				self.assigned_on = now_datetime()
@@ -106,6 +123,16 @@ class ChinaCashFlowAssignment(Document):
 		from china_finance.services.cash_flow_assignment import prepare_cash_flow_assignment_confirmation
 
 		prepare_cash_flow_assignment_confirmation(self)
+
+	def before_update_after_submit(self):
+		# Frappe skips validate() for submitted-document updates. These fields
+		# remain allow_on_submit so native submit/cancel can write their audit,
+		# but an ordinary submitted save must never change the effective state.
+		for fieldname in (
+			"status", "confirmed_by", "confirmed_on", "cancelled_by", "cancelled_on", "cancellation_reason"
+		):
+			if self.has_value_changed(fieldname):
+				frappe.throw(_("已提交现金流量指定单的状态或审计信息不能修改"))
 
 	def before_cancel(self):
 		self.status = "Cancelled"
