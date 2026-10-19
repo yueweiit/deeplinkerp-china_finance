@@ -79,6 +79,28 @@ bench --site SITE execute china_finance.api.initialize_company --kwargs \
 
 应用必须能够进入现有自定义镜像，并兼容服务器既有的 `deploy_akivision_apps.sh` 更新流程。应用代码不得要求在服务器上执行额外手工 SQL、临时补丁或应用外数据修复。
 
+### 预生成报表通知兼容补丁
+
+`china_finance` 通过标准 `after_build` 钩子交付一处 Frappe `v16.23.0` 兼容修复：预生成报表的 `report_generated` 通知在事务提交后发送，避免浏览器收到完成通知时尚不能读取结果附件。代码入口为 `china_finance/build.py`，补丁随 App 保存在 `china_finance/framework_patches/frappe/prepared-report-after-commit.patch`，不改变财务数据、报表计算或权限。
+
+这是一处明确维护的 Frappe 源码补丁，不是运行时全局替换。`bench init --apps_path` 获取包含本 App 的应用清单后，会在正常构建中调用该钩子；已有 Bench 的 `bench build --app china_finance` 同样会调用。无需新增根 Docker 仓库的构建步骤，也无需从本地 Frappe 分支拉取代码。必须先将本 App 提交推送到组织仓库，服务器正常构建取得包含该提交的 `main` 并发布新镜像后才会生效；本地提交、仅迁移站点、跳过构建或重启旧镜像均不算完成交付。
+
+补丁已存在时保持源码不变；上游源码不兼容、缺少补丁或无法写入时构建失败，应核对上游修复后更新或移除补丁，不能忽略错误。补丁使用构建环境现有的 Git，不要求保留镜像内的 `.git`。升级 Frappe 时须复核；同一 Bench 共享的 Frappe 预生成报表均受此通知时序修复影响。
+
+构建日志和 Bench 根目录的 `china-finance-framework-patches.json` 记录补丁名、SHA-256、交付 App 与应用状态；原 App 源提交记录不包含对 Frappe 的这处修改，验收时应同时核对该清单。例如在主机只读检查新镜像：
+
+```bash
+docker run --rm --entrypoint cat <本次镜像标签> /home/frappe/frappe-bench/china-finance-framework-patches.json
+```
+
+隔离回归从 Bench 的 `sites` 目录执行，不连接数据库、不删除预生成结果：
+
+```bash
+../env/bin/python -m unittest china_finance.tests.test_framework_patches china_finance.tests.test_prepared_report_notification -v
+```
+
+本地已通过 8 项回归，并使用 Frappe 真实 `run_after_build_hook` 对官方 `v16.23.0` 的完整目标文件验证应用及重复执行；App wheel 构建成功并核对钩子与补丁文件均已打包，CI YAML 和 Bash 步骤语法检查通过。没有运行完整镜像构建或生产发布。实时页面刷新还依赖正常的 Socket.IO 服务，该补丁不调整网络配置。
+
 ## 许可证
 
 MIT

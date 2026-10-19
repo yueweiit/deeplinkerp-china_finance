@@ -1,0 +1,20 @@
+diff --git a/frappe/core/doctype/prepared_report/prepared_report.py b/frappe/core/doctype/prepared_report/prepared_report.py
+--- a/frappe/core/doctype/prepared_report/prepared_report.py
++++ b/frappe/core/doctype/prepared_report/prepared_report.py
+@@ -156,8 +156,9 @@ def generate_report(prepared_report):
+-	frappe.publish_realtime(
+-		"report_generated",
+-		{"report_name": instance.report_name, "name": instance.name},
+-		user=frappe.session.user,
+-	)
+-
+-
++	frappe.publish_realtime(
++		"report_generated",
++		{"report_name": instance.report_name, "name": instance.name},
++		user=frappe.session.user,
++		after_commit=True,
++	)
++
++
+ @dangerously_reconnect_on_connection_abort

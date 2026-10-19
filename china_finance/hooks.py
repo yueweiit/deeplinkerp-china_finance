@@ -201,7 +201,7 @@ override_doctype_class = {
 # ------------------
 # To hook into the build process
 
-# after_build = "china_finance.build.after_build"
+after_build = "china_finance.build.after_build"
 
 # Desk Notifications
 # ------------------
