@@ -77,7 +77,7 @@ def _posting_date(value, row_number):
 def parse_workbook(file_path):
 	"""Parse and validate the voucher sheet without writing anything."""
 	if load_workbook is None:
-		frappe.throw("当前环境未安装 openpyxl，无法读取 Excel")
+		frappe.throw(_("当前环境未安装 openpyxl，无法读取 Excel"))
 
 	path = Path(file_path)
 	if not path.is_file():
@@ -257,7 +257,7 @@ def import_from_file(file_path, company=COMPANY, submit=True):
 	controls can be completed through the normal workflow before posting.
 	"""
 	if company != COMPANY:
-		frappe.throw("此 Excel 导入脚本仅允许处理 aaa 的悦为智能技术(东莞)有限公司")
+		frappe.throw(_("此 Excel 导入脚本仅允许处理 aaa 的悦为智能技术(东莞)有限公司"))
 
 	vouchers = parse_workbook(file_path)
 	accounts = _resolve_accounts(company, vouchers)
@@ -332,7 +332,7 @@ def import_from_file(file_path, company=COMPANY, submit=True):
 def remove_imported_vouchers(file_name="悦为智能(1).xlsx", company=COMPANY, apply=False):
 	"""Preview or remove only vouchers imported from the named workbook."""
 	if company != COMPANY:
-		frappe.throw("此清理脚本仅允许处理 aaa 的悦为智能技术(东莞)有限公司")
+		frappe.throw(_("此清理脚本仅允许处理 aaa 的悦为智能技术(东莞)有限公司"))
 
 	tag_pattern = f"Excel导入：{file_name}；%"
 	sources = frappe.db.sql(

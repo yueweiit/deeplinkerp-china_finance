@@ -1,5 +1,12 @@
 """Local, strict parser for CMB text receipts. No OCR or network service."""
 
+try:
+	from frappe import _
+except ImportError:
+	def _(message):
+		return message
+
+
 import importlib
 import io
 import re
@@ -68,9 +75,10 @@ def get_receipt_parser(bank_name):
 			module_name, function_name = config["parser"].rsplit(".", 1)
 			parser = getattr(importlib.import_module(module_name), function_name, None)
 			if not callable(parser):
-				raise ReceiptParseError(f"银行回单解析器配置不完整：{parser_version}")
+				raise ReceiptParseError(_("银行回单解析器配置不完整：{0}").format(parser_version))
 			return {
 				**config,
+				"label": _(config["label"]),
 				"parser_version": config.get("parser_version", parser_version),
 				"parser_key": parser_version,
 				"parse": parser,
@@ -82,9 +90,9 @@ def money(value):
 	try:
 		amount = Decimal(str(value).replace(",", "").strip())
 	except InvalidOperation as exc:
-		raise ReceiptParseError("金额无法识别") from exc
+		raise ReceiptParseError(_("金额无法识别")) from exc
 	if not amount.is_finite() or amount < 0 or amount != amount.quantize(Decimal("0.01")):
-		raise ReceiptParseError("金额必须是有效的非负数，最多两位小数")
+		raise ReceiptParseError(_("金额必须是有效的非负数，最多两位小数"))
 	return amount
 
 
@@ -96,37 +104,37 @@ def parse_receipt_text(text):
 		matches = re.findall(r"(?:^|\s)" + re.escape(label) + r":\s*([^\n]*?)(?=\s+[^\s:]+:|\n|$)", text)
 		value = matches[0].strip() if len(matches) == 1 else ""
 		if required and not value:
-			raise ReceiptParseError(f"缺少或重复的字段：{label}")
+			raise ReceiptParseError(_("缺少或重复的字段：{0}").format(label))
 		return value
 
 	title = TITLE.search(text)
 	if not title or len(TITLE.findall(text)) != 1:
-		raise ReceiptParseError("未找到独立的出账/入账回单标题")
+		raise ReceiptParseError(_("未找到独立的出账/入账回单标题"))
 	direction = "支出" if title.group().startswith("出") else "收入"
 	d = re.fullmatch(r"(\d{4})年(\d{1,2})月(\d{1,2})日", field("交易日期", True))
 	if not d:
-		raise ReceiptParseError("交易日期格式不支持")
+		raise ReceiptParseError(_("交易日期格式不支持"))
 	try:
 		posting_date = date(*map(int, d.groups())).isoformat()
 	except ValueError as exc:
-		raise ReceiptParseError("交易日期无效") from exc
+		raise ReceiptParseError(_("交易日期无效")) from exc
 	amount_text = field("交易金额(小写)", True)
 	m = re.fullmatch(r"(CNY|￥|¥)\s*((?:\d+|\d{1,3}(?:,\d{3})+)\.\d{2})", amount_text)
 	if not m:
-		raise ReceiptParseError("第一期仅支持明确标注的人民币金额")
+		raise ReceiptParseError(_("第一期仅支持明确标注的人民币金额"))
 	amount = money(m[2])
 	if amount <= 0:
-		raise ReceiptParseError("交易金额必须大于零")
+		raise ReceiptParseError(_("交易金额必须大于零"))
 	flow = field("交易流水", True)
 	if not re.fullmatch(r"[A-Za-z0-9-]{5,140}", flow):
-		raise ReceiptParseError("交易流水号无效")
+		raise ReceiptParseError(_("交易流水号无效"))
 	receipt_number = field("回单编号", True).split()[0]
 	business_type = field("业务类型", True)
 	payer_account, payee_account = field("付款账号"), field("收款账号")
 	payer, payee = field("付款人"), field("收款人")
 	own_account = payer_account if direction == "支出" else payee_account
 	if not re.fullmatch(r"\d{8,32}", own_account):
-		raise ReceiptParseError("本方账号缺失、被掩码或格式不支持")
+		raise ReceiptParseError(_("本方账号缺失、被掩码或格式不支持"))
 	fees, taxes = [], []
 	for line in text.splitlines():
 		tax = re.fullmatch(r"(.+?)\s+(\d{8})--(\d{8})\s+[￥¥]?([\d,]+\.\d{2})", line.strip())
@@ -138,12 +146,12 @@ def parse_receipt_text(text):
 		if fee and "收费项目" in text:
 			fees.append({"item": fee[1], "count": int(fee[2]), "amount": str(money(fee[3]))})
 	if "税(费)种名称" in text and not taxes:
-		raise ReceiptParseError("税费明细无法完整识别")
+		raise ReceiptParseError(_("税费明细无法完整识别"))
 	if "收费项目" in text and not fees:
-		raise ReceiptParseError("收费明细无法完整识别")
+		raise ReceiptParseError(_("收费明细无法完整识别"))
 	for details in (fees, taxes):
 		if details and sum(money(item["amount"]) for item in details) != amount:
-			raise ReceiptParseError("回单明细合计与交易金额不一致")
+			raise ReceiptParseError(_("回单明细合计与交易金额不一致"))
 	return {
 		"posting_date": posting_date,
 		"direction": direction,
@@ -180,25 +188,25 @@ def parse_cmb_receipts(content):
 	import pdfplumber
 
 	if not content.startswith(b"%PDF-") or len(content) > 20 * 1024 * 1024:
-		raise ReceiptParseError("请上传不超过 20 MB 的 PDF 回单")
+		raise ReceiptParseError(_("请上传不超过 20 MB 的 PDF 回单"))
 	rows, errors = [], []
 	try:
 		with pdfplumber.open(io.BytesIO(content)) as pdf:
 			if not 1 <= len(pdf.pages) <= 100:
-				raise ReceiptParseError("单次支持 1—100 页回单")
+				raise ReceiptParseError(_("单次支持 1—100 页回单"))
 			for page_number, page in enumerate(pdf.pages, 1):
 				headings = page.search(TITLE)
 				if not headings:
 					errors.append(
 						{
 							"page": page_number,
-							"message": "未识别到文字版回单；扫描件、非回单页面或其他版式暂不支持",
+							"message": _("未识别到文字版回单；扫描件、非回单页面或其他版式暂不支持"),
 						}
 					)
 					continue
 				for index, heading in enumerate(headings):
 					if len(rows) >= 300:
-						raise ReceiptParseError("单次最多支持 300 张回单")
+						raise ReceiptParseError(_("单次最多支持 300 张回单"))
 					bottom = headings[index + 1]["top"] if index + 1 < len(headings) else page.height
 					bbox = (
 						0,
@@ -215,5 +223,5 @@ def parse_cmb_receipts(content):
 	except ReceiptParseError:
 		raise
 	except Exception as exc:
-		raise ReceiptParseError("无法读取 PDF，请确认文件未加密、未损坏且包含文字层") from exc
+		raise ReceiptParseError(_("无法读取 PDF，请确认文件未加密、未损坏且包含文字层")) from exc
 	return {"rows": rows, "errors": errors, "parser_version": PARSER_VERSION}

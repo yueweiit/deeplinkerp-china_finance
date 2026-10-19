@@ -12,22 +12,22 @@ frappe.provide("china_finance.preparation");
 		const labels = {opening: "期初余额", posted_debit: "已记账借方", posted_credit: "已记账贷方", draft_debit: "草稿借方", draft_credit: "草稿贷方", expected_balance: "预计余额"};
 		const dialog = new frappe.ui.Dialog({title: __("含未记账凭证的科目余额试算"), size: "extra-large", fields: [{fieldtype: "HTML", options: `
 			<p>${esc(company)} · ${esc(from_date)} — ${esc(to_date)} · ${esc(result.currency)}</p><p>${esc(result.message)}</p>
-			<p>本期草稿 ${result.draft_count} 张；更早期间草稿 ${result.earlier_drafts} 张。</p>
-			${result.excluded.length ? `<div class="alert alert-warning">以下草稿未纳入，试算不完整：${result.excluded.map(r => `${esc(r.name)}：${esc(r.error)}`).join("<br>")}</div>` : ""}
-			<div style="overflow:auto"><table class="table table-bordered"><thead><tr><th>科目</th>${Object.values(labels).map(label => `<th>${label}</th>`).join("")}</tr></thead><tbody>${result.rows.map(row => `<tr><td>${esc(row.account)}</td>${Object.keys(labels).map(key => `<td class="text-right">${money(row[key], result.currency)}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`}]});
+			<p>${__("本期草稿 {0} 张；更早期间草稿 {1} 张。", [result.draft_count, result.earlier_drafts])}</p>
+			${result.excluded.length ? `<div class="alert alert-warning">${__("以下草稿未纳入，试算不完整：{0}", [result.excluded.map(r => `${esc(r.name)}：${esc(r.error)}`).join("<br>")])}</div>` : ""}
+			<div style="overflow:auto"><table class="table table-bordered"><thead><tr><th>${__("科目")}</th>${Object.values(labels).map(label => `<th>${esc(__(label))}</th>`).join("")}</tr></thead><tbody>${result.rows.map(row => `<tr><td>${esc(row.account)}</td>${Object.keys(labels).map(key => `<td class="text-right">${money(row[key], result.currency)}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`}]});
 		dialog.show();
 	};
 
 	china_finance.preparation.review = async names => {
 		const preview = await api("review_preview", {names});
 		const options = row => Object.fromEntries(row.cash.options.map(o => [o.value, o.label]));
-		const body = preview.map(row => `<details open><summary>${esc(row.name)} · ${esc(row.posting_date)}</summary><table class="table table-bordered"><tr><th>摘要</th><th>科目</th><th>借方</th><th>贷方</th></tr>${row.accounts.map(r => `<tr><td>${esc(r.summary)}</td><td>${esc(r.account)}</td><td>${esc(r.debit)}</td><td>${esc(r.credit)}</td></tr>`).join("")}</table><p>${row.cash.rows.map(r => `${esc(r.cash_account)} ${esc(r.direction)} ${esc(r.amount)} → ${esc(options(row)[r.row_code] || "待选择现金流项目")}`).join("<br>")}${esc(row.cash.error)}</p></details>`).join("");
+		const body = preview.map(row => `<details open><summary>${esc(row.name)} · ${esc(row.posting_date)}</summary><table class="table table-bordered"><tr><th>${__("摘要")}</th><th>${__("科目")}</th><th>${__("借方")}</th><th>${__("贷方")}</th></tr>${row.accounts.map(r => `<tr><td>${esc(r.summary)}</td><td>${esc(r.account)}</td><td>${esc(r.debit)}</td><td>${esc(r.credit)}</td></tr>`).join("")}</table><p>${row.cash.rows.map(r => `${esc(r.cash_account)} ${esc(r.direction)} ${esc(r.amount)} → ${esc(options(row)[r.row_code] || "待选择现金流项目")}`).join("<br>")}${esc(row.cash.error)}</p></details>`).join("");
 		return new Promise(resolve => {
 			const dialog = new frappe.ui.Dialog({title: __("核对凭证与现金流项目"), size: "extra-large", fields: [{fieldtype: "HTML", options: body}], primary_action_label: __("核对完成，待记账"), primary_action: async () => {
 				dialog.get_primary_btn().prop("disabled", true);
 				try {
 					const rows = await api("review_drafts", {names, versions: Object.fromEntries(preview.map(r => [r.name, r.modified])), cash_plans: Object.fromEntries(preview.map(r => [r.name, r.cash.rows]))});
-					frappe.msgprint(rows.map(r => `${esc(r.name)}：${r.success ? "核对完成，待记账" : esc(r.error)}`).join("<br>"));
+					frappe.msgprint(rows.map(r => `${esc(r.name)}：${r.success ? __("核对完成，待记账") : esc(r.error)}`).join("<br>"));
 					dialog.hide(); resolve(rows);
 				} finally { dialog.get_primary_btn().prop("disabled", false); }
 			}});

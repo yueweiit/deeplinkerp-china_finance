@@ -1,5 +1,12 @@
 """Strict text-PDF receipt parsers for supported Chinese banks."""
 
+try:
+	from frappe import _
+except ImportError:
+	def _(message):
+		return message
+
+
 import io
 import logging
 import re
@@ -35,7 +42,7 @@ def compact_account(value):
 def required_match(pattern, text, message, flags=0, group=1):
 	match = re.search(pattern, text, flags)
 	if not match:
-		raise ReceiptParseError(message)
+		raise ReceiptParseError(_(message))
 	return match.group(group).strip()
 
 
@@ -48,13 +55,13 @@ def iso_date(year, month, day):
 	try:
 		return date(int(year), int(month), int(day)).isoformat()
 	except ValueError as exc:
-		raise ReceiptParseError("交易日期无效") from exc
+		raise ReceiptParseError(_("交易日期无效")) from exc
 
 
 def decimal_amount(value):
 	amount = money(value)
 	if amount <= 0:
-		raise ReceiptParseError("交易金额必须大于零")
+		raise ReceiptParseError(_("交易金额必须大于零"))
 	return str(amount)
 
 
@@ -75,7 +82,7 @@ def line_field(text, label):
 def validate_flow(value):
 	value = compact_account(value)
 	if not re.fullmatch(r"[A-Za-z0-9-]{5,140}", value):
-		raise ReceiptParseError("交易流水号无效")
+		raise ReceiptParseError(_("交易流水号无效"))
 	return value
 
 
@@ -110,7 +117,7 @@ def parse_boc_receipt_text(text):
 	direction = "收入" if title == "国内支付业务收款回单" else "支出"
 	date_match = re.search(r"日期:\s*(\d{4})年(\d{1,2})月(\d{1,2})日", text)
 	if not date_match:
-		raise ReceiptParseError("缺少中国银行交易日期")
+		raise ReceiptParseError(_("缺少中国银行交易日期"))
 	posting_date = iso_date(*date_match.groups())
 	amount = decimal_amount(required_match(r"金额:\s*CNY\s*([\d,]+\.\d{2})", text, "缺少中国银行人民币金额"))
 	flow = validate_flow(required_match(r"交易流水号:\s*([A-Za-z0-9-]+)", text, "缺少中国银行交易流水号"))
@@ -138,9 +145,9 @@ def parse_boc_receipt_text(text):
 			}
 		)
 	if "税(费)种名称" in text and not taxes:
-		raise ReceiptParseError("中国银行税费明细无法完整识别")
+		raise ReceiptParseError(_("中国银行税费明细无法完整识别"))
 	if taxes and sum(money(item["amount"]) for item in taxes) != money(amount):
-		raise ReceiptParseError("中国银行税费明细合计与交易金额不一致")
+		raise ReceiptParseError(_("中国银行税费明细合计与交易金额不一致"))
 	fees = [{"item": fee_name, "count": 1, "amount": amount}] if fee_name else []
 	purpose = colon_field(text, "用途")
 	postscript = colon_field(text, "附言")
@@ -149,7 +156,7 @@ def parse_boc_receipt_text(text):
 	if "住房公积" in payee:
 		summary = "住房公积金"
 	if not summary:
-		raise ReceiptParseError("缺少中国银行交易摘要")
+		raise ReceiptParseError(_("缺少中国银行交易摘要"))
 	own_account = payer_account if direction == "支出" else payee_account
 	own_name = payer if direction == "支出" else payee
 	counterparty = payee if direction == "支出" else payer
@@ -188,11 +195,11 @@ def parse_boc_receipt_text(text):
 def parse_abc_receipt_text(text):
 	text = normalize_text(text)
 	if "客户收付款入账通知" not in text:
-		raise ReceiptParseError("未识别到中国农业银行回单标题")
+		raise ReceiptParseError(_("未识别到中国农业银行回单标题"))
 	receipt_number = required_match(r"回单编号:\s*([A-Za-z0-9-]+)", text, "缺少农业银行回单编号")
 	accounts = re.search(r"^账号\s+([0-9 ]+)\s+账号\s+([0-9 ]+)$", text, re.M)
 	if not accounts:
-		raise ReceiptParseError("缺少农业银行收付款账号")
+		raise ReceiptParseError(_("缺少农业银行收付款账号"))
 	names = re.search(r"付款方\s+户名\s*(.*?)\s+收款方\s+户名\s*([^\n]*)", text)
 	banks = re.search(r"开户行\s+(.+?)\s+开户行\s*([^\n]*)", text)
 	payer = names.group(1).strip() if names else ""
@@ -201,11 +208,11 @@ def parse_abc_receipt_text(text):
 	payee_bank = banks.group(2).strip() if banks else ""
 	datetime_match = re.search(r"交易时间\s+(\d{4})-(\d{2})-(\d{2})\s+\d{2}:\d{2}:\d{2}", text)
 	if not datetime_match:
-		raise ReceiptParseError("缺少农业银行交易时间")
+		raise ReceiptParseError(_("缺少农业银行交易时间"))
 	posting_date = iso_date(*datetime_match.groups())
 	amount = decimal_amount(required_match(r"金额\(小写\)\s+([\d,]+\.\d{2})", text, "缺少农业银行金额"))
 	if not re.search(r"币种\s+人民币", text):
-		raise ReceiptParseError("农业银行回单币种不是人民币")
+		raise ReceiptParseError(_("农业银行回单币种不是人民币"))
 	summary = optional_match(r"摘要\s+(.+?)\s+凭证号", text)
 	lines = [line.strip() for line in text.splitlines()]
 	for candidate in ("短信费", "手续费", "服务费"):
@@ -213,7 +220,7 @@ def parse_abc_receipt_text(text):
 			summary = candidate
 			break
 	if not summary:
-		raise ReceiptParseError("缺少农业银行交易摘要")
+		raise ReceiptParseError(_("缺少农业银行交易摘要"))
 	fee_details = (
 		[{"item": summary, "count": 1, "amount": amount}]
 		if any(word in summary for word in ("费", "手续费"))
@@ -246,19 +253,19 @@ def parse_icbc_receipt_text(text):
 	flow = validate_flow(required_match(r"交易流水号\s+([0-9 ]+?)\s+时间戳", text, "缺少工商银行交易流水号"))
 	timestamp = re.search(r"时间戳\s+(\d{4})-(\d{2})-(\d{2})-", text)
 	if not timestamp:
-		raise ReceiptParseError("缺少工商银行交易时间")
+		raise ReceiptParseError(_("缺少工商银行交易时间"))
 	posting_date = iso_date(*timestamp.groups())
 	amount = decimal_amount(required_match(r"金\s*额\s+[¥￥]\s*([\d,]+\.\d{2})元", text, "缺少工商银行人民币金额"))
 	accounts = re.search(r"付款\s+([0-9 ]+)\s+收款\s+([0-9* ]+)", text)
 	if not accounts:
-		raise ReceiptParseError("缺少工商银行收付款账号")
+		raise ReceiptParseError(_("缺少工商银行收付款账号"))
 	names_block = required_match(r"电子回单号码:[^\n]+\n(.+?)\n户\s*名", text, "缺少工商银行收付款户名")
 	names = names_block.split()
 	payer = names[0] if names else ""
 	payee = "".join(names[1:]) if len(names) > 1 else ""
 	summary_match = re.search(r"摘\s*要\s+(.+?)\s+业务\(产品\)种类\s+([^\n]+)", text)
 	if not summary_match:
-		raise ReceiptParseError("缺少工商银行摘要或业务种类")
+		raise ReceiptParseError(_("缺少工商银行摘要或业务种类"))
 	summary, business_type = (value.strip() for value in summary_match.groups())
 	purpose = optional_match(r"^用[ \t]*途[ \t]*(.*)$", text, re.M)
 	remark = colon_field(text, "备注")
@@ -299,12 +306,12 @@ def parse_icbc_receipt_text(text):
 def parse_cgb_receipt_text(text):
 	text = normalize_text(text)
 	if not text.startswith("广发银行客户回单"):
-		raise ReceiptParseError("未识别到广发银行回单标题")
+		raise ReceiptParseError(_("未识别到广发银行回单标题"))
 	header = re.search(
 		r"交易日期:\s*(\d{4})(\d{2})(\d{2})\s+交易时间:[^\n]+?回单流水号:\s*([0-9]+)", text
 	)
 	if not header:
-		raise ReceiptParseError("缺少广发银行交易日期或回单流水号")
+		raise ReceiptParseError(_("缺少广发银行交易日期或回单流水号"))
 	year, month, day, receipt_number = header.groups()
 	transaction_reference = required_match(r"交易流水号\s+([A-Za-z0-9]+)", text, "缺少广发银行交易流水号")
 	amount = decimal_amount(required_match(r"小写金额\s+[¥￥]\s*([\d,]+\.\d{2})", text, "缺少广发银行人民币金额"))
@@ -312,7 +319,7 @@ def parse_cgb_receipt_text(text):
 	accounts = re.search(r"款\s+账\s*号\s+([0-9 ]+)\s+款\s+账\s*号(?:\s+([0-9 ]+))?", text)
 	banks = re.search(r"开户银行\s+(.+?)\s+开户银行(?:\s+([^\n]*))?", text)
 	if not names or not accounts:
-		raise ReceiptParseError("缺少广发银行收付款信息")
+		raise ReceiptParseError(_("缺少广发银行收付款信息"))
 	payer, payee = names.group(1).strip(), (names.group(2) or "").strip()
 	payer_account = compact_account(accounts.group(1))
 	payee_account = compact_account(accounts.group(2) or "")
@@ -326,7 +333,7 @@ def parse_cgb_receipt_text(text):
 	if "住房公积" in summary or "住房公积" in payee:
 		summary = "住房公积金"
 	if not summary:
-		raise ReceiptParseError("缺少广发银行交易摘要")
+		raise ReceiptParseError(_("缺少广发银行交易摘要"))
 	fees = (
 		[{"item": summary, "count": 1, "amount": amount}]
 		if any(word in summary for word in ("手续费", "汇款费"))
@@ -358,23 +365,23 @@ def parse_text_pdf(content, heading_pattern, parse_text, parser_version, bank_la
 	import pdfplumber
 
 	if not content.startswith(b"%PDF-") or len(content) > MAX_FILE_SIZE:
-		raise ReceiptParseError("请上传不超过 20 MB 的 PDF 回单")
+		raise ReceiptParseError(_("请上传不超过 20 MB 的 PDF 回单"))
 	rows, errors = [], []
 	try:
 		with pdfplumber.open(io.BytesIO(content)) as pdf:
 			if not 1 <= len(pdf.pages) <= MAX_PAGES:
-				raise ReceiptParseError("单次支持 1—100 页回单")
+				raise ReceiptParseError(_("单次支持 1—100 页回单"))
 			for page_number, page in enumerate(pdf.pages, 1):
 				headings = sorted(page.search(heading_pattern), key=lambda item: item["top"])
 				if not headings:
 					page_text = normalize_text(page.extract_text() or "")
 					if ignore_blank_pages and not page_text.strip():
 						continue
-					errors.append({"page": page_number, "message": f"未识别到{bank_label}文字版回单"})
+					errors.append({"page": page_number, "message": _("未识别到{0}文字版回单").format(_(bank_label))})
 					continue
 				for index, heading in enumerate(headings):
 					if len(rows) >= MAX_RECEIPTS:
-						raise ReceiptParseError("单次最多支持 300 张回单")
+						raise ReceiptParseError(_("单次最多支持 300 张回单"))
 					bottom = headings[index + 1]["top"] if index + 1 < len(headings) else page.height
 					bbox = (0, max(0, heading["top"] - 2), page.width, bottom - 2 if index + 1 < len(headings) else bottom)
 					try:
@@ -386,7 +393,7 @@ def parse_text_pdf(content, heading_pattern, parse_text, parser_version, bank_la
 	except ReceiptParseError:
 		raise
 	except Exception as exc:
-		raise ReceiptParseError("无法读取 PDF，请确认文件未加密、未损坏且包含文字层") from exc
+		raise ReceiptParseError(_("无法读取 PDF，请确认文件未加密、未损坏且包含文字层")) from exc
 	return {"rows": rows, "errors": errors, "parser_version": parser_version}
 
 

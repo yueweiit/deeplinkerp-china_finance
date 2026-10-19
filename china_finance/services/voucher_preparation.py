@@ -554,5 +554,5 @@ def trial_balance(company, from_date, to_date):
 		"draft_count": len(docs),
 		"earlier_drafts": earlier,
 		"currency": frappe.get_cached_value("Company", company, "default_currency"),
-		"message": "试算包含本期有效草稿；期初仅含已记账数据。早期草稿须先处理，正式报表以实际记账数据为准。",
+		"message": _("试算包含本期有效草稿；期初仅含已记账数据。早期草稿须先处理，正式报表以实际记账数据为准。"),
 	}

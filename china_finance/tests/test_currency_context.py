@@ -6,7 +6,7 @@ import frappe
 from frappe.tests import IntegrationTestCase, UnitTestCase
 from frappe.utils import fmt_money
 
-from china_finance.services import currency_context
+from china_finance.services import currency_context, financial_statement
 from china_finance.china_finance.report.china_vat_return_worksheet.china_vat_return_worksheet import execute as vat_worksheet
 from china_finance.china_finance.report.china_financial_statements import china_financial_statements as statements
 from china_finance.china_finance.report.china_purchase_reconciliation import china_purchase_reconciliation as purchases
@@ -59,6 +59,43 @@ class TestCurrencyCoverage(UnitTestCase):
 		self.assertEqual(result[1][0]["currency"], "CNY")
 		self.assertEqual(result[3]["currency"], "CNY")
 		self.assertEqual(result[0][0]["options"], "currency")
+
+	def test_statement_display_labels_translate_without_changing_identity_or_amounts(self):
+		rows = [{"row_code": "CURRENT_ASSETS", "label": "流动资产", "amount": 700,
+			"asset_label": "资产合计", "liability_equity_label": None,
+			"source_accounts": ["BUSINESS-ACCOUNT"]}]
+		with patch.object(statements, "_execute", return_value=([], rows)), patch.object(
+			statements, "_", side_effect=lambda value: {"流动资产": "Current assets", "资产合计": "Total assets"}.get(value, value)
+		), patch.object(statements.frappe, "has_permission", return_value=False), patch.object(
+			statements, "bind_report_currency"
+		):
+			result = statements.execute({"company": "Company", "fiscal_year": "2026",
+				"from_date": "2026-01-01", "to_date": "2026-12-31"})
+		self.assertEqual(result[1][0]["label"], "Current assets")
+		self.assertEqual(result[1][0]["asset_label"], "Total assets")
+		self.assertEqual(result[1][0]["row_code"], "CURRENT_ASSETS")
+		self.assertEqual(result[1][0]["amount"], 700)
+		self.assertEqual(result[1][0]["source_accounts"], ["BUSINESS-ACCOUNT"])
+		self.assertIsNone(result[1][0]["liability_equity_label"])
+
+	def test_reclassification_warning_translates_parts_and_preserves_source(self):
+		translations = {"本期": "Current period", "其他应收款": "Other receivables",
+			"其他应付款": "Other payables", "{0}余额展示调整": "Presentation adjustment for {0}",
+			"（科目：{0}）": " (Account: {0})",
+			"其他应收款贷方余额": "Credit balance of other receivables",
+			"{0}：{1}{2} {3} 已按报表展示规则列入 {4}；原始账务未改变。": "{0}: {1}{2} {3} -> {4}"}
+		for reason in ("其他应收款余额展示调整", "其他应收款贷方余额"):
+			item = {"period": "本期", "reason": reason, "source_account": "业务科目-ID",
+				"amount": 123.45, "target_label": "其他应付款"}
+			original = item.copy()
+			with patch.object(financial_statement, "_", side_effect=lambda value: translations.get(value, value)):
+				message = financial_statement._format_reclassification_warning(item)
+			self.assertIn("Current period", message)
+			self.assertIn("Other payables", message)
+			self.assertIn("(Account: 业务科目-ID)", message)
+			self.assertIn("123.45", message)
+			self.assertNotIn("余额展示调整", message)
+			self.assertEqual(item, original)
 
 	def test_mixed_currency_totals_are_suppressed_including_party_currency(self):
 		columns = [{"fieldname": "total", "fieldtype": "Currency", "options": "currency"},

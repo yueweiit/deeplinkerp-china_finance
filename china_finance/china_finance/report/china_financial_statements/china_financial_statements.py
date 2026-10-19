@@ -38,6 +38,11 @@ def execute(filters=None):
 	filters = frappe._dict(filters or {})
 	_apply_default_period(filters)
 	columns, rows, *rest = _execute(filters)
+	# Localize the report projection; keep template labels and row codes intact.
+	for row in rows:
+		for field in ("label", "asset_label", "liability_equity_label"):
+			if row.get(field):
+				row[field] = _(row[field])
 	if frappe.has_permission("Journal Entry", "read"):
 		pending = frappe.get_list("Journal Entry", filters={"company": filters.company, "docstatus": 0,
 			"posting_date": ["between", [filters.from_date, filters.to_date]]}, fields=[{"COUNT": "name", "as": "total"}])[0].total

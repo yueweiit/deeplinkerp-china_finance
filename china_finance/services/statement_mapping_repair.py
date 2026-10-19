@@ -1,5 +1,8 @@
 """Narrow, auditable correction of the pre-1.8 cash-flow suggestions."""
 
+from frappe import _
+
+
 import frappe
 from frappe.utils import cint
 
@@ -33,7 +36,7 @@ def repair_cash_flow_mappings(company=None, apply=False, include_manual=False):
 	"""
 	apply, include_manual = cint(apply), cint(include_manual)
 	if include_manual and not company:
-		frappe.throw("修正手工现金流映射必须指定公司")
+		frappe.throw(_("修正手工现金流映射必须指定公司"))
 	from china_finance.setup.china_coa_profile import is_profile_company
 
 	templates = frappe.get_all(

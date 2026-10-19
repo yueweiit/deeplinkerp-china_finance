@@ -4,6 +4,7 @@
 # ruff: noqa: RUF001
 
 import json
+from decimal import Decimal, InvalidOperation
 
 import frappe
 from frappe import _
@@ -16,6 +17,10 @@ EDITABLE_SOURCE_DOCTYPES = ("Journal Entry", "Payment Entry")
 EDIT_TOLERANCE = 0.005
 MAX_INLINE_CHANGES = 100
 MAX_INLINE_SUMMARY_LENGTH = 500
+INLINE_AMOUNT_FIELDS = {
+	"debit": "debit_in_account_currency",
+	"credit": "credit_in_account_currency",
+}
 
 
 def _get_source_document(source_doctype, source_name):
@@ -584,6 +589,34 @@ def get_inline_row_edit_metadata(doc, ledger_row):
 	}
 
 
+def _inline_amount_reason(doc, row):
+	company_currency = frappe.get_cached_value("Company", doc.company, "default_currency")
+	if doc.multi_currency or row.account_currency != company_currency or flt(row.exchange_rate) != 1:
+		return _("外币或汇率换算分录请打开原单修改金额")
+	return None
+
+
+def get_inline_amount_edit_metadata(doc, ledger_row, mapping):
+	if doc.doctype != "Journal Entry":
+		return {"editable": False, "reason": _("该来源金额由系统计算，请打开原单修改")}
+	if not mapping.get("editable"):
+		return {"editable": False, "reason": _("无法把该金额唯一对应到来源凭证分录")}
+	row = next(row for row in doc.accounts if f"je:{row.name}" == mapping["edit_key"])
+	reason = _inline_amount_reason(doc, row)
+	# A merged/split GL display must not overwrite the complete source amount.
+	if not reason and any(
+		Decimal(str(ledger_row.get(field) or 0)) != Decimal(str(row.get(field) or 0))
+		for field in INLINE_AMOUNT_FIELDS
+	):
+		reason = _("该金额为合并或拆分展示结果，请打开原单修改")
+	return {
+		"editable": not reason,
+		"reason": reason,
+		"edit_key": mapping["edit_key"],
+		"precision": row.precision("debit_in_account_currency"),
+	}
+
+
 def annotate_inline_edit_rows(rows):
 	"""Attach non-persistent editing metadata to report rows in-place."""
 	documents = {}
@@ -613,6 +646,7 @@ def annotate_inline_edit_rows(rows):
 		row["edit_source_modified"] = str(doc.modified)
 		mapping = get_inline_row_edit_metadata(doc, row)
 		summary_mapping = get_inline_summary_edit_metadata(doc, row)
+		amount_mapping = get_inline_amount_edit_metadata(doc, row, mapping)
 		can_edit = bool(status.get("can_edit") or status.get("quick_unreconcile"))
 		row["inline_bank_transaction"] = next(iter(status.get("bank_transactions") or []), None)
 		row["editable_account"] = bool(mapping.get("editable") and can_edit)
@@ -627,6 +661,12 @@ def annotate_inline_edit_rows(rows):
 		row["inline_summary_edit_hint"] = summary_mapping.get("hint")
 		row["inline_summary_edit_reason"] = (
 			summary_mapping.get("reason") or (None if can_edit else status.get("reason"))
+		)
+		row["editable_amount"] = bool(amount_mapping.get("editable") and can_edit)
+		row["amount_edit_key"] = amount_mapping.get("edit_key")
+		row["amount_precision"] = amount_mapping.get("precision")
+		row["inline_amount_edit_reason"] = (
+			amount_mapping.get("reason") or (None if can_edit else status.get("reason"))
 		)
 	return rows
 
@@ -723,6 +763,13 @@ def _parse_inline_changes(changes):
 				frappe.throw(_("摘要只能填写一行内容"))
 			if len(value) > MAX_INLINE_SUMMARY_LENGTH:
 				frappe.throw(_("摘要不能超过 {0} 个字符").format(MAX_INLINE_SUMMARY_LENGTH))
+		elif fieldname in INLINE_AMOUNT_FIELDS:
+			try:
+				value = Decimal(str(change.get("value")))
+			except (InvalidOperation, ValueError):
+				frappe.throw(_("请输入有效金额"))
+			if not value.is_finite() or value.adjusted() > 11:
+				frappe.throw(_("请输入有效金额"))
 		else:
 			frappe.throw(_("不支持修改该凭证字段"))
 
@@ -736,6 +783,33 @@ def _parse_inline_changes(changes):
 def _resolve_inline_changes(doc, changes):
 	diffs = []
 	for (change_field, edit_key), value in _parse_inline_changes(changes).items():
+		if change_field in INLINE_AMOUNT_FIELDS:
+			if doc.doctype != "Journal Entry":
+				frappe.throw(_("该来源金额由系统计算，请打开原单修改"))
+			target = _resolve_inline_edit_target(doc, edit_key)
+			row = _find_child_by_idx(doc, target.parentfield, target.row_idx)
+			reason = _inline_amount_reason(doc, row)
+			if reason:
+				frappe.throw(reason)
+			fieldname = INLINE_AMOUNT_FIELDS[change_field]
+			precision = row.precision(fieldname)
+			if value != value.quantize(Decimal(1).scaleb(-precision)):
+				frappe.throw(_("金额最多保留 {0} 位小数").format(precision))
+			if Decimal(str(row.get(fieldname) or 0)) == value:
+				continue
+			diffs.append(
+				frappe._dict(
+					change_field=change_field,
+					edit_key=edit_key,
+					old_value=row.get(fieldname) or 0,
+					new_value=float(value),
+					fieldname=fieldname,
+					parentfield=target.parentfield,
+					row_idx=target.row_idx,
+					role="journal_line",
+				)
+			)
+			continue
 		if change_field == "account":
 			target = _resolve_inline_edit_target(doc, edit_key)
 			if target.account == value:
@@ -791,12 +865,54 @@ def _inline_preflight(doc, modified, changes):
 	if not can_apply:
 		frappe.throw(_("当前凭证不能修改：{0}").format(status.get("reason") or _("不满足修改条件")))
 	diffs = _resolve_inline_changes(doc, changes)
+	if any(diff.change_field in INLINE_AMOUNT_FIELDS for diff in diffs):
+		_validate_inline_amount_changes(doc, diffs)
 	quick_info = status.get("quick_unreconcile")
 	if quick_info and quick_info.get("bank_account"):
 		for diff in diffs:
 			if diff.change_field == "account" and diff.old_account == quick_info.get("bank_account"):
 				frappe.throw(_("已核销凭证不能从查凭证修改银行流水对应的银行科目"))
 	return status, diffs
+
+
+def _validate_inline_amount_changes(doc, diffs):
+	proposed = frappe.copy_doc(doc)
+	_apply_inline_diffs(proposed, diffs)
+	totals = {field: Decimal(0) for field in INLINE_AMOUNT_FIELDS}
+	for row in proposed.accounts:
+		amounts = {field: Decimal(str(row.get(field) or 0)) for field in INLINE_AMOUNT_FIELDS}
+		if amounts["debit"] and amounts["credit"]:
+			frappe.throw(_("第 {0} 行不能同时填写借方和贷方金额").format(row.idx))
+		if not amounts["debit"] and not amounts["credit"]:
+			frappe.throw(_("第 {0} 行借方和贷方金额不能同时为零").format(row.idx))
+		for field, amount in amounts.items():
+			totals[field] += amount
+	if totals["debit"] != totals["credit"]:
+		frappe.throw(_("借贷不平衡，请把同一张凭证的相关金额修改完成后一起保存"))
+
+	# Bank evidence is immutable here: expense/accrual allocations may change,
+	# but an amount edit cannot change the payment represented by its source.
+	bank_accounts = set()
+	for name in _get_bank_transaction_names(doc):
+		bank_account = frappe.db.get_value("Bank Transaction", name, "bank_account")
+		account = frappe.db.get_value("Bank Account", bank_account, "account") if bank_account else None
+		if account:
+			bank_accounts.add(account)
+	if frappe.db.exists("DocType", "China Bank Receipt"):
+		for bank_account in frappe.get_all(
+			"China Bank Receipt",
+			filters={"voucher_type": doc.doctype, "voucher_name": doc.name},
+			pluck="bank_account",
+		):
+			account = frappe.db.get_value("Bank Account", bank_account, "account")
+			if account:
+				bank_accounts.add(account)
+	for account in bank_accounts:
+		for field in INLINE_AMOUNT_FIELDS:
+			before = sum(Decimal(str(row.get(field) or 0)) for row in doc.accounts if row.account == account)
+			after = sum(Decimal(str(row.get(field) or 0)) for row in proposed.accounts if row.account == account)
+			if before != after:
+				frappe.throw(_("关联回单或银行流水的银行收付款金额不能在此修改，请先核对原始回单和银行流水"))
 
 
 @frappe.whitelist()
@@ -1027,6 +1143,8 @@ def _apply_inline_diffs(doc, diffs):
 		if diff.parentfield:
 			target = _find_child_by_idx(doc, diff.parentfield, diff.row_idx)
 			target.set(diff.fieldname, diff.new_value)
+			if diff.change_field in INLINE_AMOUNT_FIELDS:
+				target.set(diff.change_field, diff.new_value)
 			if diff.change_field == "account" and doc.doctype == "Journal Entry":
 				target.account_currency = diff.new_account_currency
 			continue
@@ -1050,6 +1168,10 @@ def _inline_change_label(diffs):
 		return _("科目")
 	if fields == {"summary"}:
 		return _("摘要")
+	if fields <= set(INLINE_AMOUNT_FIELDS):
+		return _("金额")
+	if fields & set(INLINE_AMOUNT_FIELDS):
+		return _("凭证内容")
 	return _("科目和摘要")
 
 
@@ -1058,12 +1180,14 @@ def _audit_inline_changes(doc, diffs, *, amended_from=None):
 	heading = _("查凭证表内科目更正") if label == _("科目") else _("查凭证表内{0}修改").format(label)
 	lines = [heading]
 	for diff in diffs:
-		field_label = _("科目") if diff.change_field == "account" else _("摘要")
+		field_label = {
+			"account": _("科目"), "summary": _("摘要"), "debit": _("借方"), "credit": _("贷方")
+		}[diff.change_field]
 		lines.append(
 			"{0}：{1} → {2}".format(
 				field_label,
-				frappe.utils.escape_html(diff.old_value or _("（空）")),
-				frappe.utils.escape_html(diff.new_value),
+				frappe.utils.escape_html(str(diff.old_value) if diff.old_value is not None else _("（空）")),
+				frappe.utils.escape_html(str(diff.new_value)),
 			)
 		)
 	if amended_from:

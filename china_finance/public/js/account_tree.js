@@ -82,7 +82,7 @@
 					number && full_name
 						? `${number} - ${full_name}`
 						: result.manual_required && !current_manual
-							? `${full_name}（请直接填写科目编码）`
+							? __("{0}（请直接填写科目编码）", [full_name])
 							: full_name
 				);
 			},

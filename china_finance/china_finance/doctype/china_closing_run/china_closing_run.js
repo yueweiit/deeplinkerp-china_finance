@@ -221,7 +221,7 @@ async function reverse_closing(frm) {
 					frappe.msgprint({ message: messages.join("<br>"), indicator: pending ? "orange" : "green" });
 					await frm.reload_doc();
 				} catch (error) {
-					show_closing_action_error("反结账失败", error);
+					show_closing_action_error(__("反结账失败"), error);
 				} finally {
 					frappe.dom.unfreeze();
 				}
@@ -230,7 +230,7 @@ async function reverse_closing(frm) {
 			__("确认反结账")
 		);
 	} catch (error) {
-		show_closing_action_error("反结账检查失败", error);
+		show_closing_action_error(__("反结账检查失败"), error);
 	} finally {
 		frm.__china_closing_action_running = false;
 	}
@@ -269,7 +269,7 @@ async function generate_period_closing_voucher(frm) {
 			},
 		});
 	} catch (error) {
-		show_closing_action_error("损益结转凭证生成失败", error);
+		show_closing_action_error(__("损益结转凭证生成失败"), error);
 	} finally {
 		frappe.dom.unfreeze();
 		frm.__china_closing_action_running = false;
@@ -310,7 +310,7 @@ async function run_closing_checks(frm) {
 			indicator: "green",
 		});
 	} catch (error) {
-		show_closing_action_error("结账检查保存失败", error);
+		show_closing_action_error(__("结账检查保存失败"), error);
 	} finally {
 		frappe.dom.unfreeze();
 		frm.__china_closing_action_running = false;
@@ -337,7 +337,7 @@ async function submit_and_complete_closing(frm) {
 			indicator: "green",
 		}, 7);
 	} catch (error) {
-		show_closing_action_error("期末结账提交失败", error);
+		show_closing_action_error(__("期末结账提交失败"), error);
 	} finally {
 		frappe.dom.unfreeze();
 		frm.__china_closing_action_running = false;

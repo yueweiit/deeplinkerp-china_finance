@@ -35,8 +35,8 @@
 
 	function side_label(side) {
 		if (!side.label) return "";
-		if (side.type === "Heading") return frappe.utils.escape_html(side.label + "：");
-		return "&nbsp;".repeat((side.indent || 0) * 4 + 4) + frappe.utils.escape_html(side.label);
+		if (side.type === "Heading") return frappe.utils.escape_html(__(side.label) + ":");
+		return "&nbsp;".repeat((side.indent || 0) * 4 + 4) + frappe.utils.escape_html(__(side.label));
 	}
 	function side_amount(value, side) {
 		if (!side.label || value === null || value === undefined) return "";
@@ -45,26 +45,26 @@
 %}
 
 <div class="statutory-report">
-	<h2>资产负债表</h2>
+	<h2>{%= __("资产负债表") %}</h2>
 	<table class="meta">
 		<tr>
 			<td>{%= form_code %}</td>
-			<td class="right">税款所属期起止：{%= filters.from_date %} 至 {%= filters.to_date %}</td>
+			<td class="right">{%= __("税款所属期起止：") %}{%= filters.from_date %} {%= __("至") %} {%= filters.to_date %}</td>
 		</tr>
 		<tr>
-			<td>纳税人识别号：{%= frappe.utils.escape_html(header_info.tax_id || "") %}</td>
-			<td class="right">报送日期：{%= frappe.datetime.get_today() %}</td>
+			<td>{%= __("纳税人识别号：") %}{%= frappe.utils.escape_html(header_info.tax_id || "") %}</td>
+			<td class="right">{%= __("报送日期：") %}{%= frappe.datetime.get_today() %}</td>
 		</tr>
 		<tr>
-			<td>编制单位：{%= frappe.utils.escape_html(filters.company) %}</td>
-			<td class="right">币种：{%= currency_context.currency || "" %}　单位：元</td>
+			<td>{%= __("编制单位：") %}{%= frappe.utils.escape_html(filters.company) %}</td>
+			<td class="right">{%= __("币种：") %}{%= currency_context.currency || "" %}　{%= __("单位：元") %}</td>
 		</tr>
 	</table>
 	<table class="grid">
 		<thead>
 			<tr>
-				<th>资 产</th><th>行次</th><th>期末余额</th><th>年初余额</th>
-				<th>负债和所有者权益</th><th>行次</th><th>期末余额</th><th>年初余额</th>
+				<th>{%= __("资 产") %}</th><th>{%= __("行次") %}</th><th>{%= __("期末余额") %}</th><th>{%= __("年初余额") %}</th>
+				<th>{%= __("负债和所有者权益") %}</th><th>{%= __("行次") %}</th><th>{%= __("期末余额") %}</th><th>{%= __("年初余额") %}</th>
 			</tr>
 		</thead>
 		<tbody>
@@ -91,15 +91,15 @@
 	<h2>{%= __(report.report_name) %}</h2>
 	<table class="meta">
 		<tr>
-			<td>编制单位：{%= frappe.utils.escape_html(filters.company) %></td>
-			<td class="right">{%= filters.from_date %} 至 {%= filters.to_date %}　币种：{%= currency_context.currency || "" %}　单位：元</td>
+			<td>{%= __("编制单位：") %}{%= frappe.utils.escape_html(filters.company) %}</td>
+			<td class="right">{%= filters.from_date %} {%= __("至") %} {%= filters.to_date %}　{%= __("币种：") %}{%= currency_context.currency || "" %}　{%= __("单位：元") %}</td>
 		</tr>
 	</table>
 	<table class="grid">
 		<thead>
 			<tr>
 				{% for (var c = 0; c < columns.length; c++) { %}
-					<th>{%= columns[c].label %}</th>
+					<th>{%= __(columns[c].label) %}</th>
 				{% } %}
 			</tr>
 		</thead>
@@ -107,7 +107,7 @@
 			{% for (var j = 0; j < data.length; j++) { %}
 				{% var row = data[j]; %}
 				<tr class="{%= row.bold ? "bold" : "" %}">
-					<td>{%= "&nbsp;".repeat((row.indent || 0) * 4) + frappe.utils.escape_html(row.label || "") %}</td>
+					<td>{%= "&nbsp;".repeat((row.indent || 0) * 4) + frappe.utils.escape_html(__(row.label || "")) %}</td>
 					{% for (var c = 1; c < columns.length; c++) { %}
 						<td class="num">{%= row[columns[c].fieldname] === null || row[columns[c].fieldname] === undefined ? "" : frappe.format(row[columns[c].fieldname], columns[c], {}, row) %}</td>
 					{% } %}

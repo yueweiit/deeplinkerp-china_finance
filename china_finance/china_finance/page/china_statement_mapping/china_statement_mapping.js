@@ -217,14 +217,25 @@ class ChinaStatementMapping {
 		this.expanded_aggregates.clear();
 		this.$rows.html(`<div class="smc-empty">${__("Loading...")}</div>`);
 		this.$accounts.empty();
-		const data = await frappe.xcall(
-			"china_finance.services.statement_mapping_console.get_mapping_console",
-			{
-				company,
-				statement_type,
-				accounting_standard: accounting_standard === "跟随公司设置" ? null : accounting_standard,
-			},
-		);
+		let data;
+		try {
+			data = await frappe.xcall(
+				"china_finance.services.statement_mapping_console.get_mapping_console",
+				{
+					company,
+					statement_type,
+					accounting_standard: accounting_standard === "跟随公司设置" ? null : accounting_standard,
+				},
+			);
+		} catch {
+			if (request !== this.refresh_request) return;
+			this.data = null;
+			this.$summary.empty();
+			this.$reclassifications.empty();
+			this.$accounts.empty();
+			this.$rows.html(`<div class="smc-empty">${__("Unable to load statement mapping. Check the reported error and try again.")}</div>`);
+			return;
+		}
 		// A previous company's slower response must not replace the current view.
 		if (request !== this.refresh_request) return;
 		this.data = data;
@@ -278,7 +289,7 @@ class ChinaStatementMapping {
 					<span class="text-muted">${rule.enabled ? __("已启用") : __("已停用")}</span>
 				</div>`);
 			if (this.can_write) {
-				$('<button class="btn btn-xs btn-default">编辑</button>').on("click", () => this.edit_reclassification_rule(rule)).appendTo($row);
+				$(`<button class="btn btn-xs btn-default">${__("编辑")}</button>`).on("click", () => this.edit_reclassification_rule(rule)).appendTo($row);
 			}
 			$list.append($row);
 		});
@@ -534,7 +545,7 @@ class ChinaStatementMapping {
 		$head.append(
 			`<span class="smc-row__toggle" style="margin-left: ${row.indent * 18}px">${has_children ? (collapsed ? "▸" : "▾") : ""}</span>`,
 		);
-		$head.append(`<span class="smc-row__label" title="${frappe.utils.escape_html(row.row_code)}">${frappe.utils.escape_html(row.label)}</span>`);
+		$head.append(`<span class="smc-row__label" title="${frappe.utils.escape_html(row.row_code)}">${frappe.utils.escape_html(__(row.label))}</span>`);
 		if (row.balance_direction) {
 			$head.append(`<span class="smc-row__direction">${frappe.utils.escape_html(__(row.balance_direction))}</span>`);
 		}
@@ -732,7 +743,7 @@ class ChinaStatementMapping {
 		const $chips = $('<div class="smc-code-chips"></div>').appendTo($codes_wrapper);
 		this.data.rows.forEach((template_row) => {
 			const $chip = $(
-				`<button type="button" class="smc-code-chip" title="${frappe.utils.escape_html(template_row.row_code)}">${frappe.utils.escape_html(template_row.label)}</button>`,
+				`<button type="button" class="smc-code-chip" title="${frappe.utils.escape_html(template_row.row_code)}">${frappe.utils.escape_html(__(template_row.label))}</button>`,
 			);
 			$chip.on("click", () => {
 				const current = (dialog.get_value("formula") || "").trimEnd();
@@ -781,7 +792,7 @@ class ChinaStatementMapping {
 		);
 		$chip.append(`<span>${frappe.utils.escape_html(label)}</span>`);
 		if (mapping.debit_total !== undefined) {
-			const totals = `借 ${frappe.format(mapping.debit_total, { fieldtype: "Currency", options: "currency" }, {}, this.data)} · 贷 ${frappe.format(mapping.credit_total, { fieldtype: "Currency", options: "currency" }, {}, this.data)} · 余额 ${frappe.format(mapping.balance, { fieldtype: "Currency", options: "currency" }, {}, this.data)}`;
+			const totals = __("借 {0} · 贷 {1} · 余额 {2}", [frappe.format(mapping.debit_total, { fieldtype: "Currency", options: "currency" }, {}, this.data), frappe.format(mapping.credit_total, { fieldtype: "Currency", options: "currency" }, {}, this.data), frappe.format(mapping.balance, { fieldtype: "Currency", options: "currency" }, {}, this.data)]);
 			$chip.attr("title", totals);
 		}
 		if (mapping.sign_multiplier === -1) {

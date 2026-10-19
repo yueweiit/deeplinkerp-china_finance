@@ -122,10 +122,18 @@ def validate_formula_graph(rows):
 			dependencies.pop(code)
 
 
+def get_company_finance_settings(company):
+	try:
+		return frappe.get_cached_doc("China Finance Settings", company)
+	except frappe.DoesNotExistError:
+		frappe.clear_last_message()
+		frappe.throw(_("Company {0} has no China Finance Settings. Configure its accounting standard and activation dates, or select a configured company.").format(company))
+
+
 def get_template(company, statement_type, to_date, accounting_standard=None, required=True):
 	to_date = getdate(to_date)
 	if not accounting_standard:
-		accounting_standard = frappe.get_cached_doc("China Finance Settings", company).accounting_standard
+		accounting_standard = get_company_finance_settings(company).accounting_standard
 	filters = {
 		"accounting_standard": accounting_standard, "statement_type": statement_type,
 		"is_active": 1, "effective_from": ["<=", to_date],
@@ -148,6 +156,19 @@ def get_template(company, statement_type, to_date, accounting_standard=None, req
 			))
 		return None
 	return frappe.get_cached_doc("China Financial Statement Template", name)
+
+
+def _format_reclassification_warning(item):
+	reason = item["reason"]
+	# Database rules combine a template label with this suffix; translate each part.
+	if reason.endswith("余额展示调整"):
+		reason = _("{0}余额展示调整").format(_(reason.removesuffix("余额展示调整")))
+	else:
+		reason = _(reason)
+	source_detail = _("（科目：{0}）").format(item["source_account"]) if item.get("source_account") else ""
+	return _("{0}：{1}{2} {3} 已按报表展示规则列入 {4}；原始账务未改变。").format(
+		_(item["period"]), reason, source_detail, item["amount"], _(item["target_label"])
+	)
 
 
 def build_statement(
@@ -274,12 +295,7 @@ def build_statement(
 				)
 			)
 		for item in reclassifications:
-			source_detail = f"（科目：{item['source_account']}）" if item.get("source_account") else ""
-			warnings.append(
-				_("{0}：{1}{2} {3} 已按报表展示规则列入 {4}；原始账务未改变。").format(
-					item["period"], item["reason"], source_detail, item["amount"], item["target_label"]
-				)
-			)
+			warnings.append(_format_reclassification_warning(item))
 		row_by_code = {row.row_code: row for row in template.rows}
 		for rule in get_balance_sheet_reclassification_rules(company, template, to_date):
 			target_codes = rule.get("target_row_codes", (rule.get("target_row_code"),))

@@ -1,4 +1,11 @@
 frappe.query_reports["China Financial Statements"] = {
+	get_chart_data() {
+		const report = frappe.query_report;
+		// QueryReport empties the chart container without disconnecting the old
+		// chart's ResizeObserver. Dispose it before the framework replaces its SVG.
+		destroy_statement_chart(report);
+		return report.raw_data?.chart;
+	},
 	get_datatable_options(datatable_options) {
 		// Keep the same fixed-column table behavior as China Voucher Ledger.
 		// Wide statement tables scroll inside the report instead of resizing
@@ -9,6 +16,7 @@ frappe.query_reports["China Financial Statements"] = {
 	},
 	after_datatable_render(datatable) {
 		const report = frappe.query_report;
+		report.__china_statement_chart = report.chart;
 		report.page.main.find(".china-balance-sheet-panels").remove();
 		report.page.main.find(".china-balance-sheet-checks").remove();
 	report.page.main.find(".china-activity-balance-panel").remove();
@@ -50,6 +58,7 @@ frappe.query_reports["China Financial Statements"] = {
 	// The tree footer (Set Level / Expand All / Collapse All) only controls the
 	// hidden main datatable, so hide it as well; each panel has its own buttons.
 	after_refresh(report) {
+		if (!report.data?.length) destroy_statement_chart(report);
 		if (report.get_filter_value("statement_type") === "Balance Sheet") {
 			report.$report.hide();
 			report.$tree_footer?.hide();
@@ -119,6 +128,13 @@ frappe.query_reports["China Financial Statements"] = {
 		return value;
 	},
 };
+
+function destroy_statement_chart(report) {
+	const chart = report.__china_statement_chart || report.chart;
+	chart?.destroy();
+	if (report.chart === chart) report.chart = null;
+	report.__china_statement_chart = null;
+}
 
 function apply_balance_sheet_compact_style() {
 	if (document.getElementById("china-balance-sheet-compact-style")) return;
@@ -260,9 +276,9 @@ function get_period_options(fiscal_year, periodicity) {
 		return [1, 2, 3, 4].map((quarter) => make_period_option(start, end, (quarter - 1) * 3, 3, `第${quarter}季度`));
 	}
 	if (periodicity === "月度") {
-		return Array.from({ length: 12 }, (_, index) => make_period_option(start, end, index, 1, `第${index + 1}月`));
+		return Array.from({ length: 12 }, (_, index) => make_period_option(start, end, index, 1, __("第{0}月", [index + 1])));
 	}
-	return [{ label: "全年", from_date: start.format("YYYY-MM-DD"), to_date: end.format("YYYY-MM-DD") }];
+	return [{ label: __("全年"), from_date: start.format("YYYY-MM-DD"), to_date: end.format("YYYY-MM-DD") }];
 }
 
 function make_period_option(year_start, year_end, offset_months, duration_months, label) {
@@ -391,6 +407,9 @@ if (!frappe._china_fs_panels_cleanup_bound) {
 	frappe.router.on("change", () => {
 		const route = frappe.get_route();
 		if (route[0] !== "query-report" || route[1] !== "China Financial Statements") {
+			if (frappe.query_report?.__china_statement_chart) {
+				destroy_statement_chart(frappe.query_report);
+			}
 			$(".china-balance-sheet-panels").remove();
 			// Query Report reuses the same page container. Remove the report-only
 			// class immediately when navigating elsewhere, otherwise the compact

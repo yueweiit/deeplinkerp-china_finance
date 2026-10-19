@@ -2,7 +2,7 @@ import frappe
 from frappe import _
 from frappe.utils import cint, getdate, today
 
-from china_finance.services.financial_statement import get_template
+from china_finance.services.financial_statement import get_company_finance_settings, get_template
 from china_finance.services.statement_mapping_review import REVIEW_ROLES, set_mapping_reviewed
 from china_finance.services.account_display import (
 	get_account_display_label,
@@ -53,7 +53,7 @@ def get_mapping_console(company, statement_type, accounting_standard=None):
 		frappe.throw(_("未知的报表类型 {0}").format(statement_type))
 	if accounting_standard not in ("企业会计准则", "小企业会计准则"):
 		accounting_standard = None
-	settings = frappe.get_cached_doc("China Finance Settings", company)
+	settings = get_company_finance_settings(company)
 	report_effective_from = settings.statutory_reporting_activation_date or settings.activation_date
 	mapping_effective_from = settings.statement_mapping_activation_date or report_effective_from or TEMPLATE_EFFECTIVE_FROM
 	template = get_template(company, statement_type, today(), accounting_standard=accounting_standard)

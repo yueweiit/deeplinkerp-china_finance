@@ -33,7 +33,7 @@ class ChinaBankingPage {
 		});
 
 		this.$iframe = $('<iframe>', {
-			src: "/banking?embedded=1",
+			src: "/china_banking_embedded?embedded=1",
 			title: __("银行对账"),
 			class: "china-banking-embedded",
 			frameborder: "0",

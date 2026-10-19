@@ -524,7 +524,7 @@ def auto_create_voucher_on_submit(doc, method=None):
 				update_modified=False,
 			)
 		frappe.msgprint(
-			f"已为银行流水 {doc.name} 生成待审核记账凭证 {je.name}，请检查后手动提交",
+			_("已为银行流水 {0} 生成待审核记账凭证 {1}，请检查后手动提交").format(doc.name, je.name),
 			alert=True,
 		)
 
@@ -624,7 +624,7 @@ def repair_unlinked_bank_vouchers(company="悦为智能技术(东莞)有限公�
 	"""
 	frappe.only_for(("System Manager", "China Finance Manager"))
 	if company != "悦为智能技术(东莞)有限公司":
-		frappe.throw("此维护操作仅允许处理 aaa 的悦为智能技术(东莞)有限公司")
+		frappe.throw(_("此维护操作仅允许处理 aaa 的悦为智能技术(东莞)有限公司"))
 
 	if isinstance(references, str):
 		try:
@@ -833,5 +833,5 @@ def _get_valid_bank_account_gl(bank_account, company):
 def _validate_bank_account_company(bank_account, company):
 	account = _get_valid_bank_account_gl(bank_account, company)
 	if not account:
-		frappe.throw(f"银行账户 {bank_account} 未正确关联公司 {company} 的银行科目")
+		frappe.throw(_("银行账户 {0} 未正确关联公司 {1} 的银行科目").format(bank_account, company))
 	return account

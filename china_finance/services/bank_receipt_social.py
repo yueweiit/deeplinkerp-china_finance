@@ -1,5 +1,8 @@
 """Company-configured payroll contribution allocations from receipt details."""
 
+from frappe import _
+
+
 import hashlib
 import json
 import re
@@ -91,7 +94,7 @@ def social_suggestion(rule, data):
 	if data["direction"] != "支出" or not details or any(d["item"] not in SOCIAL_ITEMS for d in details):
 		return blocked("社保分摊只支持已配置的四类险种，请核对其他税费项目")
 	if sum(money(d["amount"]) for d in details) != money(data["amount"]):
-		frappe.throw("社保明细合计与银行付款不一致")
+		frappe.throw(_("社保明细合计与银行付款不一致"))
 	period = social_period(details, data["posting_date"])
 	if not period:
 		return blocked("社保所属时期缺失、无效或涉及多个月份，请按原件分期核对后手工制证并关联")
@@ -103,7 +106,7 @@ def social_suggestion(rule, data):
 		amount = money(detail["amount"])
 		percent = Decimal(str(rule.get(SOCIAL_ITEMS[detail["item"]]) or 0))
 		if not percent.is_finite() or not 0 <= percent <= 100:
-			frappe.throw("社保公司承担比例必须在 0 到 100 之间")
+			frappe.throw(_("社保公司承担比例必须在 0 到 100 之间"))
 		company_amount = (amount * percent / 100).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
 		personal_amount = amount - company_amount
 		company_total += company_amount
@@ -172,7 +175,7 @@ def housing_fund_suggestion(rule, data):
 	if data["direction"] != "支出" or not is_housing_fund_receipt(data):
 		return blocked("公积金分摊只支持明细全部为住房公积金的支出回单，请核对税费项目")
 	if details and sum(money(detail["amount"]) for detail in details) != money(data["amount"]):
-		frappe.throw("公积金明细合计与银行付款不一致")
+		frappe.throw(_("公积金明细合计与银行付款不一致"))
 	period = housing_fund_period(data)
 	if not period:
 		return blocked("公积金所属时期缺失、无效或涉及多个月份，请按原件分期核对后手工制证并关联")
@@ -184,9 +187,9 @@ def housing_fund_suggestion(rule, data):
 	try:
 		percent = Decimal(str(percent_value))
 	except InvalidOperation:
-		frappe.throw("公积金公司承担比例必须是有效数字")
+		frappe.throw(_("公积金公司承担比例必须是有效数字"))
 	if not percent.is_finite() or not 0 <= percent <= 100:
-		frappe.throw("公积金公司承担比例必须在 0 到 100 之间")
+		frappe.throw(_("公积金公司承担比例必须在 0 到 100 之间"))
 
 	breakdown = []
 	company_total = personal_total = Decimal("0.00")

@@ -4,6 +4,9 @@ Run through bench execute. This module intentionally exposes no delete endpoint:
 the inventory must first be reviewed against the actual server's business data.
 """
 
+from frappe import _
+
+
 from collections import Counter, defaultdict
 from datetime import date
 
@@ -29,10 +32,10 @@ def preview_finance_cleanup(company, from_date=None, to_date=None, cancelled_onl
 	frappe.only_for("System Manager")
 	company = str(company or "").strip()
 	if not company or not frappe.db.exists("Company", company):
-		frappe.throw("请指定已存在的公司完整名称，不支持简称或模糊匹配")
+		frappe.throw(_("请指定已存在的公司完整名称，不支持简称或模糊匹配"))
 	from_date, to_date = _date(from_date), _date(to_date)
 	if from_date and to_date and from_date > to_date:
-		frappe.throw("起始日期不能晚于截止日期")
+		frappe.throw(_("起始日期不能晚于截止日期"))
 	cancelled_only = bool(cint(cancelled_only))
 	sources = {}
 	for doctype, date_field in SOURCE_DATE_FIELDS.items():
@@ -180,7 +183,7 @@ def _date(value):
 	try:
 		return date.fromisoformat(str(value)).isoformat()
 	except ValueError:
-		frappe.throw("日期必须使用 YYYY-MM-DD 格式")
+		frappe.throw(_("日期必须使用 YYYY-MM-DD 格式"))
 
 
 def _scope_filters(company, date_field, from_date, to_date):
@@ -197,7 +200,7 @@ def _rows(doctype, filters, fields):
 		return []
 	rows = frappe.get_all(doctype, filters=filters, fields=fields, order_by="name", limit_page_length=MAX_RECORDS + 1)
 	if len(rows) > MAX_RECORDS:
-		frappe.throw(f"{doctype} 超过 {MAX_RECORDS} 条，请缩小日期范围；没有生成不完整的预览")
+		frappe.throw(_("{0} 超过 {1} 条，请缩小日期范围；没有生成不完整的预览").format(doctype, MAX_RECORDS))
 	return rows
 
 

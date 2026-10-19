@@ -1,0 +1,2393 @@
+6901 以前年度损益调整不得计入当期利润表，请使用前期差错更正记录进行严格追溯调整,6901 The profit and loss adjustment of previous years shall not be included in the current period Income Statement. Please use the error correction record of the previous period to make strict retrospective adjustments.
+A5 横向凭证 PDF 已生成,A5 Horizontal Voucher PDF Generated
+Excel 中存在未配置的科目：{0},There are unconfigured accounts in Excel: {0}
+Excel 生成失败，未返回文件链接,"Excel generation failed, no file link was returned"
+Excel 第 {0} 行在任何凭证之前出现了分录,Excel row {0} has an entry before any Voucher
+Excel 第 {0} 行的{1}不是有效金额：{2},{1} in Excel row {0} is not a valid amount: {2}
+Excel 第 {0} 行的凭证号无效：{1},The Voucher number in Excel row {0} is invalid: {1}
+Excel 第 {0} 行的日期和凭证号必须同时存在,The date and Voucher number in Excel row {0} must exist at the same time.
+Excel 第 {0} 行的日期无效：{1},Excel row {0} has an invalid date: {1}
+Excel 第 {0} 行贷方科目使用借方金额时必须为负数,Excel row {0} account Credit must be a negative number when using Debit amount
+Excel 缺少工作表：{0},Excel missing worksheet: {0}
+Excel导入：,Excel import:
+MIME 类型,MIME type
+PDF 生成失败，未返回文件链接,"PDF Generation failed, no file link was returned"
+POS 默认科目,POS default account
+aaa 在导入日期范围内已有 Journal Entry（{0}），为避免重复导入已停止,"aaa There is already a Journal Entry ({0}) within the import date range. To avoid repeated import, it has been stopped."
+aaa 招商银行公司账户数量异常：{0}，未自动修改,"aaa The number of China Merchants Bank corporate accounts is abnormal: {0}, not automatically modified"
+aaa 缺少 6602 管理费用父科目,aaa Missing 6602 management expense parent account
+aaa 缺少 660203 管理费用－物业管理费科目,aaa Missing 660203 Management expenses - property management fee account
+aaa 缺少悦为公司的 100201 银行科目,aaa The 100201 bank account of Yuewei Company is missing.
+aaa 缺少流动负债父科目,aaa Current liabilities parent account is missing
+records 必须是发票对象数组,records must be an array of invoice objects
+{0} · {1} 张回单 / {2} 笔交易 · 收入 {3} · 支出 {4}（按流水号去重合计）,{0} · {1} receipts / {2} transactions · Income {3} · Expenditure {4} (total after deduplication by serial number)
+{0} · {1}/{2} 张,{0} · {1}/{2} sheets
+{0} 不是支持的总账来源单据,{0} is not a supported source document for General Ledger
+{0} 不是模板 {1} 的有效行编码,{0} is not a valid line encoding for template {1}
+{0} 分录为空或借贷不平衡,{0} entry is empty or the debit and credit is unbalanced
+{0} 包含不同币种，不能合计；请按币种分别建立单据,{0} contains different currencies and cannot be totaled; please create separate documents according to currencies.
+{0} 只能选择明细项目，不能选择标题或公式行,"{0} Only detailed items can be selected, not titles or formula rows."
+{0} 存在取消、冲销或非标准快照，需单独处理,"{0} There is cancellation, Reversal or non-standard snapshot, which needs to be processed separately"
+{0} 尚未核对或内容已修改，请在查凭证中核对完成,{0} has not been verified or the content has been modified. Please check it in Voucher.
+{0} 已启用制单审核分离，但 Journal Entry 没有启用审批工作流,"{0} The separation of document production and review is enabled, but the approval workflow is not enabled for Journal Entry."
+{0} 已启用制单审核分离，但 {1} 没有启用审批工作流,"{0} has enabled the separation of document production and review, but {1} has not enabled the approval workflow."
+{0} 已经记账或作废，请刷新,"{0} has been Posting or is invalid, please refresh"
+{0} 应为科目编号 {1},{0} should be the account number {1}
+{0} 必须属于公司 {1},{0} must belong to the company {1}
+{0} 无法从 {1} 进入 {2}，请检查审批工作流配置,"{0} cannot enter {2} from {1}, please check the approval workflow configuration"
+{0} 清理后仍有残留，整批回滚,"{0} still remains after cleaning, the entire batch is rolled back"
+{0} 状态或核对版本已变化，请暂停后重新检查,"{0} The status or verification version has changed, please pause and check again."
+{0} 的凭证号不是从 1 连续排列：{1},The Voucher numbers of {0} are not consecutively arranged from 1: {1}
+{0} 的凭证日期/字号不是升序排列：{1},Voucher date/font size of {0} is not in ascending order: {1}
+{0} 的日期或字号信息不一致,{0} has inconsistent date or font size information
+{0} 的来源单据已不存在,The source document for {0} no longer exists
+{0} 的来源已取消、修订或日期不一致,"The source of {0} is canceled, revised, or inconsistently dated"
+{0} 笔,{0} pen
+{0} 笔需要人工处理，暂不生成凭证草稿。,"The {0} pen requires manual processing, and the Voucher draft will not be generated for the time being."
+{0} 超过 {1} 条，请缩小日期范围；没有生成不完整的预览,"{0} exceeds {1}, please narrow the date range; no incomplete preview is generated"
+{0}不能为负数,{0} cannot be a negative number
+{0}个人承担请选择本公司人民币其他应收款明细科目；需要逐人往来核算时请手工制证后关联,"{0} For personal responsibility, please select the company's other RMB receivables details account; if you need to calculate the transactions on a person-by-person basis, please manually prepare the certificate and then associate it."
+{0}分摊规则已变化，请刷新预览重新核对金额,"{0} The allocation rules have changed, please refresh the preview and recheck the amount"
+{0}分摊须为支出，公司承担科目须为费用科目,"{0} allocation must be expenditure, and the account borne by the company must be expense account"
+{0}已保存；如该凭证原已核对，请重新核对后记账,"{0} has been saved; if Voucher has been checked originally, please recheck Posting"
+{0}拆分需有效的公司分摊规则，并确认该所属期尚未计提,The split of {0} requires valid corporate apportionment rules and confirmation that no provision has been made for the period to which it belongs.
+{0}无效：{1},{0} is invalid: {1}
+{0}更正已完成，修订凭证 {1} 已重新记账,"{0} correction completed, revision Voucher {1} re-Posting"
+{0}模板与映射,{0} template and mapping
+{0}缺少报表行：{1},{0} Missing report row: {1}
+{0}至{1}损益结转,Profit and loss carry forward from {0} to {1}
+{0}计提请选择本公司启用的人民币负债明细科目；需要往来单位的科目请手工制证后关联,"For {0}, please select the RMB liability detail account enabled by our company; for accounts that require Party, please manually prepare the certificate and then associate it."
+{0}（请直接填写科目编码）,{0} (please fill in the subject code directly)
+{0}：{1} 对 {2}，差额 {3},"{0}: {1} to {2}, the difference is {3}"
+{0}：{1}{2} {3} 已按报表展示规则列入 {4}；原始账务未改变。,{0}: {1}{2} {3} has been included in {4} according to the report display rules; the original accounts have not changed.
+一个销售出库单不能混合直接确认应收和对账结算后确认应收的订单,A Delivery Note order cannot mix orders that directly confirm receivables and orders that confirm receivables after reconciliation and settlement.
+一次只能修改 1 至 {0} 项凭证内容,Only 1 to {0} items of Voucher content can be modified at a time
+一次最多处理 100 张凭证，请分批操作,"A maximum of 100 Voucher sheets can be processed at one time, please operate in batches"
+一次请选择 1 至 300 张草稿,Please select from 1 to 300 drafts at a time
+一般纳税人,General taxpayer
+万元,Ten thousand yuan
+上一版本政策,Previous version policy
+上一版本政策必须是同一公司、同一类别的已提交政策,The previous version of the policy must be a submitted policy of the same company and category
+上月,last month
+上月凭证,Last month Voucher
+上级科目,Advanced subjects
+上级科目 {0} 不是分组科目，不能新增下级科目,The superior account {0} is not a group account and cannot add subordinate accounts.
+上级科目 {0} 没有可用于自动编码的同级数字科目，请直接填写科目编码,Superior subject {0} There is no digital subject at the same level that can be used for automatic coding. Please fill in the subject code directly.
+上级科目与所选公司不一致,The upper-level account is inconsistent with the selected company
+下级科目名称/大类名称,Subordinate subject name/major category name
+下级科目名称不能只填写上级科目名称,The name of the subordinate subject cannot only fill in the name of the superior subject.
+下载 PDF,Download PDF
+不允许导出该类型的电子档案：{0},This type of electronic file is not allowed to be exported: {0}
+不含税金额,Amount excluding tax
+不存在,does not exist
+不得抵扣,No deduction allowed
+不得抵扣原因,Reasons for not being able to deduct
+不得抵扣必须填写原因,Reasons must be filled in if no deduction is allowed
+不支持修改该凭证字段,Modification of the Voucher field is not supported
+不支持的凭证类型,Unsupported Voucher type
+不支持的对账类型,Unsupported reconciliation type
+不支持的对账范围类型,Unsupported reconciliation scope type
+不支持的币种：{0},Unsupported currency: {0}
+不支持的结账类型：{0},Unsupported Period Closing type: {0}
+不满足修改条件,Modification conditions not met
+不能修改其他公司的重分类规则,The reclassification rules of other companies cannot be modified.
+不能手工填写回单处理结果,You cannot manually fill in the reply processing results
+不能手工填写识别结果,Recognition results cannot be filled in manually
+不能重排：{0},Cannot be rearranged: {0}
+不适用,Not applicable
+业务单据,Business documents
+业务单据分摊,Business document allocation
+业务单据分摊金额不能超过发票价税合计,The apportioned amount of business documents cannot exceed the total invoice price and tax
+业务单据类型,Business document type
+业务控制规则,business control rules
+业务类型,Business type
+业务类型和关键词至少填写一项,Fill in at least one item of business type and keywords
+业务类型（精确匹配）,Business type (exact match)
+业务编号,Business number
+业务规则,business rules
+严格追溯调整不得使用 6901 以前年度损益调整科目,Strict retrospective adjustment shall not use 6901 profit and loss adjustment accounts of previous years.
+严格追溯调整除未分配利润外，只能直接调整资产或负债科目：{0},"Strict retrospective adjustment, except for undistributed profits, can only directly adjust asset or liability accounts: {0}"
+个人承担,Personal responsibility
+个人承担科目（其他应收款）,Personal account (other receivables)
+中国会计准则四表一注正式输出就绪,China Accounting Standards 4 Table 1 Note is officially ready for output
+中国会计准则正式报表范围,Scope of official statements of China Accounting Standards
+中国会计凭证,China Accounting Voucher
+中国会计凭证冲销同步记录创建失败,China Accounting VoucherReversal synchronization record creation failed
+中国会计凭证冲销快照排队失败,China Accounting VoucherReversal snapshot queuing failed
+中国会计凭证冲销快照补齐失败,China Accounting VoucherReversal snapshot completion failed
+中国会计凭证分录数量与总账不一致：{0},The entry quantity of China Accounting Voucher is inconsistent with General Ledger: {0}
+中国会计凭证分录顺序与总账不一致：{0},The entry sequence of China Accounting Voucher is inconsistent with General Ledger: {0}
+中国会计凭证快照,China Accounting Voucher Snapshot
+中国会计政策,China accounting policies
+中国农业银行文字版回单 PDF,Agricultural Bank of China text version reply form PDF
+中国工商银行文字版回单 PDF,Industrial and Commercial Bank of China text version reply slip PDF
+中国科目模板,Chinese subject template
+中国科目模板及公司默认科目完整,Chinese account templates and company default accounts are complete
+中国科目模板档案,China Subject Template Archives
+中国税务发票,China tax invoice
+中国财务,China Finance
+中国财务关键配置完整,China's financial key configuration is complete
+中国财务工作台,China Financial Workbench
+中国财务报表,China financial statements
+中国财务结算,China Financial Settlement
+中国财务设置,China financial settings
+中国银行文字版回单 PDF,Bank of China text version reply slip PDF
+中国银行税费明细合计与交易金额不一致,The total tax details of Bank of China are inconsistent with the transaction amount
+中国银行税费明细无法完整识别,Bank of China tax details cannot be fully identified
+临时及待处理科目期末余额为零,The closing balance of temporary and pending accounts is zero
+主数据与业务默认科目,Master data and business default accounts
+主数据与业务默认科目已就绪,Master data and business default accounts are ready
+主要计量基础,Main measurement basis
+交易日无效：{0},Invalid trading day: {0}
+交易日期,transaction date
+交易日期无效,Transaction date is invalid
+交易日期格式不支持,Transaction date format is not supported
+交易日期止,until transaction date
+交易日期起,From transaction date
+交易日期起不能晚于交易日期止,The transaction date cannot be later than the transaction date
+交易流水号,Transaction serial number
+交易流水号无效,Transaction serial number is invalid
+交易身份,transaction identity
+交易金额,Transaction amount
+交易金额必须大于零,Transaction amount must be greater than zero
+人工维护,Manual maintenance
+仅保存草稿,Save draft only
+仅可结算已提交且非退货的销售出库单,Only Delivery Note orders that have been submitted and are not returned can be settled.
+仅已提交来源单据可以指定现金流量,Only submitted source documents can specify cash flows
+仅已提交的中国会计凭证可以指定现金流量项目,Only submitted China Accounting Voucher can specify cash flow items
+仅异常,Exceptions only
+仅影响报表展示，不修改总账、凭证和原始科目映射,"It only affects report display and does not modify General Ledger, Voucher and original account mapping."
+仅提示：,Tip only:
+仅用于“其中”类披露，不参与主项目公式汇总。,"It is only used for ""wherein"" disclosures and does not participate in the main item formula summary."
+仅草稿销售订单可覆盖结算模式,Only draft Sales Order can override settlement mode
+仅该日期及以后新建的销售订单可按客户规则启用对账结算模式。,Only Sales Order created on or after this date can enable the reconciliation settlement mode according to customer rules.
+仅过账凭证可以重新创建现金流量指定单,Only PostingVoucher can re-create the cash flow designation order
+仓库与库存估值科目,Warehouse and inventory valuation accounts
+仓库库存科目完整,Warehouse inventory accounts are complete
+付款,payment
+付款人,Payer
+付款分录只能指定到现金流出项目,Payment entries can only be assigned to cash outflow items
+付款单,payment order
+付款单须已提交；内部转账请人工对账,The payment order must have been submitted; internal transfers must be reconciled manually
+付款台账余额,Payment ledger balance
+付款开户行,Payment bank
+付款账号,Payment account
+以下凭证的总账撤销仍在后台处理：{0},The General Ledger undo of the following Voucher is still being processed in the background: {0}
+以下结账检查未通过：{0},The following Period Closing check failed: {0}
+以下草稿未纳入，试算不完整：{0},The following draft has not been included and the trial calculation is incomplete: {0}
+价税合计,Total price and tax
+价税合计分摊不一致,Total price and tax allocation is inconsistent
+企业会计准则,Accounting Standards for Business Enterprises
+优先级（数字越小越优先）,"Priority (the smaller the number, the higher the priority)"
+会计主管：__________,Accounting Supervisor:__________
+会计估计变更,Changes in accounting estimates
+会计准则,accounting standards
+会计分录,accounting entries
+会计分录加载失败，请刷新页面重试,"Accounting entries failed to load, please refresh the page and try again."
+会计年度,fiscal year
+会计政策内容,Accounting policy content
+会计政策变更,Changes in accounting policies
+会计政策采用的准则必须与公司中国财务设置一致,The principles adopted in accounting policies must be consistent with the company’s financial settings in China
+会计期间,accounting period
+会计期间必须为 YYYY-MM，例如 2026-05,"The accounting period must be YYYY-MM, for example, 2026-05"
+会计期间：,Accounting period:
+会计科目,Accounting account
+余额,Balance
+余额方向,Balance direction
+余额方向无效,Balance direction is invalid
+余额来源项目,Balance source item
+余额贡献,Balance contribution
+作为子行,as subrow
+作废,void
+作废人,invalidator
+作废原因,Reason for cancellation
+作废批次,Void batch
+作废时间,void time
+例如 2026-05,For example 2026-05
+供应商,Supplier
+保存,save
+保存中...,Saving...
+保存修改,Save changes
+保存前预览,Preview before saving
+保存后可查看完整科目性质和复核提示。,"After saving, you can view the complete account properties and review tips."
+保存后，提交结账凭证将生成会计分录,"After saving, submitting Period ClosingVoucher will generate accounting entries"
+保存并完成结账,Save and complete Period Closing
+保存并记账,Save and Posting
+保存并记账仅支持新建记账凭证，已有草稿请使用原审核流程,"Save and Posting only supports new PostingVoucher. If you already have a draft, please use the original review process."
+保存草稿,Save Draft
+保管至,Keep to
+修改后会更新整张收付款凭证的摘要,"After modification, the summary of the entire receipt and payment Voucher will be updated."
+修改订单结算模式必须填写原因,The reason must be filled in when modifying the order settlement mode
+修正手工现金流映射必须指定公司,Fix manual cash flow mapping must specify company
+修订凭证 {0} 已自动审核并记账,Revision Voucher {0} has been automatically reviewed and Posting
+修订凭证处理完成,Revision Voucher processing completed
+修订凭证已记账,Revised Voucher has been changed to Posting
+修订凭证未完成记账，全部修改已回滚,"Revision Voucher is not completed Posting, all modifications have been rolled back"
+修订凭证自动记账失败,Revision Voucher automatic Posting failed
+修订版,revised version
+修订自,Revised from
+借 {0} · 贷 {1} · 余额 {2},Debit {0} · Loan {1} · Balance {2}
+借方,Debit
+借方合计,DebitTotal
+借方金额,Debit amount
+借方金额和贷方金额不能同时为空或零,Debit amount and Credit amount cannot be empty or zero at the same time
+借方金额和贷方金额不能同时大于零,The Debit amount and the Credit amount cannot be greater than zero at the same time
+借方（科目币种）,Debit (account currency)
+借贷不平,Unequal loan
+借贷合计,Total loans and debits
+借贷平衡,loan balance
+允许对带有 Excel 导入或银行流水来源标识的记账凭证使用批量审核并记账，普通凭证仍按原审批流程处理。,"Batch review is allowed for PostingVoucher with Excel import or bank flow source identification, and ordinary Voucher will still be processed according to the original approval process."
+允许批量审核并记账,Allow batch review and posting
+元,Yuan
+入账状态,Accounting status
+全年,All year round
+全部有效凭证,All Valid Vouchers
+全部科目,All subjects
+公允价值,fair value
+公司,Company
+公司 {0} 尚未启用中国财务,Company {0} has not yet enabled China Finance
+公司 {0} 尚未启用批量审核并记账,Company {0} has not enabled batch review and Posting
+公司 {0} 尚未填写税号，是否前往公司资料填写？,Company {0} has not filled in the tax number. Do you want to go to the company information to fill it in?
+公司 {0} 已有业务数据或人工复核配置，禁止直接更新科目模板：{1},"Company {0} already has business data or manual review configuration, and it is prohibited to directly update the account template: {1}"
+公司 {0} 未启用中国财务设置,Company {0} does not have China financial settings enabled
+公司 {0} 未维护税号，请先在公司资料中填写税号,The company {0} has not maintained a tax number. Please fill in the tax number in the company information first.
+公司 {0} 的科目编号 {1} 存在重复,The account number {1} of company {0} is duplicated
+公司 {0} 缺少科目 {1},Company {0} missing account {1}
+公司不存在,The company does not exist
+公司不存在：{0},The company does not exist: {0}
+公司尚未启用中国财务,The company has not yet enabled China Finance
+公司承担,The company bears
+公司未使用受支持的中国标准科目模板，继续使用旧版兼容逻辑。,The company is not using the supported Chinese standard account templates and continues to use legacy compatibility logic.
+公司未使用受支持的中国科目模板,Company is not using a supported China account template
+公司比例,company ratio
+公司科目模板不能与上级公司同时使用,The company account template cannot be used at the same time as the parent company
+公司科目编号重复，不能更新模板：{0},The company account number is duplicated and the template cannot be updated: {0}
+公司还有进行中的月末结账：{0},The company also has ongoing month-end Period Closing: {0}
+公司默认科目,Company default account
+公司默认科目 {0} 应为 {1},The company's default account {0} should be {1}
+公司：,Company:
+公式,formula
+公式汇总项目,Formula summary items
+公式行必须填写公式,The formula line must be filled in with the formula
+公积金,provident fund
+公积金公司承担比例必须在 0 到 100 之间,Provident fund company contribution ratio must be between 0 and 100
+公积金公司承担比例必须是有效数字,The provident fund company’s share must be a valid figure
+公积金公司承担（%）,Provident fund company borne (%)
+公积金分摊,Provident fund allocation
+公积金明细合计与银行付款不一致,The total provident fund details are inconsistent with the bank payment
+共 {0} 条分录,A total of {0} entries
+共发现 {0} 个异常,A total of {0} anomalies were found
+关联修订凭证,Associated revision Voucher
+关联凭证,Associated Voucher
+关联单据,Related documents
+关联单据类型,Related document types
+关联已有凭证,Already associated with Voucher
+"关联已有凭证
+{0}",Already associated with Voucher {0}
+关联开票申请必须为已审批状态,The associated invoicing application must be in the approved status
+关联方及关联交易,Related parties and related transactions
+关联记录在扫描期间发生变化，请重新执行,"The associated records changed during the scan, please execute again."
+关键字,Keywords
+关键设置已完成,Key settings completed
+关键词,keywords
+关闭后供应商对账范围不纳入月结强制覆盖；已有供应商对账单不会删除。,"After closing, the Supplier reconciliation range will not be included in the compulsory monthly settlement coverage; existing Supplier statements will not be deleted."
+关闭后客户对账范围不纳入月结强制覆盖；已有客户对账单不会删除。,"After closing, the scope of customer reconciliation will not be included in the mandatory coverage of monthly statements; existing customer statements will not be deleted."
+关闭后银行对账范围不纳入月结强制覆盖；已有银行对账单不会删除。,"After closing, the bank reconciliation scope will not be included in the mandatory coverage of monthly statements; existing bank statements will not be deleted."
+其他,Others
+其他会计维度,Other accounting dimensions
+其他经营性调整,Other operating adjustments
+其他重要事项,Other important matters
+养老保险公司承担（%）,Pension insurance company borne (%)
+内部复核,internal review
+内部复核原因,Reason for internal review
+内部复核必须填写原因,Reasons must be filled in for internal review
+内部复核必须填写原因后才能提交,Internal review must be filled in with reasons before it can be submitted.
+内部正常余额方向,Internal normal balance direction
+内部用于根据总账借贷计算余额符号；控制台按正负号展示。,Internally used to calculate the balance sign based on General Ledger debit and credit; the console displays the positive and negative signs.
+内部编号规则,Internal numbering scheme
+内部资金划转（不计入现金流量表）,Internal fund transfer (not included in Cash Flow Statement)
+农业银行回单币种不是人民币,Agriculture Bank Receipt currency is not RMB
+冲突,conflict
+冲销 {0},Reversal {0}
+冲销原凭证,ReversalOriginalVoucher
+冲销同步记录与来源单据不匹配,Reversal synchronization record does not match the source document
+冲销审计快照,Reversal audit snapshot
+冲销审计快照待补齐：{0},Reversal audit snapshot needs to be completed: {0}
+冲销审计快照或来源凭证状态不完整，不能标记同步完成,Reversal audit snapshot or source Voucher status is incomplete and cannot mark synchronization completed
+净利润,net profit
+净利润与权益变动衔接,Linkage between net profit and equity changes
+净利率,net profit margin
+凭证 {0} 不存在,Voucher {0} does not exist
+凭证 {0} 不是 Excel 导入或银行流水生成的凭证，快捷处理已停止,"Voucher {0} is not Voucher generated by Excel import or bank flow, and the quick processing has been stopped."
+凭证 {0} 不是未记账草稿，不能直接删除,Voucher {0} is not an unPosting draft and cannot be deleted directly.
+凭证 {0} 不是草稿，不能重复处理,Voucher {0} is not a draft and cannot be processed repeatedly.
+凭证 {0} 与银行流水所属公司不一致,Voucher {0} is inconsistent with the company to which the bank statement belongs.
+凭证 {0} 借贷不平衡，差额为 {1},"Voucher {0} The loan is unbalanced, the difference is {1}"
+凭证 {0} 关联的银行流水不存在,Voucher {0} The associated bank statement does not exist
+凭证 {0} 关联的银行流水尚未提交,Voucher {0} The associated bank statement has not yet been submitted.
+凭证 {0} 尚未记账或缺少有效会计快照,Voucher {0} Not yet Posting or missing valid accounting snapshot
+凭证 {0} 已经生成中国会计凭证，不能重复处理,Voucher {0} has already generated Chinese Accounting Voucher and cannot be processed repeatedly.
+凭证 {0} 已被退回，请先重新提交审核,"Voucher {0} has been returned, please resubmit for review first"
+凭证 {0} 当前状态为 {1}，不能使用批量审核并记账,"Voucher {0} The current status is {1}, batch review cannot be used and Posting"
+凭证 {0} 未完成记账，当前状态为 {1},"Voucher {0} Unfinished Posting, current status is {1}"
+凭证 {0} 没有会计分录,Voucher {0} No accounting entries
+凭证与结账,Voucher and Period Closing
+凭证保存失败，请检查后重试,"Voucher failed to save, please check and try again"
+凭证保存失败，请检查必填项和校验提示,"Voucher failed to save, please check the required fields and verification prompts"
+凭证保存尚未完成，请检查必填项和校验提示,"Voucher saving has not been completed, please check the required fields and verification prompts"
+凭证信息,Voucher information
+凭证修改尚未保存，请检查保存提示后重试,"Voucher modifications have not been saved, please check the save prompt and try again"
+凭证修改已保存,Voucher modification saved
+凭证修改数据不完整，请刷新后重试,"Voucher modified data is incomplete, please refresh and try again"
+凭证公司不一致或凭证已取消,Voucher company is inconsistent or Voucher has been canceled
+凭证内容已修改但尚未保存,Voucher content has been modified but not saved yet
+凭证准备字段和导航已更新；请在中国财务设置中选择生效日期并启用。,Voucher Preparation fields and navigation have been updated; please select the effective date in China Financial Settings and enable it.
+凭证准备模式生效日期,Voucher preparation mode effective date
+凭证准备模式设置,Voucher preparation mode setting
+凭证分录,Voucher entry
+凭证号,No. Voucher
+凭证号：,Voucher number:
+凭证唯一键,Voucher unique key
+凭证字,Voucher words
+凭证字号,Voucher Prefix
+凭证字号：{0},VoucherFont size: {0}
+凭证字模式,Voucher Prefix Mode
+凭证尚未核对，或核对后内容已改变。请在查凭证中重新核对后记账。,"Voucher has not been verified, or the content has changed after verification. Please check Posting again in Voucher."
+凭证工作表表头不符合预期：{0},Voucher worksheet header does not meet expectations: {0}
+凭证已保存并记账,Voucher saved and Posting
+凭证已关联银行回单，银行金额或方向不能与原回单不一致,Voucher has been associated with Bank Receipt. The bank amount or direction cannot be inconsistent with the original receipt.
+凭证已参与银行对账（银行流水 {0}），请先执行“取消银行交易流水核销”后再取消凭证,"Voucher has participated in bank reconciliation (bank transaction {0}), please execute ""Cancel bank transaction Reconciliation"" first and then cancel Voucher"
+凭证已取消或缺失,Voucher has been canceled or missing
+凭证已完成银行清账，请先撤销银行对账,"Voucher has completed bank reconciliation, please cancel the bank reconciliation first"
+凭证已完成银行清账，请先撤销银行对账后再取消凭证,"Voucher has completed bank reconciliation, please cancel the bank reconciliation first and then cancel Voucher"
+凭证已被修改，请刷新并重新核对,"Voucher has been modified, please refresh and recheck"
+凭证已被其他人修改，请刷新后重试,"Voucher has been modified by others, please refresh and try again"
+凭证已被退回，请先修改后重新提交审核,"Voucher has been returned, please modify it first and then resubmit it for review."
+凭证已记账，但总账仍在后台处理中，请稍后刷新查看,"Voucher has been changed to Posting, but General Ledger is still being processed in the background. Please refresh to view later."
+凭证已记账，开始损益结转,"Voucher has been Posting, start profit and loss carryover"
+凭证已记账，银行对账未恢复,"Voucher has been Posting, bank reconciliation has not been restored"
+凭证快照与分录哈希一致,Voucher snapshot is consistent with the entry hash
+凭证快照同步异常,Voucher snapshot synchronization exception
+凭证或编号序列已变化，请重新预览,"Voucher or the numbering sequence has changed, please preview again"
+凭证日期,VoucherDate
+凭证日期 {0} 已被冻结（冻结至 {1}）,Voucher date {0} has been frozen (frozen to {1})
+凭证明细与历史,Voucher Details and History
+凭证没有匹配的人民币银行分录,Voucher does not have a matching RMB bank entry
+凭证的银行金额或收支方向与回单不一致，不可关联,The bank amount or payment direction of Voucher is inconsistent with the receipt and cannot be associated.
+凭证类型,Voucher type
+凭证编号,Voucher number
+凭证范围检查完成，开始月末记账,"Voucher range check completed, start month end Posting"
+凭证草稿删除完成（部分失败）,Voucher draft deletion completed (partial failure)
+凭证草稿已删除,VoucherDraft deleted
+凭证记账完成，检查核销和现金流,"VoucherPosting completed, check Reconciliation and cash flow"
+出库单,Outbound order
+出库单价,Outbound unit price
+出库截止日期,Exit deadline
+出库数量,Outbound quantity
+出库日期,Shipping date
+出库起始日期,Shipping start date
+出纳：__________,Cashier:__________
+分录合计与银行交易金额不一致,Entry total is inconsistent with bank transaction amount
+分录哈希,Entry hash
+分摊不含税金额,Apportionment of tax-exclusive amount
+分摊价税合计,Total price and tax apportionment
+分摊税额,Apportioned tax amount
+分摊金额,Apportioned amount
+列报项目,Presentation items
+创建开票申请,Create an invoicing request
+创建现金流量指定,Create a cash flow assignment
+创建科目,Create account
+创建进项税抵扣批次,Create Input VAT deduction batch
+创建销售结算单,Create sales settlement document
+删除,Delete
+删除失败,Delete failed
+删除所选未记账草稿,Delete selected unPosting drafts
+判定人,adjudicator
+判定时间,Decision time
+利润与权益衔接,The connection between profit and equity
+利润分配科目,Profit distribution account
+利润表,Income Statement
+利润表净利润与所有者权益变动表衔接,Income Statement The connection between net profit and the statement of changes in owners’ equity
+利润表有 {0} 个项目出现负数发生额，请关注红字、冲销或科目映射：{1},"Income Statement has {0} items with negative balances, please pay attention to Credit, Reversal or account mapping: {1}"
+制单人,Maker
+制单：,Order making:
+制造成本/库存估值科目无效：{0},Invalid manufacturing cost/inventory valuation account: {0}
+制造成本和库存估值科目可用,Manufacturing cost and inventory valuation accounts are available
+刷新处理状态,Refresh processing status
+刷新银行对账快照,Refresh bank reconciliation snapshot
+前期差错原因及更正说明,Causes and corrections of previous errors
+前期差错更正,Early error correction
+前期差错更正已复核,Correction of previous errors has been reviewed
+前期差错更正已审批并附依据,Early error corrections have been approved with evidence attached
+剩余可红冲金额,Remaining redundant amount
+剩余可结算数量,Remaining settlement quantity
+功能未启用，不阻断结账,The function is not enabled and Period Closing is not blocked.
+加粗,Bold
+勾选人,Check people
+勾选时间,Check time
+包含不同币种，金额按各行币种列示；未进行汇率换算，不显示跨币种合计。,"Including different currencies, the amounts are listed according to the currency of each row; no exchange rate conversion is performed, and cross-currency totals are not displayed."
+匹配状态,match status
+匹配说明,Match description
+医疗保险公司承担（%）,Medical insurance company borne (%)
+千元,Thousand yuan
+单一科目,single subject
+单价,unit price
+单位,Unit
+单位：元,Unit: Yuan
+单据,Document
+单据尚未完成审核，不能记账,The document has not yet been reviewed and cannot be Posting
+单据类型,Document type
+单次支持 1—100 页回单,Supports 1-100 page responses at a time
+单次最多支持 300 张回单,Supports up to 300 replies at a time
+历史成本,historical cost
+历史补回单,Historical replenishment order
+历史补回单模式不允许生成新凭证,The historical compensation order mode does not allow the generation of new Voucher
+历史补回单模式请关联已有凭证,"For historical replenishment order mode, please associate the existing Voucher"
+历史财务单据币种需要核对,The currency of historical financial documents needs to be checked
+原件 SHA-256,Original SHA-256
+原件内容已变化，请作废批次后重新上传,The content of the original document has changed. Please cancel the batch and upload it again.
+原件第 {0} 页第 {1} 张,"Original page {0}, sheet {1}"
+原件页码,Original page number
+原凭证 {0} 借贷不平：借方 {1}，贷方 {2},"Original Voucher {0} Loan imbalance: Debit {1}, Credit {2}"
+原凭证 {0} 没有有效分录,Original Voucher {0} has no valid entries
+原凭证冲销审计记录生成失败，全部修改已回滚,The original VoucherReversal audit record generation failed and all modifications have been rolled back.
+原凭证取消尚未完成，请稍后再试,"The original Voucher cancellation has not been completed, please try again later."
+原凭证已取消或缺失，请选择修订后的凭证并填写重新关联说明，禁止自动重复制证,The original Voucher has been canceled or missing. Please select the revised Voucher and fill in the re-association instructions. Automatic duplication of certificates is prohibited.
+原凭证已取消，修订凭证 {0} 已生成草稿；修改并保存后将自动审核并记账,"The original Voucher has been cancelled, and the revised Voucher {0} has generated a draft; after modification and saving, it will be automatically reviewed and Posting"
+原凭证：{0},Original Voucher: {0}
+原因,Reason
+原始已提交 Posting 快照分录或会计维度无效，不能生成冲销审计快照,"The original submitted Posting snapshot entry or accounting dimension is invalid, and Reversal audit snapshot cannot be generated."
+原始流水文件必须作为当前银行对账单导入记录的附件上传。,The original statement file must be uploaded as an attachment to the current bank statement import record.
+原批次凭证 {0} 状态异常，请核对历史处理记录,"The status of the original batch Voucher {0} is abnormal, please check the historical processing records"
+原草稿 {0} 已删除，可重新生成,The original draft {0} has been deleted and can be regenerated.
+原蓝票,original blue ticket
+原蓝票必须已提交且为蓝票,The original blue ticket must have been submitted and is a blue ticket
+原错报期间截止日,End date of the original misstatement period
+反结账,Anti-Period Closing
+反结账人,Anti-Period Closing people
+反结账原因,Anti-Period Closing reasons
+反结账原因不能超过 500 个字符,Anti-Period Closing reason cannot exceed 500 characters
+反结账失败,Anti-Period Closing failed
+反结账必须填写原因,Anti-Period Closing must fill in the reason
+反结账时间,Counter Period Closing time
+反结账期间：,During anti-Period Closing:
+反结账检查失败,Anti-Period Closing check failed
+发现不在 2026 年 5、6 月范围内的凭证：{0},Found Voucher that is not within the range of May and June 2026: {0}
+发生额及余额表,Amount and Balance Statement
+发票代码,Invoice code
+发票信息,Invoice information
+发票号码,Invoice number
+发票唯一键,Invoice unique key
+发票张数,Number of invoices
+发票明细,Invoice details
+发票类型,Invoice type
+发票金额,Invoice amount
+取消,Cancel
+取消人,canceller
+取消原因,Reason for cancellation
+取消复核,Cancel review
+取消必须填写原因,Reason for cancellation is required
+取消批次,Cancel batch
+取消抵扣批次,Cancel the deduction batch
+取消抵扣批次必须填写原因,The reason must be filled in to cancel the deduction batch
+取消时间,Cancellation time
+取消申请,Cancel application
+受控采购已完成齐套校验,Controlled procurement has completed complete verification
+受限原因,Reason for restriction
+受限资金,restricted funds
+受限资金必须填写受限原因,Restricted funds must fill in the reason for restriction
+变更原因,Reason for change
+变更类型,Change type
+只支持新建记账凭证的保存并记账,Only supports saving the new PostingVoucher and Posting
+只有中国财务管理员可以确认内部复核,Only the China Financial Administrator can confirm internal reviews
+只有已作废的现金流量指定单可以重新创建,Only voided cash flow orders can be re-created
+只有已保存的修订草稿才能自动审核并记账,Only saved revised drafts can be automatically reviewed and Posting
+只有已勾选抵扣批次可以确认抵扣,Only the deduction batches that have been checked can confirm the deduction.
+只有已审批开票申请可以生成税务发票草稿,Only approved invoicing applications can generate draft tax invoices
+只有已结账的月末结账单可以反结账,Only Period Closing orders at the end of the month that have been Period Closing can be reversed to Period Closing
+只有已选择银行账户的银行对账单可以生成快照,Only bank statements for selected bank accounts can generate snapshots
+只有已通过检查并提交的期末智能结转可以生成正式法定财务报表,Only period-end smart carryforwards that have been reviewed and submitted can generate formal statutory financial statements.
+只有待处理差异可以变更状态,Only pending differences can change status
+只有待审批开票申请可以审批,Only pending invoicing applications can be approved
+只有待审批开票申请可以驳回,Only invoicing applications pending approval can be rejected
+只有未记账草稿可以直接删除；已记账或已取消凭证必须保留审计记录,Only unPosting drafts can be deleted directly; Posting or canceled Voucher audit records must be retained.
+只有草稿开票申请可以提交,Only draft invoicing requests can be submitted
+只有草稿或已勾选抵扣批次可以取消,Only drafts or batches with deductions checked can be canceled
+只有草稿抵扣批次可以勾选,Only draft deduction batches can be checked
+只有草稿状态的月末结账单可以确认结账,Only the month-end Period Closing order in draft status can confirm Period Closing
+只有草稿现金流量指定单可执行此操作,Only draft cash flow orders can perform this operation
+只有财务经理可以豁免采购齐套校验,Only the financial manager can be exempted from purchasing complete set verification
+只有账面或银行时间性差异可以批准跨期跟踪,Only book or bank timing differences can be approved for intertemporal tracking
+只能保存并记账草稿凭证,Can only save and draft PostingVoucher
+只能回填关联开票申请的税务发票草稿,Only draft tax invoices associated with invoicing applications can be backfilled.
+只能打印已提交的凭证，请取消勾选草稿或已取消的凭证,"Only submitted Voucher can be printed, please uncheck the draft or canceled Voucher"
+只能豁免草稿供应商对账单中的采购拦截明细,Only the purchase interception details in the draft Supplier statement can be exempted
+只能选择币种为 {0} 的科目,Only accounts whose currency is {0} can be selected
+只能选择本公司启用的明细科目,Only detailed accounts enabled by our company can be selected.
+只补齐空白的默认科目、税务建议、现金范围和收付款方式科目，不会覆盖已有配置或创建业务主数据。是否继续？,"Only the blank default accounts, tax advice, cash range and payment method accounts are filled in, and the existing configuration or business master data will not be overwritten. Continue?"
+可变现净值,net realizable value
+可选，例如：已按 2026 年会计政策复核。,"Optional, for example: Reviewed against 2026 accounting policy."
+合并开票申请必须属于同一公司,Combined billing applications must belong to the same company
+合并开票申请必须属于同一客户,Combined billing applications must belong to the same customer
+合并结算的销售出库单必须使用相同的税费模板、税务类别和价目表,"The Delivery Note order for consolidated settlement must use the same tax template, tax category and price list"
+合计,total
+同一凭证字段不能重复提交,The same Voucher field cannot be submitted repeatedly
+同一文件存在同号但金额、日期或收支方向不同的回单,"The same document contains receipts with the same number but different amounts, dates, or payment directions."
+同一流水号存在多条银行交易，请先核对重复数据,"There are multiple bank transactions with the same serial number, please check for duplicate data first"
+同时补建银行交易（用于后续核销）,"At the same time, add bank transactions (for subsequent Reconciliation)"
+同步科目配置,Synchronize account configuration
+后台未生成修订凭证，全部修改已回滚,Revision Voucher was not generated in the background and all modifications have been rolled back.
+含未记账凭证的科目余额试算,Trial calculation of account balances including PostingVoucher
+启用,Enabled
+启用与基础设置,Enable and basic settings
+启用中国财务,Enable China Finance
+启用凭证准备与月末记账,Enable Voucher ready to end Posting
+启用前必须为来源单据配置审批工作流。未启用时仍会在结账就绪度中提示。,"The approval workflow must be configured for the source document before enabling it. When it is not enabled, it will still be prompted in the Period Closing readiness level."
+启用后显示为前一父行的子项,"When enabled, appear as children of the previous parent row"
+启用后科目配置完整,"After activation, the account configuration is complete"
+启用对账结算后确认应收时必须设置切换生效日期,"When confirming receivables after enabling reconciliation settlement, the switching effective date must be set"
+启用日后有 {0} 张含外部现金流的凭证未确认指定，金额 {1},"After the activation date, there will be {0} and Voucher containing external cash flows that have not been confirmed and designated, and the amount is {1}."
+启用日后现金流量项目均已确认指定,All future cash flow projects have been confirmed and designated.
+启用日期,Activation date
+启用永续库存时，仓库必须绑定可用库存科目；缺少 {0} 个,"When enabling perpetual inventory, the warehouse must be bound to available inventory accounts; {0} are missing"
+启用职责分离时，现金流量指定人与确认人不能为同一用户,"When separation of duties is enabled, the cash flow designator and confirmer cannot be the same user."
+周悦,Zhou Yue
+响应摘要,Response summary
+四类现行模板可用,Four categories of current templates are available
+四类财务报表均已配置并复核科目映射,All four types of financial statements have been configured and account mapping reviewed
+回单仍有待处理项：{0},There are still pending items for the reply order: {0}
+回单处理状态,Reply processing status
+回单已关联其他银行交易，请先核对原交易,"The reply has been linked to other bank transactions, please check the original transaction first"
+回单币种与银行账户不一致,The currency of the receipt is inconsistent with the bank account
+回单批次,Reply batch
+回单批次与公司不一致,The reply batch is inconsistent with the company's
+回单明细,Reply details
+回单明细合计与交易金额不一致,The total number of receipt details is inconsistent with the transaction amount
+回单本方户名与公司名称不一致，请核对公司及银行账户,The account name of the party on the reply is inconsistent with the company name. Please check the company and bank account.
+回单本方账号与所选银行账户不一致,The account number of the party who responded to the order is inconsistent with the selected bank account.
+回单编号,Reply number
+回单行不存在或重复，请刷新,"The reply line does not exist or is duplicate, please refresh"
+回单记录只能通过回单导入的确认操作维护,Reply order records can only be maintained through the confirmation operation of reply order import.
+回填必须提供发票号码和开票日期,The backfill must provide the invoice number and billing date
+回款状态,Payment status
+固定资产,fixed assets
+固定资产及在建工程说明,Description of fixed assets and projects under construction
+固定资产折旧、使用权资产折旧及无形资产摊销,"Depreciation of fixed assets, depreciation of right-of-use assets and amortization of intangible assets"
+基础设置,Basic settings
+填写处理单据时必须选择单据类型,You must select the document type when filling in the processing document
+增值税专用发票,Special value-added tax invoice
+增值税普通发票,General VAT invoice
+增减率,increase or decrease rate
+增减额,Increase or decrease
+处理 {0} 项，创建 {1} 张，已存在 {2} 张，失败 {3} 项,"Process the {0} item, create {1} sheets, {2} sheets already exist, and fail the {3} item"
+处理人,Processor
+处理单据,Processing documents
+处理单据类型,Processing document types
+处理原因,Processing reason
+处理原因不能超过 500 个字符,Reason for processing cannot exceed 500 characters
+处理失败,Processing failed
+处理异常,Handle exceptions
+处理批次,process batch
+处理方式,Processing method
+处理时间,processing time
+处理期限,processing period
+处理状态,Processing status
+处理结果,Processing results
+处理记录,processing records
+处理说明,Processing Instructions
+处理进度,Processing progress
+处理阶段,processing stage
+处理附件,Handle attachments
+备注,Remarks
+复核,Review
+复核人,reviewer
+复核指引,Review Guidelines
+复核时间,Review time
+复核说明,Review instructions
+外币折算,Foreign currency conversion
+外部客户确认,External customer confirmation
+外部客户确认必须上传回函、邮件或平台文件后才能提交,"External customers confirm that they must upload a reply letter, email or platform file before submission"
+外部确认或银行对账必须上传确认附件,External confirmation or bank reconciliation must upload confirmation attachments
+失业保险公司承担（%）,Unemployment insurance company borne (%)
+失效日期,Expiration date
+失效日期不能早于生效日期,Expiration date cannot be earlier than effective date
+失败 {0} 张,Failed {0} Zhang
+存在 {0} 组重复报表科目映射,Duplicate report account mapping for group {0} exists
+存在已审批前期差错更正，附注必须披露更正原因及比较数据影响,"If there is an approved error correction in the previous period, the note must disclose the reason for the correction and the impact of the comparative data."
+存在无效或重复字号，不能自动重排,There are invalid or duplicate font sizes and cannot be automatically rearranged.
+存在无权查看的疑似凭证，请财务管理员核对,There is a suspected Voucher that you do not have permission to view. Please check with the financial administrator.
+存在旧损益结转,There is old profit and loss carry forward
+存在更早期间的未记账凭证，请先核对并处理,"There is an earlier period of unresolved PostingVoucher, please check and deal with it first"
+存在未齐套的采购发票，不能确认对账单：{0},There are incomplete purchase invoices and the statement cannot be confirmed: {0}
+存在疑似已有凭证，请先关联核对；若均非本笔业务，请手工制证后关联,"There is a suspected Voucher, please contact and check first; if it is not this business, please manually create a certificate and then contact"
+存在需管理员核对的凭证,There is Voucher that needs to be checked by the administrator.
+存货,Inventory
+存货余额,inventory balance
+存货变动,Inventory changes
+存货说明,Stock description
+季度,quarter
+完成时间,completion time
+完整识别数据,Complete identification data
+实际现金分录与已核对草稿不同，请核对现金流项目,"Actual cash entries differ from reconciled draft, please reconcile cash flow items"
+审批,Approval
+审批人,approver
+审批时间,Approval time
+审批记录,Approval records
+审批附件,Approval attachments
+审核人,reviewer
+审核：,Review:
+审计与归档,Audit and Archiving
+审计准备,Audit preparation
+审计快照尚未生成,Audit snapshot has not been generated yet
+审计快照尚未生成，且来源单据没有可用总账分录,"The audit snapshot has not been generated, and the source document has no General Ledger entry available."
+客户,Customer
+客户、供应商和银行对账范围已按设置配置,"Customer, Supplier and bank reconciliation scopes are configured as per settings"
+客户名称,Customer name
+客户和供应商对账必须选择外部确认或内部复核,The customer must choose external confirmation or internal review for reconciliation with Supplier
+客户或供应商对账必须选择往来单位,Customer or Supplier reconciliation must select Party
+客户确认材料,Customer confirmation materials
+对应记账凭证,Corresponds to PostingVoucher
+对方 / 摘要,Opponent/Abstract
+对方名称,Name of the other party
+对方确认余额,The other party confirms the balance
+对方科目,Opponent's subjects
+对象类型,Object type
+对账,Reconciliation
+对账单,statement
+对账单与对账范围不一致,The statement is inconsistent with the reconciliation scope
+对账容差不能小于零,Reconciliation tolerance cannot be less than zero
+对账对象,Reconciliation object
+对账差异必须登记差异事项，且差异事项金额合计应等于对账差异,"Reconciliation differences must register discrepancies, and the total amount of discrepancies should be equal to the reconciliation discrepancy"
+对账差异状态只能通过差异处理服务变更,Reconciliation difference status can only be changed through the difference processing service
+对账明细,Reconciliation details
+对账状态,Reconciliation status
+对账策略,Reconciliation strategy
+对账类型,Reconciliation type
+对账结算后确认应收,Confirm receivables after reconciliation and settlement
+对账结算模式切换生效日期,Effective date of reconciliation settlement mode switching
+对账结算模式的销售出库必须通过已审批的销售结算单生成正式销售发票,Delivery Note in reconciliation settlement mode must generate a formal sales invoice through the approved sales settlement document
+对账结算销售出库已完成正式应收确认,Reconciliation settlement Delivery Note has completed formal receivable confirmation
+对账范围,Reconciliation scope
+对账范围与公司或对账类型不一致,The reconciliation scope is inconsistent with the company or reconciliation type
+对账范围配置,Reconciliation scope configuration
+对账金额容差,Reconciliation amount tolerance
+对账金额容差必须大于零,Reconciliation amount tolerance must be greater than zero
+对账金额容差无效,Reconciliation amount tolerance is invalid
+导入凭证快捷处理失败：{0},Failed to import Voucher shortcut processing: {0}
+导出,Export
+导出 Excel,Export to Excel
+导出 PDF,Export PDF
+小企业会计准则,Small Business Accounting Standards
+小规模纳税人,small taxpayer
+小规模纳税人不要求配置进项税抵扣科目,Small-scale taxpayers are not required to configure the Input VAT deduction account
+尚未启用生产业务；BOM、工序和工作站不会自动创建,"The production business has not been enabled; BOM, processes and workstations will not be automatically created"
+尚未启用银行或收付款方式,No bank or payment method enabled yet
+尚未建立仓库，暂不检查库存科目,"The warehouse has not been established yet, so the inventory account will not be checked yet."
+尚未配置或使用该业务模块,This business module has not been configured or used yet
+尚未配置现金及现金等价物范围,The scope of cash and cash equivalents has not been allocated yet
+展开往来明细,Expand transaction details
+展示列入项目,Display included projects
+展示调整规则 {0} 的目标项目不存在，已保留原始余额。,The target item displaying adjustment rule {0} does not exist and the original balance has been retained.
+展示调整规则已保存,Impression adjustment rules saved
+工伤保险公司承担（%）,Work-related injury insurance company (%)
+差异,difference
+差异原因,Reason for difference
+差异来源,source of difference
+差异类型,Difference type
+差异说明,Difference description
+差异金额,Difference amount
+差异金额不能为零,Difference amount cannot be zero
+差错更正,error correction
+差额,difference
+已为银行流水 {0} 生成待审核记账凭证 {1}，请检查后手动提交,PostingVoucher {1} has been generated for bank statement {0} to be reviewed. Please check and submit manually.
+已付金额,Amount paid
+已作废,voided
+已停用,Inactive
+已入账,Already accounted for
+已关联待核销,Already linked to pending Reconciliation
+已冲销,Already Reversal
+已冲销（原结账单）,Already Reversal (original Period Closing order)
+已出库但未完成正式结算 {0} 条，金额 {1},"{0} items have been shipped out of the warehouse but formal settlement has not been completed, and the amount is {1}"
+已分摊进项税额 {0}，总账进项税发生额 {1},"Already allocated Input VAT amount {0}, General LedgerInput VAT amount incurred {1}"
+已删除 {0} 张草稿。,{0} drafts have been deleted.
+已勾选,checked
+已勾选未抵扣 {0} 张，税额 {1},"Checked and not deducted {0} sheets, tax amount {1}"
+已参与银行对账（银行流水 {0}），请先撤销银行对账,"Already participated in bank reconciliation (bank statement {0}), please cancel the bank reconciliation first"
+已反结账，可以修改本期凭证；修改完成后重新结账。,"Period Closing has been reversed, and you can modify Voucher for this issue; re-Period Closing after the modification is completed."
+已反结账：{0},Anti-Period Closing: {0}
+已取消,Cancelled
+已取消复核 {0} 行,Review of row {0} canceled
+已取消的凭证不能从查凭证重复发起修订,The canceled Voucher cannot be revised again from Voucher
+已启用,Active
+已处理的批次不能作废；请完成剩余回单核对,Processed batches cannot be invalidated; please complete the remaining receipt verification
+已复核,Reviewed
+已复核。修改归类、科目、期间或金额方向后，系统会自动要求重新复核。,"Reviewed. After modifying the classification, account, period or amount direction, the system will automatically require re-review."
+已完成或已取消的销售结算单不可修改,Completed or canceled sales settlement documents cannot be modified.
+已定位科目：{0},Positioned account: {0}
+已审批,Approved
+已就绪,Ready
+已开票或已取消申请不能取消,Applications that have been invoiced or canceled cannot be canceled
+已归档电子文件不允许修改,No modification of archived electronic files is allowed
+已打开全部来源科目。总账包含结转分录，核对利润表时请剔除损益结转。,"All source accounts have been opened. General Ledger contains carry forward entries, please exclude the profit and loss carry forward when checking Income Statement."
+已批量复核 {0} 行,Batch review of rows {0}
+已批量审核并记账,Has been reviewed in batches and Posting
+已抵扣,Already deducted
+已提交财务报表附注 {0},Notes to financial statements {0} submitted
+已提交银行对账快照不可重新生成,Submitted bank reconciliation snapshots cannot be regenerated
+已提交附注 {0} 份；年结时按结账期间校验,Note {0} copies have been submitted; the verification will be based on the Period Closing period at the end of the year.
+已撤销损益结转：{0},Profit and loss carry forward canceled: {0}
+已新增内部资金划转行，请调整两行的指定金额使其合计等于现金发生额,An internal fund transfer bank has been added. Please adjust the designated amounts of the two banks so that the total is equal to the cash amount.
+已暂停,Suspended
+已暂停。已记账凭证保留，继续前将重新检查剩余草稿。,"Paused. PostingVoucher reserved, remaining drafts will be rechecked before continuing."
+已更新 {0} 张未记账草稿。{1},Updated {0} Zhang Wei Posting draft. {1}
+已有凭证,Already have Voucher
+已有银行交易尚未提交，请先核对处理,"There are bank transactions that have not yet been submitted, please check and process first."
+已核对原回单、业务依据及重复记账情况,"The original reply, business basis and duplicate Posting have been checked"
+已核对回单所属时期，该期{0}尚未计提，同意生成计提及支付分录；已计提时应手工冲应付科目后关联,"The period to which the receipt belongs has been checked. {0} has not been accrued for this period. It is agreed to generate accrual and payment entries. If it has been accrued, it should be manually offset to the account payable and then related."
+已核对当前凭证内容，待记账；后续修改将要求重新核对。,The current Voucher content has been checked and is pending for Posting; subsequent modifications will require rechecking.
+已核对财务报表，确认结账并生成结账档案？,"Have the financial statements been checked, Period Closing confirmed and Period Closing file generated?"
+已核销凭证不能从查凭证修改银行流水对应的银行科目,ReconciliationVoucher cannot modify the bank account corresponding to the bank statement from Voucher
+已生成应收,Receivables generated
+已生成损益结转凭证草稿 {0}，提交后系统将按实际损益科目生成分录,"Profit and loss carry forward Voucher draft {0} has been generated. After submission, the system will generate entries according to the actual profit and loss account."
+已生成正式应收的结算单不可取消，请通过销售退货或贷项销售发票更正,The settlement document that has been officially generated cannot be canceled. Please correct it through sales return or credit sales invoice.
+已生成的财务报表快照不可修改,The generated financial statement snapshot cannot be modified.
+已生效政策 {0} 项，缺少：{1},"Policy item {0} has taken effect, missing: {1}"
+已登记回单,Registered reply
+已确认,Confirmed
+已确认或已作废的现金流量指定单不能修改明细,The details of confirmed or invalidated cash flow designation orders cannot be modified.
+已结算数量,Settled quantity
+已结算金额,Settled amount
+已结账，结账档案尚未就绪，可刷新或重新生成,"Already Period Closing, Period Closing file is not ready yet, can be refreshed or regenerated"
+已结账，结账档案已生成,"Period Closing, Period Closing file has been generated"
+已结账，结账档案正在生成，可稍后刷新,Period Closing has been generated. The Period Closing file is being generated and can be refreshed later.
+已覆盖结算模式,Billing mode covered
+已记账,Already Posting
+已记账 {0},Already Posting {0}
+已记账借方,AlreadyPostingDebit
+已记账凭证不允许修改字段：{0},Already PostingVoucher is not allowed to modify the field: {0}
+已记账贷方,AlreadyPostingCredit
+已记账（修订后）,Already Posting (revised)
+已识别批次不能直接修改；请通过处理按钮操作，文件或账户错误时作废后新建批次,"Identified batches cannot be modified directly; please operate through the processing button. If the file or account is wrong, it will be invalid and a new batch will be created."
+已转换 {0} 条银行流水，请检查后点击开始导入,"{0} bank statements have been converted, please check and click to start importing"
+已进入抵扣流程的税务发票不能标记为不得抵扣,Tax invoices that have entered the deduction process cannot be marked as non-deductible
+已选择 {0} 张凭证，其中 {1} 张不是草稿。系统只会删除未记账草稿，其余记录会显示失败原因。,"{0} sheets and Voucher sheets have been selected, of which {1} sheets are not drafts. The system will only delete drafts that are not Posting, and the remaining records will show the reasons for failure."
+已选择 {0} 条已提交的银行流水，不能直接删除。,{0} submitted bank statements have been selected and cannot be deleted directly.
+已选择 {0} 行,Row {0} selected
+已选择手动编码，请填写科目编码,"Manual coding has been selected, please fill in the account code"
+已驳回,Dismissed
+币种,Currency
+币种：,Currency:
+幂等键,idempotent keys
+幂等键已用于其他税务接口调用,Idempotent keys are already used in other tax interface calls
+平衡差额（资产 - 负债 - 所有者权益）,Balancing Difference (Assets - Liabilities - Owners' Equity)
+年初余额,Beginning balance
+年度,annual
+年度结转截止日期必须是会计年度结束日 {0},The annual carryover deadline must be the end of the fiscal year {0}
+广发银行文字版回单 PDF,China Guangfa Bank Text Version Reply PDF
+序列键,sequence key
+库存现金,cash on hand
+应收发票,Invoices receivable
+应收应付台账存在 {0} 项差异，差额绝对值合计 {1},"There are {0} differences in accounts receivable and payable, and the absolute value of the differences totals {1}"
+应收应付台账核对未执行，请从核对报表确认,"The reconciliation of accounts receivable and payable has not been executed, please confirm from the reconciliation report"
+应收应付台账核对通过,Accounts receivable and payable ledger verified and passed
+应收应付总账与付款台账一致,Accounts receivable and payable General Ledger are consistent with the payment ledger
+应收应付科目,Accounts receivable and payable
+应收款项及信用减值说明,Description of receivables and credit impairment
+应收状态,Receivable status
+应收账款,Accounts Receivable
+应收账款余额,Accounts Receivable balance
+应收过账日期,Receivable Posting date
+建议映射,Suggested mapping
+建议科目 / 依据,Suggested subjects/basis
+建议科目 / 公司承担科目,Suggested subjects/Company-borne subjects
+开始时间,start time
+开始月末结账,Start month end Period Closing
+开票控制规则,Invoicing control rules
+开票日期,Invoice date
+开票明细,Invoicing details
+开票申请,Invoicing application
+开票申请与税务发票公司不一致,The invoicing application is inconsistent with the tax invoice company
+开票申请状态只能通过审批服务变更,The status of the invoicing application can only be changed through the approval service
+开票要求,Billing requirements
+开票要求快照,Invoicing request snapshot
+异常,Abnormal
+异常 {0} 张,Exception {0} sheets
+异常余额重分类目前只支持资产负债表,Abnormal balance reclassification currently only supports Balance Sheet
+异常余额项目,Abnormal balance items
+异常原因,Abnormal cause
+异常唯一键,Exception unique key
+张,sheets
+强制制单审核分离,Require separate preparation and review
+强制对账 {0} 项，已确认 {1} 项，缺失 {2} 项,"Forced reconciliation of item {0}, item {1} confirmed, item {2} missing"
+强制对账差异均已闭环,All forced reconciliation differences have been closed.
+强制对账范围均已完成当期确认,The mandatory reconciliation range has been confirmed for the current period.
+归入报表项目,Included in report items
+归档人,Filer
+归档任务已加入队列，请稍后刷新,"The archive task has been added to the queue, please refresh later"
+归档文件必须计算哈希,Archives must calculate hashes
+归档时间,Archive time
+归档记录正在被其他请求处理，请稍后重试,"The archive record is being processed by other requests, please try again later."
+当前公司没有匹配“{0}”的科目。,"There is no account matching ""{0}"" in the current company."
+当前公司：{0},Current company: {0}
+当前凭证不能修改：{0},The current Voucher cannot be modified: {0}
+当前分录没有往来单位，不能选择应收或应付科目,"The current entry does not have Party, and accounts receivable or payable cannot be selected."
+当前往来单位要求使用{0}科目,The current Party requires the use of {0} subjects
+当前报表中无法可靠判断所选科目的映射，请人工选择报表项目。,The mapping of the selected account cannot be reliably determined in the current report. Please select report items manually.
+当前报表没有可导出的列,The current report has no exportable columns
+当前显示：{0} · {1} 笔,Currently displaying: {0} · {1} pen
+当前有效规则 {0} 条；未配置供应商沿用直接策略,Currently effective rules {0}; Supplier is not configured to inherit the direct policy
+当前有效规则 {0} 条；未配置客户沿用直接确认应收,"Currently effective rules are {0}; if no customer is configured, the customer will continue to directly confirm receivables."
+当前有效规则 {0} 条；未配置时按单据人工决定,"Currently effective rules are {0}; if not configured, it will be determined manually based on the document"
+当前期间尚未提交财务报表附注,Notes to the financial statements have not been submitted for the current period
+当前标签下没有回单,There is no reply under the current label
+当前流水号,Current serial number
+当前状态的销售结算单不可提交,The current status of the sales settlement document cannot be submitted.
+当前环境未安装 openpyxl，无法读取 Excel,openpyxl is not installed in the current environment and Excel cannot be read
+当前环境缺少 openpyxl，无法读取科目余额表,The current environment lacks openpyxl and cannot read the account balance table.
+当前用户无法将期末结账凭证从 {0} 流转到 {1}，请检查工作流权限,"The current user cannot transfer the end-of-period Period ClosingVoucher from {0} to {1}, please check the workflow permissions"
+当前用户没有保存并记账该修订凭证的权限,The current user does not have permission to save and Posting this revision Voucher
+当前用户没有修改该凭证的权限,The current user does not have the permission to modify the Voucher
+当前用户没有修改该银行流水的权限,The current user does not have the permission to modify the bank statement.
+当前用户没有修订凭证的权限,The current user does not have the authority to modify Voucher
+当前用户没有创建修订凭证的权限,The current user does not have permission to create revision Voucher
+当前用户没有创建和提交 ERPNext 销售发票的权限,The current user does not have permission to create and submit ERPNext sales invoices
+当前用户没有删除记账凭证的权限,The current user does not have the permission to delete PostingVoucher
+当前用户没有取消原凭证的权限,The current user does not have the authority to cancel the original Voucher
+当前银行回单解析器仅支持{0}本位币及银行账户,"Currently, the Bank Receipt parser only supports {0} currency and bank accounts."
+当前银行流水不满足安全的一键撤销条件，请按提示先手动撤销核销,"The current bank statement does not meet the safe one-click cancellation conditions, please follow the prompts to manually cancel Reconciliation"
+往来单位,Party
+往来单位类型,Party type
+往来单位类型或名称不完整,Party type or name is incomplete
+往来科目必须选择真实往来单位；复杂拆分请手工制证后关联,"The current account must select the real Party; for complex splits, please manually prepare the certificate and then associate it."
+往来类型,Type of transaction
+待人工分类,Awaiting manual classification
+待内部复核,Pending internal review
+待勾选,To be checked
+待处理,Pending
+待处理差异 {0} 项，已批准时间性差异 {1} 项,"Pending difference item {0}, approved temporal difference item {1}"
+待处理问题,pending issues
+待复核,To be reviewed
+待复核：先确认科目性质和归入项目；现金流量表还需确认收款、付款两个方向。,To be reviewed: First confirm the nature of the account and the classification of the project; Cash Flow Statement also needs to confirm the two directions of collection and payment.
+待完成前期差错更正 {0} 条,{0} items of early error correction to be completed
+待审批,Pending approval
+待客户确认,To be confirmed by customer
+待收数量,Quantity to be received
+待确认结账,To be confirmed Period Closing
+待票数量,Number of tickets waiting
+待结算金额,Amount to be settled
+待补齐冲销审计快照 {0} 张,Reversal audit snapshots to be completed {0}
+待补齐收付款方式科目 {0} 个,There are {0} payment method accounts to be completed.
+待记账,Waiting for Posting
+待选择现金流项目,Cash flow projects to be selected
+必需科目 {0} 已停用,Required account {0} is deactivated
+必需范围已配置,Required scope configured
+必须开票的销售发票已完成票账闭环,Sales invoices that must be invoiced have completed the closed loop of billing
+必须选择公司,Company must be selected
+必须选择开票要求并填写覆盖原因,You must select a billing requirement and fill in the coverage reason
+快照数据,snapshot data
+总账与付款台账差异 {0} 项，差额绝对值合计 {1},"The difference between General Ledger and the payment ledger is {0}, the total absolute value of the difference is {1}"
+总账余额,General Ledger balance
+总账借贷平衡,General Ledger Loan Balance
+总账分录,General Ledger entry
+总账处理失败，请打开凭证查看错误信息,"General Ledger processing failed, please open Voucher to view the error message"
+总账来源与冲销均已生成审计快照,Both the General Ledger source and Reversal have generated audit snapshots
+总账正在后台处理中，请稍后刷新,"General Ledger is being processed in the background, please refresh later"
+总额（CNY）,Total amount (CNY)
+恢复模板默认科目,Restore template default accounts
+悦为公司存在重复科目编码：{0},There is a duplicate account code in Yuewei Company: {0}
+悦为公司已有未冲销总账分录，不能直接同步科目主数据；请先完成迁移方案评估,Yuewei Company already has unrecorded entries ReversalGeneral Ledger and cannot directly synchronize the account master data; please complete the migration plan evaluation first
+悦为智能技术(东莞)有限公司的科目模板当前不可用,"The account template of Yuewei Intelligent Technology (Dongguan) Co., Ltd. is currently unavailable"
+成功处理 {0} 张凭证,Successfully processed {0} Zhang Voucher
+成本中心,cost center
+成本中心与财务账簿,Cost centers and financial books
+截止日期,Deadline
+所属时期：{0} · 计提及支付分录（CNY）,Period: {0} · Accounting and payment entries (CNY)
+所属期间已提交损益结转凭证 {0},Profit and loss carryforward Voucher {0} has been submitted for the period
+所属期间已提交期末智能结转 {0},The end-of-period smart carry forward {0} has been submitted for the period to which it belongs.
+所得税,income tax
+所有者权益,Owner's equity
+所有者权益变动表,Statement of changes in owner's equity
+所有者权益合计,Total owners' equity
+所选银行账户与导入单据银行不一致。,The selected bank account is inconsistent with the bank of the imported document.
+手工取消,Manual cancellation
+手工或来源单据作废,Invalidation of manual or source documents
+打印 A5 横向,Print A5 landscape
+打开原单,Open original order
+打开损益结转凭证,Open profit and loss carry forward Voucher
+执行时必须提供预览中的 expected_plan_hash 和修复原因 reason,expected_plan_hash in the preview and the repair reason must be provided when executing
+批准人,approver
+批准时间,Approval time
+批准时间性差异,Approve timing differences
+批次状态,Batch status
+批量处理完成,Batch processing completed
+批量处理完成（部分失败）,Batch processing completed (partial failure)
+批量复核,Batch review
+批量审核并记账,Batch review and Posting
+批量审核并记账<br>批次：{0}<br>处理原因：{1},Batch review and Posting<br> batch: {0}<br> processing reason: {1}
+批量审核并记账只支持 Excel 导入或银行流水生成的记账凭证，请不要同时勾选普通凭证。,Batch review and Posting only support PostingVoucher generated by Excel import or bank flow. Please do not check the ordinary Voucher at the same time.
+批量打印完成,Batch printing completed
+找不到 Excel 文件：{0},Excel file not found: {0}
+找不到科目表文件：{0},Chart of accounts file not found: {0}
+承接上期差异,Take over the differences from the previous period
+承诺及或有事项,Commitments and contingencies
+折扣/扣款,Discounts/Deductions
+报告期截止日期,Reporting period deadline
+报告期起始日期,Reporting period start date
+报告期起始日期不能晚于截止日期,The start date of the reporting period cannot be later than the end date
+报表与查询,Reports and queries
+报表余额重分类,Statement balance reclassification
+报表公式包含不允许的表达式,Report formula contains an expression that is not allowed
+报表公式存在循环引用或不确定的前向依赖：{0},There is a circular reference or uncertain forward dependency in the report formula: {0}
+报表公式存在循环引用或无法确定的依赖：{0},Report formulas have circular references or undetermined dependencies: {0}
+报表公式引用了不存在的行：{0},Report formula references a non-existent row: {0}
+报表公式语法错误：{0},Report formula syntax error: {0}
+报表刷新，未保存的凭证修改已取消,The report was refreshed and the unsaved modification of Voucher was cancelled.
+报表影响明细,Report impact details
+报表快照,Report snapshot
+报表检查：全部通过。,Report check: all passed.
+报表检查：有 {0} 项阻断问题，暂不可作为正式报表。,"Report check: There are {0} blocking issues, which cannot be used as a formal report."
+报表检查：通过；另有 {0} 项需复核。,Report inspection: passed; there are other items {0} that need to be reviewed.
+报表模板,Report template
+报表生效日期,Report effective date
+报表生效日期不能早于中国财务启用日期,The effective date of the report cannot be earlier than the start-up date of China Finance
+报表类型,Report type
+报表行 {0} 不是公式行，不能编辑公式,Report row {0} is not a formula row and the formula cannot be edited.
+报表行编码不能重复,Report row codes cannot be repeated
+报表重要项目及现金流补充资料快照,Snapshot of important report items and cash flow supplementary information
+报表金额单位,Report amount unit
+报表项目,Report items
+报表项目正常显示为正数，负数时按规则重分类,"Report items are normally displayed as positive numbers, and when negative, they are reclassified according to rules."
+报送日期：,Submission date:
+抵扣批次只能包含同一公司的税务发票,The deduction batch can only contain tax invoices from the same company
+抵扣批次状态只能通过税务服务变更,The status of the deduction batch can only be changed through the tax service
+抵扣期间,Deduction period
+抵扣状态,Deduction status
+抵扣确认人,Deduction confirmer
+抵扣确认时间,Deduction confirmation time
+拆分,Split
+招商银行文字版回单 PDF,China Merchants Bank Text Version Reply PDF
+招商银行模板必须是 XLSX 文件。,The China Merchants Bank template must be a XLSX file.
+指定与确认记录,Specify and confirm records
+指定人,designated person
+指定信息,Specify information
+指定修订键,Specify revision key
+指定时间,specified time
+指定明细,Specify details
+指定说明,Specify instructions
+指定金额,specified amount
+指定金额必须大于零,The specified amount must be greater than zero
+按{0}计提及支付生成草稿,Calculate and pay according to {0} to generate draft
+按凭证日期重排字号：{0} → {1}；批次 {2}；原因：{3}。分录及金额未变更。,Rearrange font size according to Voucher date: {0} → {1}; batch {2}; reason: {3}. The entries and amounts remain unchanged.
+按回单所属时期生成计提三行、支付两行。公司承担计入管理费用-公积金，个人承担计入其他应收款-公积金；当前公司和个人各承担 50%，使用前确认该所属期尚未计提。,"Three accrual lines and two payment lines are generated according to the period to which the receipt belongs. The company's responsibilities are included in the administrative expenses - provident fund, and the personal responsibilities are included in other receivables - provident fund; currently, the company and individuals each bear 50%, and it is confirmed before use that the period has not been accrued."
+按回单所属时期生成计提三行、支付两行。公司承担计入管理费用-社会保险费，个人承担计入其他应收款-社保；逐项四舍五入，个人承担取差额。使用前确认该所属期尚未计提。,"Three accrual lines and two payment lines are generated according to the period to which the receipt belongs. The company's responsibilities are included in management expenses - social insurance premiums, and the personal responsibilities are included in other receivables - social security; the differences are rounded off item by item, and the personal responsibilities are calculated as the difference. Before use, confirm that the period has not been accrued."
+按建议映射,Map as suggested
+按当前公司实际承担口径配置；50% 表示回单总额由公司和个人各承担一半。,Allocate according to the current company's actual responsibilities; 50% means that the total amount of the receipt is borne by the company and the individual.
+按所属月份补齐期末结转凭证字号：{0}；会计分录未变更。,"Complete the period-end carryover Voucher according to the corresponding month, font size: {0}; the accounting entries have not changed."
+按该科目对来源报表项目的余额贡献判断；负数时按规则重分类,"Judge based on the account's contribution to the balance of the source report item; if the number is negative, it will be reclassified according to the rules."
+损益结转凭证,Profit and loss carry forward Voucher
+损益结转凭证 {0} 不属于公司 {1},Profit and loss carry forward Voucher {0} does not belong to the company {1}
+损益结转凭证 {0} 与月末结账单 {1} 的期间不一致,The period of the profit and loss carry forward Voucher {0} is inconsistent with the period of the month-end Period Closing order {1}
+损益结转凭证 {0} 仍是草稿，不能执行反结账,Profit and loss carry forward Voucher {0} is still a draft and cannot be executed against Period Closing
+损益结转凭证 {0} 的总账仍在处理中，请稍后再反结账,"Profit and loss carry forward Voucher General Ledger of {0} is still being processed, please try again later Period Closing"
+损益结转凭证必须与月末结账单的公司和起止日期一致，且不能是已取消状态,"The profit and loss carry forward Voucher must be consistent with the company and start and end dates of the month-end Period Closing order, and cannot be in a canceled state"
+损益结转凭证生成失败,Profit and loss carry forward Voucher generation failed
+损益结转失败，请打开结转凭证处理错误后继续,"Profit and loss carry forward failed, please open the carry forward Voucher to handle the error and continue."
+损益结转已完成,Profit and loss carry forward completed
+损益结转已提交，等待总账处理完成,"Profit and loss carry forward has been submitted, waiting for General Ledger processing to be completed"
+损益结转总账处理中，请稍后继续,"Profit and loss carry forward General Ledger is being processed, please continue later"
+损益结转总账处理尚未完成,Profit and loss carry forward General Ledger processing has not been completed yet
+损益结转总账尚未完成,Profit and loss carry forward General Ledger has not been completed yet
+损益结转期间不正确,Profit and loss carryforward period is incorrect
+排除项,Exclusions
+提交前必须上传依据并生成报表影响明细,"Before submission, the basis must be uploaded and report impact details must be generated."
+提交后将显示实际生成的会计分录,The actual generated accounting entries will be displayed after submission.
+提交审批,Submit for approval
+提交财务报表附注前必须先提交生效的会计政策,Accounting policies in effect must be submitted before the notes to the financial statements can be submitted
+提示,Tips
+搜索科目,Search accounts
+摘要,Summary
+摘要不能为空,Summary cannot be empty
+摘要不能超过 {0} 个字符,Summary cannot exceed {0} characters
+摘要只能填写一行内容,The abstract can only fill in one line of content
+摘要或税费明细包含,Summary or tax details include
+撤销复核,Withdraw review
+操作,Operation
+操作失败，请刷新页面后重试,"The operation failed, please refresh the page and try again."
+操作失败，请检查凭证状态后重试,"The operation failed, please check the Voucher status and try again."
+操作类型,Operation type
+支付现金时归入,Included when paying cash
+支出,expenditure
+支出合计,Total expenses
+收付方向,Payment direction
+收付款主科目必须保持科目类型 {0},The main account of receipts and payments must maintain the account type {0}
+收付款方及费用明细,Payee and fee details
+收付转记,Payment / Receipt / Transfer / Journal
+收入,income
+收入合计,Total revenue
+收入确认,Revenue recognition
+收到现金时归入,Cash is credited as received
+收支 / 金额,Income and expenditure/amount
+收支方向,Income and expenditure direction
+收款,Collection
+收款人,Payee
+收款分录只能指定到现金流入项目,Receipt entries can only be assigned to cash inflow items
+收款单,Collection slip
+收款开户行,Receiver's bank
+收款账号,Payment account number
+收货与发票未齐套,Goods receipt and invoice are not matched
+收费明细,Charge details
+收费明细无法完整识别,Charge details cannot be fully identified
+收费期间,charging period
+政府补助,government subsidies
+政策依据,Policy basis
+政策变更,Policy changes
+政策变更必须关联上一版本政策,Policy changes must be related to the previous version of the policy
+政策变更必须填写变更原因,Policy changes must include the reason for the change
+政策名称,Policy name
+政策唯一键,policy unique key
+政策类别,policy category
+数据来源：ERPNext 原生试算平衡表,Data source: ERPNext native trial balance sheet
+数电专用发票,Digital and electricity special invoice
+数电普通发票,General digital invoice
+数量,Quantity
+数量容差,Quantity tolerance
+文件,File
+文件名,file name
+文件大小,file size
+新业务制证,New business certificate
+新业务确认一次即按建议科目生成全部可处理草稿，草稿可在查凭证修改，月末统一记账后才进入报表。流水号重复会阻止重复制证；仅日期和金额相同的历史凭证只作提示。,"Once the new business is confirmed, all processable drafts will be generated according to the recommended accounts. The drafts can be modified after checking Voucher, and only enter the report after unifying Posting at the end of the month. Repeated serial numbers will prevent repeated certification; only historical Voucher with the same date and amount will only be prompted."
+新增一级科目时必须手动填写科目编码,"When adding a first-level account, you must manually fill in the account code"
+新增下级科目,Add lower-level subjects
+新增展示规则,Add display rules
+新增展示调整规则,Add display adjustment rules
+新增草稿,Add new draft
+新增草稿 {0} 张，复用 {1} 笔，需处理 {2} 笔。,"Add {0} drafts, reuse {1} pen, and need to process {2} pen."
+新建,New
+新建或调整的报表科目映射默认从该日期起生效。,Newly created or adjusted report account mappings will take effect from this date by default.
+新建科目,Create new account
+新进项税务发票必须从未查验和不适用状态开始,New Input VAT service invoice must start from unverified and inapplicable status
+无,None
+无形资产及研发支出,Intangible assets and R&D expenditures
+无形资产及研发支出说明,Description of intangible assets and R&D expenditures
+无效公司科目 {0} 个,Invalid company accounts {0}
+无效收付款方式科目 {0} 个,Invalid payment method accounts {0}
+无效的销售结算模式,Invalid sales billing model
+无效税费科目 {0} 个,Invalid tax accounts {0}
+无效资产科目 {0} 个,Invalid asset accounts {0}
+无效银行账户绑定 {0} 个,Invalid bank account binding {0}
+无权删除该财务报表科目映射,Do not have permission to delete this financial statement account mapping
+无权复核该财务报表科目映射,No authority to review this financial statement account mapping
+无权执行销售结算操作,Not authorized to perform sales settlement operations
+无权查看来源凭证,Not authorized to view source Voucher
+无权查看来源单据,Not authorized to view source documents
+无权查看该中国会计凭证,No permission to view the China Accounting Voucher
+无权查看该公司,Don't have permission to view this company
+无权查看该现金流量指定单,Do not have permission to view the cash flow order
+无权查看该财务报表科目映射,Do not have permission to view this financial statement account mapping
+无权编辑该报表模板,Don't have permission to edit this report template
+无权访问公司 {0},No access to company {0}
+无法创建凭证字号流水号记录：{0},Unable to create Voucher font size serial number record: {0}
+无法加载配置就绪度,Unable to load configuration readiness
+无法完成结账,Unable to complete Period Closing
+无法把该展示行唯一对应到来源单据字段,The display row cannot be uniquely mapped to the source document field
+无法把该摘要唯一对应到来源凭证分录,The summary cannot be uniquely mapped to the source entry Voucher
+无法根据所选银行账户确定回单收支方向,Unable to determine the receipt and payment direction of the receipt based on the selected bank account
+无法由销售出库单生成正式销售发票,Unable to generate formal sales invoice from Delivery Note order
+无法确认公司，请检查权限或网络后重试,"Unable to confirm company, please check permissions or network and try again"
+无法读取 PDF，请确认文件未加密、未损坏且包含文字层,"Unable to read PDF, please confirm that the file is not encrypted, not damaged and contains a text layer"
+无法读取招商银行 XLSX 流水：{0},Unable to read China Merchants Bank XLSX Filing: {0}
+日常工作,daily work
+日期,Date
+日期 / 原件,Date/Original
+日期必须使用 YYYY-MM-DD 格式,The date must be in the format YYYY-MM-DD
+日期：,Date:
+旧科目表公司不自动套用中国模板主数据检查,The old chart of accounts company does not automatically apply the Chinese template master data check
+旧科目表公司保持原有配置,The old chart of accounts company maintains the original configuration
+明细来源,Detailed source
+映射依据,Mapping by
+映射唯一键,map unique key
+映射复核,Mapping review
+映射来源,Mapping source
+映射版本 SHA-256,Mapping version SHA-256
+映射科目必须属于所选公司,The mapped account must belong to the selected company
+映射规则版本,Mapping rule version
+是否分组,Whether to group
+显示零余额,Show zero balance
+显示零值,Show zero value
+普通下级科目只填写名称；在无编码大类下新增时，填写新的大类名称,"For ordinary lower-level subjects, only fill in the name; when adding a new category under an uncoded category, fill in the name of the new category"
+暂估应付款借方余额 {0} 已按报表展示规则列入其他流动资产；原始账务未改变。请核对相关凭证。,The balance of provisional estimated payables Debit {0} has been included in other current assets according to the report presentation rules; the original accounts have not changed. Please check related Voucher.
+暂停,pause
+暂无关联银行回单，可从中国财务的银行回单导入入口补充,"There is currently no association with Bank Receipt, which can be supplemented from the Bank Receipt import portal of China Finance"
+暂无展示调整规则,No display adjustment rules yet
+暂未支持银行 {0} 的流水格式，请使用原生“添加文件”上传标准模板。,"The flow format of bank {0} is not supported yet. Please use the native ""Add File"" to upload the standard template."
+暂未配置银行“{0}”的回单格式，请先配置解析器,"The reply format of bank ""{0}"" has not been configured yet. Please configure the parser first."
+更多,More
+更新本批草稿摘要,Update this draft summary
+更正依据,Basis for correction
+更正后未能恢复银行流水 {0} 的核销，全部修改已回滚,"After the correction, the bank flow of {0} and Reconciliation could not be restored. All modifications have been rolled back."
+替代原对账单,Replace original statement
+最后尝试时间,last try time
+最后错误,final error
+最近检查时间,Last check time
+月份编号序列不存在，需先检查数据完整性,The month number sequence does not exist. Data integrity needs to be checked first.
+月度,monthly
+月度结转期间不正确,Monthly carryover period is incorrect
+月度结转期间必须是完整自然月,The monthly carryover period must be a full calendar month
+月末检查,End of month inspection
+月末结账,End of month Period Closing
+月末结账单 {0} 不存在,End of month Period Closing order {0} does not exist
+月末结账单 {0} 关联的损益结转凭证 {1} 不存在,Month-end Period Closing order {0} associated profit and loss carryover Voucher {1} does not exist
+月末结账单 {0} 尚未完成，不能生成结账档案,The end-of-month Period Closing order {0} has not been completed and the Period Closing file cannot be generated.
+月末结账单 {0} 已提交，但当前状态为 {1},"End-of-month order Period Closing {0} has been submitted, but the current status is {1}"
+月末结账单保存失败，请刷新页面后重试,"Period Closing order failed to save at the end of the month, please refresh the page and try again"
+月末结账失败：{0},Period Closing failed at the end of the month: {0}
+月末结账已开始，不能修改公司或期间，请新建正确期间的结账单,The end of the month Period Closing has started. The company or period cannot be modified. Please create a new Period Closing order for the correct period.
+月末结账请选择完整自然月,At the end of the month Period Closing please select the complete natural month
+月末结账请选择完整自然月，不能跨月,"At the end of the month Period Closing please select a complete natural month, not across months"
+月末结账请选择结账月份,End of the month Period Closing Please select the month Period Closing
+月末结账进度,Period Closing progress at the end of the month
+月末记账,End of month Posting
+月末记账：{0},End of month Posting: {0}
+月结对账范围,Monthly reconciliation scope
+有 {0} 个未映射科目存在本期影响金额，请确认是否纳入报表：{1},There are {0} unmapped accounts with affected amounts in the current period. Please confirm whether to include them in the report: {1}
+有 {0} 个科目同时映射到多个报表项目，请确认是否需要拆分或保留补充映射：{1},There are {0} accounts mapped to multiple report items at the same time. Please confirm whether you need to split or retain the supplementary mapping: {1}
+有 {0} 条自动科目映射尚未复核,There are {0} automatic account mappings that have not been reviewed yet
+有异常,There is an abnormality
+服务商,service provider
+期初余额,Opening balance
+期初借方,Beginning of period Debit
+期初未达,Not reached at the beginning of the period
+期初未达笔数（明细隐藏）,The number of transactions not reached at the beginning of the period (details hidden)
+期初贷方,Beginning of period Credit
+期初金额,Beginning amount
+期初银行流水,Beginning bank statement
+期初（借方）,Beginning of Period (Debit)
+期初（贷方）,Beginning of Period (Credit)
+期末余额,Ending balance
+期末借方,End of period Debit
+期末智能结转,Smart carry forward at the end of the period
+期末智能结转不属于请求公司,The period-end smart carry forward does not belong to the requesting company
+期末智能结转缺少完整四表快照,End-of-period smart carryover lacks a complete four-table snapshot
+期末现金及现金等价物,Closing cash and cash equivalents
+期末现金及现金等价物余额,Closing cash and cash equivalents balance
+期末结账凭证 {0} 不是草稿，不能重复完成结账,Final Period ClosingVoucher {0} is not a draft and cannot be completed repeatedly Period Closing
+期末结账凭证当前状态为 {0}，不能使用快捷完成结账,"The current status of Period ClosingVoucher at the end of the period is {0}, and you cannot use the shortcut to complete Period Closing"
+期末结账凭证未完成记账，当前状态为 {0},"Period ClosingVoucher at the end of the period was not completed Posting, and the current status is {0}"
+期末结账失败,End of period Period Closing failed
+期末结账已保存并记账,End of period Period Closing has been saved and Posting
+期末结账已提交并完成,The final Period Closing has been submitted and completed
+期末结账已经提交,The final Period Closing has been submitted
+期末结账提交失败,Period Closing submission failed at the end of the period
+期末结转快照 {0} 的原编号状态异常，请先核查,"The original number status of the period-end carryover snapshot {0} is abnormal, please check first"
+期末贷方,End of period Credit
+期末（借方）,End of period (Debit)
+期末（贷方）,End of period (Credit)
+期间,Period
+期间内没有可显示的科目,There are no accounts to display during the period
+期间分类,period classification
+期间键,period key
+未付金额,Unpaid amount
+未保存的凭证修改已取消,The unsaved Voucher modification has been cancelled.
+未入账,Not accounted for
+未关联已提交的进项税务发票,The submitted Input VAT service invoice is not associated
+未关联进项税票,Not associated with Input VAT ticket
+未分摊 {0} 张,Unallocated {0} sheets
+未分摊金额,Unamortized amount
+未分类,Uncategorized
+未删除记录,No records deleted
+未启用制单、审核、记账职责分离,"Document preparation, review, and Posting separation of duties are not enabled"
+未启用固定资产模块,Fixed assets module is not enabled
+未启用职责分离,Separation of duties not enabled
+未回填税务发票,Tax invoice not filled back
+未复核 {0} 条,Not reviewed {0} items
+未复核 {0} 条，缺少已复核映射模板 {1} 个,"{0} items have not been reviewed, and {1} reviewed mapping templates are missing."
+未完成销项票账闭环 {0} 张,Uncompleted output invoice closed loop {0} sheets
+未完成项 {0},Unfinished item {0}
+未找到可信的原始已提交 Posting 快照，不能生成冲销审计快照,"No trusted original submitted Posting snapshot was found, and the Reversal audit snapshot cannot be generated."
+未找到可导入的招商银行流水。,No importable China Merchants Bank statements were found.
+未找到可生成冲销审计快照的总账分录,The General Ledger entry that generated the Reversal audit snapshot was not found
+未找到可豁免的采购拦截明细,No exempted purchase interception details found
+未找到回单附件,Reply attachment not found
+未找到当前凭证对应的银行对账分配，请刷新后重试,The bank reconciliation allocation corresponding to the current Voucher was not found. Please refresh and try again.
+未找到来源凭证对应的中国会计凭证：{0},The Chinese Accounting Voucher corresponding to the source Voucher was not found: {0}
+未找到独立的出账/入账回单标题,No independent outgoing/incoming receipt title found
+未找到科目,Account not found
+未找到适用于 {0}、截止日期 {1} 的 {2} 报表模板,"Report template {2} not found for {0}, due date {1}"
+未找到银行 {0} 的流水解析器。,No running parser found for bank {0}.
+未找到需要反结账的当前月末结账单,The current month-end Period Closing order that needs to be reversed to Period Closing was not found
+未指定往来,Unspecified transaction
+未收金额,Amount not collected
+未映射科目 {0} 个：{1},Unmapped accounts {0}: {1}
+未查验,Not checked
+未检测到凭证内容变化，修订草稿暂未记账,"No changes in the content of Voucher have been detected, and the revised draft has not yet been Posting"
+未知处理方式,Unknown processing method
+未知的报表类型 {0},Unknown report type {0}
+未确认,Not confirmed
+未纳入强制覆盖的待确认草稿 {0} 张,{0} drafts to be confirmed that are not included in mandatory coverage
+未记账,NotPosting
+未记账试算,Not yet calculated for Posting
+未设置,not set
+未识别到中国农业银行回单标题,China Agriculture Bank Receipt title not recognized
+未识别到广发银行回单标题,GF Bank Receipt title not recognized
+未识别到招商银行流水表头，缺少：{0},"China Merchants Bank statement header is not recognized, missing: {0}"
+未识别到文字版回单；扫描件、非回单页面或其他版式暂不支持,"The text version of the reply form was not recognized; scanned copies, non-reply form pages or other formats are not currently supported."
+未选择,Not selected
+未配置 {0}；未复核 {1},{0} is not configured; {1} is not reviewed
+未配置利润分配科目,No profit distribution account is configured
+未配置本年利润科目,This year's profit account is not configured
+未配置现金流量直接指定启用日期,No cash flow is configured and the activation date is directly specified.
+未配置进项税科目映射,Input VAT account mapping is not configured
+未配置销项税科目映射,Output VAT account mapping is not configured
+未齐套 {0} 张,Not all {0} sheets
+本位币,functional currency
+本位币金额,Amount in functional currency
+本年,This Year
+本年凭证,This year Voucher
+本年利润,Profit for the year
+本年利润科目,Profit account for this year
+本年收入,Income this year
+本年毛利,gross profit this year
+本年累计,Cumulative this year
+本年累计有未分类现金流 {0},The accumulated unclassified cash flow this year is {0}
+本年费用,Expenses for the year
+本批次应包含 1 至 300 笔回单,This batch should contain between 1 and 300 returns
+本报表为申报核对底稿，不直接向税务机关提交数据。,This report is a declaration verification draft and does not directly submit data to the tax authorities.
+本方账号缺失、被掩码或格式不支持,"Our account is missing, masked, or the format is not supported"
+本月,This Month
+本月凭证,Current Month Vouchers
+本期仍按科目映射自动补充 {0} 张,This issue still automatically adds {0} sheets according to account mapping.
+本期仍有未记账凭证,There are still PostingVoucher in this issue
+本期仍有未记账草稿，请暂停后重新检查,Unposted drafts remain in this period. Pause and check again.
+本期借方,This issue Debit
+本期凭证,This issue Voucher
+本期另有 {0} 张未记账凭证，尚未计入本报表。记账前可在查凭证中查看未记账试算。,"This period also has {0} unposted vouchers that are excluded from this report. Review the trial balance including unposted vouchers in Check Voucher before posting."
+本期含开账现金 {0}，已计入期初余额而未计入经营现金流,"This period includes opening cash {0}, which has been included in the opening balance but not included in operating cash flow."
+本期已按凭证直接指定取数 {0} 张,"In this issue, {0} sheets have been directly designated to be fetched according to Voucher"
+本期已有普通记账凭证作为损益结转：{0}。请先取消或确认旧结转，再生成月末结转凭证,"In this period, ordinary PostingVoucher has been carried forward as profit and loss: {0}. Please cancel or confirm the old carryover first, and then generate the month-end carryover Voucher"
+本期必须从 {0} 开始，不能跳过或重复结转期间,"The current period must start from {0}, and the carryover period cannot be skipped or repeated"
+本期截止日期,Deadline for this issue
+本期报表模板可用,Report templates for this issue are available
+本期有未分类现金流 {0},There are unclassified cash flows in this period {0}
+本期未达,Not reached this period
+本期未达笔数,The number of transactions has not been reached in this period
+本期正在进行月末记账（{0}），请先在月末结账中暂停，再修改或导入。,This issue is in progress for month-end Posting ({0}). Please pause in month-end Period Closing before modifying or importing.
+本期草稿 {0} 张；更早期间草稿 {1} 张。,There are {0} drafts for this issue; {1} drafts for earlier periods.
+本期记账和损益结转已完成，请核对财务报表后确认结账,This period Posting and profit and loss carryover have been completed. Please check the financial statements and confirm Period Closing
+本期贷方,This issue Credit
+本期起始日期,Starting date of this period
+本期还有 {0} 张银行流水凭证未审核提交，请先处理：{1},"In this issue, there are {0} bank statements and Voucher that have not been submitted for review. Please process them first: {1}"
+本期还有未记账凭证，请先完成月末记账,"There are still PostingVoucher in this issue, please complete the Posting at the end of the month first"
+本期金额/期末余额,Amount of current period/ending balance
+本期银行流水,Current bank statement
+本次结算数量,Quantity of this settlement
+本次结账包含草表快照；请补齐比较数据，并按结账修订流程生成完整的正式快照后再导出。,This Period Closing contains a draft snapshot; please complete the comparison data and generate a complete official snapshot according to the Period Closing revision process before exporting.
+机动车销售统一发票,Unified invoice for motor vehicle sales
+权益,Equity
+权益列,Equity column
+来源与冲销,Source and Reversal
+来源与电子原件,Source and electronic original
+来源业务单据已删除，无需补齐冲销审计快照,The source business document has been deleted and there is no need to complete the Reversal audit snapshot.
+来源事件,Source event
+来源凭证不存在,Source Voucher does not exist
+来源凭证不是草稿或已提交状态，不能修改,Source Voucher is not in draft or submitted status and cannot be modified.
+来源凭证公司不匹配：{0},Source Voucher Company does not match: {0}
+来源分录结构已变化，请刷新报表后重试,The source entry structure has changed. Please refresh the report and try again.
+来源单据,Source document
+来源单据 {0} 缺少币种，请先核对,"The source document {0} is missing currency, please check first"
+来源单据不存在,Source document does not exist
+来源单据尚未取消或不是支持的总账来源，不能作废现金流量指定单,The source document has not been canceled or is not a supported General Ledger source. The cash flow designation document cannot be invalidated.
+来源单据尚未取消或不是支持的总账来源，不能创建冲销同步记录,"The source document has not been canceled or is not a supported General Ledger source, and the Reversal synchronization record cannot be created."
+来源单据尚未取消，不能生成冲销审计快照,The source document has not been canceled and the Reversal audit snapshot cannot be generated.
+来源单据已取消，不能重新创建现金流量指定单,"The source document has been cancelled, and the cash flow designation document cannot be re-created."
+来源单据已取消：{0},Source document has been cancelled: {0}
+来源单据类型,Source document type
+来源唯一键,source unique key
+来源日期,Source date
+来源科目,Source account
+来源科目余额贡献符号,Source account balance contribution symbol
+来源科目尚未映射到来源项目,The source account has not been mapped to the source item
+来源科目必须是当前公司的末级科目,The source account must be the last-level account of the current company
+来源类型,Source type
+来源系统,source system
+来源记录 ID,Source record ID
+查凭证,Check Voucher
+查凭证只支持修改记账凭证和收付款凭证,Check Voucher only supports modification PostingVoucher and payment Voucher
+查凭证表内{0}修改,Check the {0} modification in the Voucher table
+查凭证表内科目更正,Check the account correction in Voucher table
+查看原回单,View original receipt
+查看回单记录,Check the order record
+查看审计快照,View audit snapshot
+查看待复核映射,View mappings to be reviewed
+查看本批凭证,View this batch Voucher
+查看本期凭证,View this issue Voucher
+查看来源科目总账,View source account General Ledger
+查看正式销售发票,View official sales invoice
+查看维度,View dimensions
+查看该科目总账,View the subject General Ledger
+查看银行流水 {0},View bank statement {0}
+查验人,inspector
+查验失败,Verification failed
+查验时间,Inspection time
+查验状态,Check status
+查验通过,Inspection passed
+标记不得抵扣,Marks are not deductible
+校验结果,Verification result
+核对人,Checker
+核对凭证与现金流项目,Check Voucher with cash flow items
+核对回单,Check receipt
+核对完成，待记账,"Verification completed, waiting for Posting"
+核对所选草稿,Review selected draft
+核对时间,Check time
+核对版本,Check version
+核对说明,Check instructions
+核心会计政策已完整生效,The core accounting policies have become fully effective
+核心会计政策已完整配置并生效,Core accounting policies are fully configured and effective
+核销,Reconciliation
+核销已关联凭证,Reconciliation is associated with Voucher
+档案类别,File category
+检查主数据,Check master data
+检查编码,Check encoding
+检查项目,Check items
+模板 {0}；未映射 {1}；未复核 {2},Template {0}; not mapped {1}; not reviewed {2}
+模板中不存在报表行 {0},Report row {0} does not exist in the template
+模板中不存在补充披露项目 {0},There is no supplementary disclosure item {0} in the template
+模板名称,Template name
+模板唯一键,template unique key
+模板版本,template version
+模板默认科目完整,The default accounts of the template are complete
+正在保存复核结果,Saving review results
+正在保存并完成结账...,Saving and completing Period Closing...
+正在保存并记账...,Saving and Posting...
+正在删除凭证草稿，请稍候…,"Deleting Voucher draft, please wait..."
+正在加载会计分录...,Loading accounting entries...
+正在反结账并撤销损益结转...,Reverse Period Closing and cancel the profit and loss carryover...
+正在执行受控更正并重新记账…,Performing controlled correction and re-Posting…
+正在批量审核并记账，请稍候…,"Batch review is in progress and Posting, please wait..."
+正在提交审核、审核通过并记账，请稍候...,"Submitting for review, approved and Posting, please wait..."
+正在提交并完成期末结账...,Submitting and completing the final Period Closing...
+正在撤销复核,Withdrawing review
+正在检查凭证修改…,Checking for Voucher modifications…
+正在生成 Excel,Generating Excel
+正在生成 PDF,Generating PDF
+正在生成并保存损益结转凭证...,Generating and saving profit and loss carry forward Voucher...
+正在自动审核并记账，请稍候…,"Automatically reviewing and Posting, please wait..."
+正在转换银行流水,Converting bank statement
+正在运行并保存结账检查...,Running and saving Period Closing check...
+正常,normal
+正常余额符号,normal balance symbol
+正式,formal
+正式应收明细,Formal receivable details
+正式报表显示的法定行次，与系统内部行编码分离。,The legal row number displayed in the official report is separated from the system's internal row coding.
+正式法定财务报表就绪度未通过，阻断项 {0} 个,"Formal statutory financial statement readiness failed, blocking items {0}"
+正式销售发票,Formal sales invoice
+正式销售发票 {0} 已取消，结算结果失效,Formal sales invoice {0} has been canceled and the settlement result is invalid.
+正数,positive number
+此 Excel 导入脚本仅允许处理 aaa 的悦为智能技术(东莞)有限公司,"This Excel import script only allows Yuewei Intelligent Technology (Dongguan) Co., Ltd. to process aaa"
+此同步脚本仅允许处理 aaa 的悦为智能技术(东莞)有限公司,"This synchronization script only allows Yuewei Intelligent Technology (Dongguan) Co., Ltd. to process aaa"
+此清理脚本仅允许处理 aaa 的悦为智能技术(东莞)有限公司,"This cleanup script only allows Yuewei Intelligent Technology (Dongguan) Co., Ltd. to process aaa"
+此维护操作仅允许处理 aaa 的悦为智能技术(东莞)有限公司,"This maintenance operation is only allowed to handle aaa Yuewei Intelligent Technology (Dongguan) Co., Ltd."
+此维护脚本仅允许处理 aaa 的悦为智能技术(东莞)有限公司,"This maintenance script only allows Yuewei Intelligent Technology (Dongguan) Co., Ltd. to process aaa"
+比较数据可生成,Comparative data can be generated
+比较期 {0} 未配置适用报表模板，当前仅显示本期草表,"The applicable report template is not configured for the comparison period {0}, and only the draft report for this period is currently displayed."
+比较期余额,Comparative period balance
+比较期截止日期,Comparison period end date
+比较期报表模板可用,Comparative period report templates available
+比较期起始日期,Comparison period start date
+比较期金额,Comparative period amount
+毛利率,Gross profit margin
+汇率,exchange rate
+没有可结算的销售出库明细,There is no clearable Delivery Note details
+没有可重新创建的已作废现金流量指定单,There are no voided cash flow orders to recreate
+没有异常,No exception
+没有检测到需要保存的凭证变化,No changes to Voucher detected that need to be saved
+没有读取全部会计科目的权限,No permission to read all accounting accounts
+没有读取完整总账范围的权限，不能生成完整试算,"Without permission to read the complete General Ledger range, a complete trial calculation cannot be generated."
+没有读取本期全部凭证的权限，不能完成月末记账,"If you do not have permission to read all Voucher in this issue, you cannot complete the month-end Posting"
+没有读取本期全部凭证的权限，不能生成完整试算,"If you do not have permission to read all Voucher in this issue, you cannot generate a complete trial calculation."
+法定报表启用日期,Statutory reporting activation date
+法定报表配置,Statutory reporting configuration
+法定行次,Legal trip
+法定财务报表,statutory financial statements
+法规要求变更,Changes in regulatory requirements
+流水号,serial number
+流水号重复：{0},Duplicate serial number: {0}
+流水号重置周期,Serial number reset cycle
+流水末笔余额与对账单期末余额不一致，请检查是否漏行、重复或排序错误。,"The final balance of the journal is inconsistent with the closing balance of the statement. Please check whether there are missing rows, duplicates or sorting errors."
+涉及记录,involving records
+混合计量,Mixing metering
+添加银行流水,Add bank statement
+清除选择,Clear selection
+点击修改摘要,Click to edit summary
+点击填写摘要,Click to fill in the summary
+点击选择兼容科目,Click to select compatible subjects
+版本,Version
+物料 {0} 收货数量不足,Insufficient received quantity of material {0}
+物料 {0} 未关联采购收货单,Material {0} is not associated with Purchase Receipt order
+物料 {0} 的折扣/扣款不能超过结算金额,The discount/deduction for material {0} cannot exceed the settlement amount
+物料 {0} 的数量、单价或扣款调整必须填写原因,"The reason for the quantity, unit price or deduction adjustment of material {0} must be filled in"
+物料 {0} 的结算数量超过剩余可结算数量,The settlement quantity of material {0} exceeds the remaining settleable quantity
+物料 {0} 缺少收货明细关联,Material {0} lacks receipt details association
+物料名称,Item name
+物料税费模板（13%进项税）,Material tax template (13%Input VAT)
+物料税费模板（13%销项税）,Material tax template (13%Output VAT)
+物料编码,Item code
+状态,Status
+状态 / 已有凭证,Status / Already have Voucher
+现值,present value
+现在可以修改本期凭证；修改完成后新建同期间的月末结账单。,"You can now modify Voucher for this period; after the modification is completed, create a new month-end Period Closing order for the same period."
+现金分录 {0} 指定金额必须等于 {1}，当前为 {2},"The specified amount for cash entry {0} must equal {1}, currently {2}"
+现金分类,Cash classification
+现金及现金等价物范围,Scope of cash and cash equivalents
+现金及现金等价物范围已完整复核,The scope of cash and cash equivalents has been fully reviewed
+现金发生额,Cash balance
+现金总账分录,Cash General Ledger entry
+现金总账分录 {0} 不属于该凭证或已失效,Cash entry General Ledger {0} does not belong to the Voucher or has expired
+现金或银行科目,Cash or bank account
+现金流使用了未复核的历史自动映射，正式报表不可用,"Cash flow uses historical automatic mapping that has not been reviewed, and formal reports are not available."
+现金流勾稽差额 {0}，未分类现金流 {1}，未复核历史自动映射 {2} 次,"Cash flow balance {0}, unclassified cash flow {1}, unreviewed historical automatic mapping {2} times"
+现金流建议已变化，请刷新核对预览,"Cash flow advice has changed, please refresh to check the preview"
+现金流量,cash flow
+现金流量勾稽,cash flow reconciliation
+现金流量归类,Cash flow classification
+现金流量指定,cash flow designation
+现金流量指定单,cash flow order
+现金流量指定单状态只能通过指定服务变更,The status of the cash flow order can only be changed through designated services.
+现金流量指定单的来源信息不能修改,The source information of the cash flow designation order cannot be modified.
+现金流量指定已确认,Cash flow designation confirmed
+现金流量直接指定,Cash flows are directly specified
+现金流量直接指定启用日期,Cash flow directly specifies activation date
+现金流量表,Cash Flow Statement
+现金流量表与现金及现金等价物变动衔接,Cash Flow Statement is linked to changes in cash and cash equivalents
+现金流量表映射必须同时配置现金流入行和现金流出行,Cash Flow Statement mapping must configure both cash inflow rows and cash flow rows
+现金流量项目,cash flow items
+现金流量项目 {0} 不是当前模板的明细项目,Cash flow item {0} is not a detailed item of the current template
+现金流量项目指定,Cash flow item designation
+现金流量项目编码,Cash flow item coding
+现金流项目需要核对：{0},Cash flow items need to be checked: {0}
+现金等价物,cash equivalents
+现金范围 SHA-256,Cash range SHA-256
+现金范围只能选择末级科目,Only the last-level account can be selected in the cash range
+现金范围科目必须属于所选公司,The cash scope account must belong to the selected company
+生产主数据与成本科目,Production master data and cost accounts
+生成,generate
+生成人,Generate person
+生成凭证草稿,Generate Voucher draft
+生成对账单,Generate statement
+生成年度损益结转凭证,Generate annual profit and loss carryforward Voucher
+生成损益结转凭证,Generate profit and loss carry forward Voucher
+生成时间,Generation time
+生成本期对账单,Generate statement for current period
+生成税务发票草稿,Generate draft tax invoice
+生效会计政策快照,Effective accounting policy snapshot
+生效日期,Effective date
+生效日期配置已保存,Effective date configuration saved
+用途,Purpose
+用途确认,Confirmation of purpose
+申请状态,Application status
+申请类型,Application type
+电子会计档案,Electronic accounting files
+电子会计档案保管年限不能少于 10 年,Electronic accounting files must be kept for no less than 10 years
+电子原件,Electronic originals
+电子档案,Electronic archives
+电子档案引用公司与请求公司不一致,The company cited in the electronic archive is inconsistent with the requesting company
+电子档案引用对象不属于请求公司,The e-file reference object does not belong to the requesting company
+电子档案引用对象不能为空,The electronic file reference object cannot be empty
+留空表示该项目下的全部科目,Leave blank to indicate all accounts under the project
+留空表示适用于该报表项目的全部科目。,Leave blank to apply to all accounts for this report item.
+疑似凭证：,Suspected Voucher:
+登记对账差异,Register reconciliation differences
+直接确认应收,Confirm receivables directly
+相关模块未安装，不阻断结账,The relevant modules are not installed and Period Closing is not blocked.
+确定,OK
+确认,Confirm
+确认与审批,Confirmation and Approval
+确认人,Confirmor
+确认信息,Confirm information
+确认删除选中的 {0} 张未记账凭证草稿？回单、银行交易和 PDF 原件会保留，可重新生成。,"Confirm to delete the selected {0} PostingVoucher draft? The original receipt, bank transaction and PDF are retained and can be regenerated."
+确认勾选,Confirm the check
+确认反结账,Confirm anti-Period Closing
+确认后生成,Generate after confirmation
+确认处理,Confirm processing
+确认导入并生成草稿（{0}）,Confirm import and generate draft ({0})
+确认将这笔回单对应银行交易与已关联凭证核销？,Confirm that the corresponding bank transaction of this receipt is associated with VoucherReconciliation?
+确认批量审核并记账,Confirm batch review and Posting
+确认抵扣,Confirm deduction
+确认提交并完成期末结账 {0}？,Confirm submission and complete the final Period Closing {0}?
+确认方式,Confirmation method
+确认时间,Confirmation time
+确认映射复核,Confirm mapping review
+确认更正,Confirm correction
+确认本条映射正确,Confirm that this mapping is correct
+确认查验通过,Confirm that the inspection is passed
+确认核销该银行交易与已关联凭证？,Confirm that the bank transaction Reconciliation is associated with Voucher?
+确认结账,Confirm Period Closing
+确认解决,Confirm resolution
+确认解决必须关联处理单据或上传处理附件,Confirmation of resolution must be associated with processing documents or uploaded processing attachments
+确认豁免,Confirm exemption
+确认附件,Confirm attachment
+社保,social security
+社保公司承担比例必须在 0 到 100 之间,The social security company’s contribution ratio must be between 0 and 100
+社保分摊,Social Security Sharing
+社保可选择 221101；公积金选择 221104。计提贷方和支付借方使用同一科目。,You can choose 221101 for social security; you can choose 221104 for provident fund. The accrual of Credit and the payment of Debit use the same account.
+社保明细合计与银行付款不一致,The total social security details are inconsistent with the bank payment
+票据状态,Ticket status
+科目,subjects
+科目 {0} 分组属性与实际父子关系不一致,The grouping attribute of account {0} is inconsistent with the actual parent-child relationship
+科目 {0} 匹配到了分组科目 {1}，不能直接记账,Account {0} matches the group account {1} and cannot directly Posting
+科目 {0} 名称与模板不一致：当前为 {1}，模板为 {2},The name of account {0} is inconsistent with the template: currently it is {1} and the template is {2}
+科目 {0} 已停用,Account {0} is deactivated
+科目 {0} 已停用：{1},Account {0} Deactivated: {1}
+科目 {0} 应唯一匹配 {1}，实际匹配 {2} 条,"Account {0} should uniquely match {1}, but actually matches {2}"
+科目 {0} 找不到可用的父科目,No available parent account found for account {0}
+科目 {0} 报表类型应为 {1},Account {0} report type should be {1}
+科目 {0} 根类型应为 {1},Account {0} root type should be {1}
+科目 {0} 的分组属性不正确,Account {0} has incorrect grouping attributes
+科目 {0} 的根类型、报表类型或父级不一致，请核对后再导出模板,"The root type, report type or parent of account {0} is inconsistent. Please check before exporting the template."
+科目 {0} 的现金范围有效期间与 {1} 重叠,The cash range validity period of account {0} overlaps with {1}
+科目 {0} 类型应为 {1},Account {0} type should be {1}
+科目不存在,Subject does not exist
+科目不属于当前公司,The account does not belong to the current company
+科目不能为空,Account cannot be empty
+科目只能映射到明细项目，不能映射到标题或公式行,"Accounts can only be mapped to detail items, not to headers or formula rows"
+科目名称,Subject name
+科目和摘要,Subjects and Summary
+科目完整性状态,Account integrity status
+科目完整性详情,Account completeness details
+科目已找到，但当前科目树无法展开到该位置，请刷新后重试。,"The account has been found, but the current account tree cannot be expanded to this position. Please refresh and try again."
+科目币种,Account currency
+科目性质,Nature of subject
+科目映射控制台,Account Mapping Console
+科目映射统一生效日期,Account mapping unified effective date
+科目映射统一生效日期不能早于中国财务启用日期,The unified effective date of account mapping cannot be earlier than the activation date of China Finance
+科目树新增接口只支持 Account,The new interface of the account tree only supports Account
+科目档案初始化时间,Account file initialization time
+科目模板,Account template
+科目模板与默认科目完整,The account template is complete with the default account
+科目模板哈希,Account template hash
+科目模板完整,Complete account template
+科目模板版本,Account template version
+科目类别,Subject Category
+科目编号 {0} 重复：{1},Account No. {0} Duplicate: {1}
+科目编号存在重复，不能同步公司默认科目,There are duplicate account numbers and the company's default accounts cannot be synchronized.
+科目编号快照,Account Number Snapshot
+科目编码,Subject code
+科目表,chart of accounts
+科目表没有读取到数字科目编码,The chart of accounts does not read the numeric account code
+科目表第 {0} 行与第 {1} 行重复使用编码 {2},Row {0} and row {1} in the chart of accounts reuse the code {2}
+租赁,lease
+税务与报表,Taxation and reporting
+税务发票,tax invoice
+税务发票 {0} 必须是已提交的进项蓝票,Tax invoice {0} must be a submitted input blue invoice
+税务发票只能关联已审批开票申请,Tax invoices can only be associated with approved invoicing applications
+税务发票已完成业务分摊,Business allocation of tax invoices has been completed
+税务发票的销售发票分摊必须与开票申请快照一致,The sales invoice allocation of the tax invoice must be consistent with the invoicing application snapshot
+税务发票金额必须与开票申请一致,The tax invoice amount must be consistent with the invoicing application
+税务接口调用日志,Tax interface call log
+税务状态,tax status
+税务科目必须属于所选公司,The tax account must belong to the selected company
+税务科目映射,Tax account mapping
+税务科目映射必须选择末级科目,Tax account mapping must select the last-level account
+税务科目的科目类型必须为 Tax,The account type of the tax account must be Tax
+税务类别,tax category
+税收分类编码,tax classification code
+税款所属期起止：,The tax period starts and ends:
+税率,tax rate
+税票号码,tax invoice number
+税票税额 {0}，总账销项税发生额 {1},"Tax stamp tax amount {0}, General LedgerOutput VAT occurrence amount {1}"
+税费明细,Tax details
+税费明细无法完整识别,Tax details cannot be fully identified
+税费科目完整,Complete tax accounts
+税项说明,Tax description
+税额,Amount of tax
+税额分摊不一致,Tax allocation is inconsistent
+空,Empty
+站点仍有排队或运行中的后台任务，请待任务完成后重试,The site still has background tasks queued or running. Please try again after the tasks are completed.
+第 {0} 条银行流水的流水号超过 {1} 个字符，请检查参考号字段映射。,"The serial number of bank statement {0} exceeds {1} characters, please check the reference number field mapping."
+第 {0} 条银行流水的流水号重复：{1}。,The serial number of bank statement {0} is repeated: {1}.
+第 {0} 行余额与上一笔流水不连续，请检查是否漏行、重复或排序错误。,"The balance of line {0} is not continuous with the previous transaction. Please check whether there are missing lines, duplications or sorting errors."
+第 {0} 行：{1},Line {0}: {1}
+第 {0} 页第 {1} 张,Page {0} Page {1}
+第 {0} 页：{1},Page {0}: {1}
+第{0}月,Month {0}
+第一期仅支持明确标注的人民币金额,The first phase only supports clearly marked RMB amounts.
+第一期关联要求凭证中恰有一行人民币本银行科目,The first phase of related requirements Voucher contains exactly one RMB bank account
+等,Wait
+等待重试,Waiting for retry
+筛选,Filter
+管理与审计,Management and Audit
+系统会完成本期凭证记账、月末检查和损益结转；核对财务报表后确认结账。关闭页面不会丢失进度。,"The system will complete the VoucherPosting, month-end inspection and profit and loss carryover for the current period; Period Closing will be confirmed after checking the financial statements. Progress will not be lost by closing the page."
+系统会记录批次、操作人和处理原因。,"The system records the batch, operator and reason for processing."
+系统将一次完成以下操作：,The system will complete the following operations at once:
+系统将按日期记账本期已核对凭证，并完成月末检查和损益结转。确认开始？,"The system will check Voucher according to date Posting in this period, and complete the month-end inspection and profit and loss carryover. Confirm to start?"
+系统建议项目,System suggestion projects
+系统建议项目编码,The system recommends project codes
+系统建议，待复核,"System recommendation, pending review"
+累计开票,Cumulative invoicing
+累计收货,Cumulative receipts
+累计红冲金额不能超过原蓝票可红冲金额,The accumulated red bonus amount cannot exceed the red bonus amount of the original blue ticket.
+红冲关联,red flush association
+红冲必须关联销售退货或贷项销售发票,Red rushes must be associated with sales returns or credited sales invoices
+红冲状态,red flush status
+红冲申请必须关联原蓝票和已提交销售退货或贷项发票,The red flush application must be associated with the original blue invoice and the submitted sales return or credit invoice
+红冲申请的所有金额必须为负数,All amounts applied for red flushes must be negative
+红冲需要已提交蓝票及已提交销售退货或贷项发票,Red flush requires submission of blue invoice and sales return or credit invoice.
+红字发票必须关联原蓝票和销售退货或贷项发票,Credit Note must be associated with the original blue invoice and the sales return or credit invoice
+红字发票必须关联已提交蓝票及已提交销售退货或贷项发票,Credit Note must be associated with a blue invoice submitted and a sales return or credit invoice submitted
+红字发票所有明细金额必须为负数,Credit NoteAll detailed amounts must be negative
+红票,red ticket
+级别,level
+纳入现金及现金等价物,Include cash and cash equivalents
+纳入现金及现金等价物的科目必须是现金或银行科目,Accounts included in cash and cash equivalents must be cash or bank accounts
+纳税人,taxpayer
+纳税人类型,Taxpayer type
+纳税人识别号,taxpayer identification number
+纳税人识别号：,Taxpayer Identification Number:
+经办信息,Handling information
+经营性应付项目变动,Changes in operating payables
+经营性应收项目变动,Changes in operating receivables
+经营活动产生的现金流量净额,Net cash flow from operating activities
+经营现金流,operating cash flow
+结果,result
+结算单价,Settlement unit price
+结算明细,Settlement details
+结算明细必须来自同一公司、客户和币种的销售出库单,"The settlement details must be from the Delivery Note order of the same company, customer and currency."
+结账人,Period Closing people
+结账前冻结日期,Freeze date before Period Closing
+结账后冻结期间,Freeze period after Period Closing
+结账时间,Period Closing time
+结账月份,Period Closing month
+结账月份与截止日期不一致，请只选择一个自然月,"Period Closing month is inconsistent with the deadline, please select only a calendar month"
+结账月份与起始日期不一致，请只选择一个自然月,"Period Closing month is inconsistent with the starting date, please select only a natural month"
+结账月份必须使用 YYYY-MM 格式，例如 2026-08,"The Period Closing month must use the YYYY-MM format, such as 2026-08"
+结账月份无效，请选择正确的月份,"Period Closing month is invalid, please select the correct month"
+结账档案,Period Closing Archives
+结账档案已生成,Period Closing file has been generated
+结账检查,Period Closing check
+结账检查保存失败,Period Closing check save failed
+结账检查已生成并保存为草稿,Period Closing check generated and saved as draft
+结账检查未通过，请处理下方问题后继续,"Period Closing check failed, please solve the following problems before continuing."
+结账类型,Period Closing type
+结账设置,Period Closing settings
+结转截止日期不能晚于会计年度结束日 {0},The carry forward deadline cannot be later than the end of the fiscal year {0}
+结转损益,Profit and loss carried forward
+结转期间不连续,The carry forward period is not consecutive
+结转科目不一致,The carry forward accounts are inconsistent
+统一记字,Unified Prefix
+继续月末结账,Continue to end of month Period Closing
+编制单位：,Prepared by:
+编制基础及持续经营说明,Preparation basis and continuing operation statement
+编制状态,Compilation status
+编制状态：草表。正式法定财务报表须从已通过检查的期末智能结转生成。,Preparation status: draft. Formal statutory financial statements must be generated from period-end smart carryforwards that have passed the checks.
+编号,No.
+编号规则,Numbering scheme
+编辑,Edit
+编辑展示调整规则,Edit display adjustment rules
+缩进,indent
+缺少 {0} 张,Missing {0} sheets
+缺少 {0} 税务科目映射,Missing {0} tax account mapping
+缺少中国银行交易摘要,Bank of China transaction summary missing
+缺少中国银行交易日期,Bank of China transaction date missing
+缺少农业银行交易摘要,Agricultural Bank of China transaction summary missing
+缺少农业银行交易时间,Agricultural Bank of China transaction hours missing
+缺少农业银行收付款账号,Lack of Agricultural Bank of China collection and payment account number
+缺少可用默认库存科目,Missing available default inventory account
+缺少对账范围：{0},Missing reconciliation range: {0}
+缺少工商银行交易时间,Missing ICBC transaction hours
+缺少工商银行摘要或业务种类,ICBC summary or business type is missing
+缺少工商银行收付款账号,Lack of ICBC collection and payment account number
+缺少广发银行交易摘要,Guangfa Bank Transaction Summary Missing
+缺少广发银行交易日期或回单流水号,Lack of Guangfa Bank transaction date or receipt serial number
+缺少广发银行收付款信息,Lack of Guangfa Bank payment information
+缺少必填字段：{0},Missing required field: {0}
+缺少或重复的字段：{0},Missing or duplicate field: {0}
+缺少截至 {0} 的比较期报表模板；本期报表保留为草表，比较金额未生成。,"The report template for the comparison period as of {0} is missing; the report for this period is retained as a draft, and the comparison amount is not generated."
+缺少本期已提交附注,Missing notes submitted for this issue
+缺少本期报表模板：{0},Missing report template for this period: {0}
+缺少比较期报表模板：{0}。月结可继续，相关报表保留为草表，比较金额留空；正式报表需补齐比较数据。,"Missing comparison period report template: {0}. The monthly settlement can be continued, and the relevant reports will be kept as drafts, with the comparative amounts left blank; the formal reports will need to be completed with comparative data."
+缺少流水号,Missing serial number
+缺少科目 {0} {1},Missing account {0} {1}
+缺少：{0},Missing: {0}
+职工薪酬,employee compensation
+自动提交采购应收单,Automatically submit purchase receivables
+自动提交销售应收单,Automatically submit sales receivables
+自动撤销损益结转凭证：{0},Automatic cancellation of profit and loss carryover Voucher: {0}
+自愿变更,voluntary change
+至,to
+至少选择一张进项税务发票,Select at least one Input VAT service invoice
+至少选择一张销售发票,Select at least one sales invoice
+范围唯一键,range unique key
+范围版本键,range version key
+草稿,Draft
+草稿借方,DraftDebit
+草稿可在查凭证中编辑，核对完成后才能记账。已记账历史保持原状态。,"The draft can be edited in the check Voucher, and it can be Posting only after the verification is completed. The Posting history remains in its original state."
+草稿现金流项目,Draft Cash Flow Project
+草稿现金流项目格式错误,Draft cash flow project format error
+草稿贷方,DraftCredit
+草稿（待重新结账）,Draft (to be re-Period Closing)
+草表,draft table
+蓝票,blue ticket
+薪资科目,Payroll account
+行次,Line number
+行类型,row type
+行编码,row encoding
+行编码只能使用大写字母、数字和下划线：{0},"Line encoding can only use uppercase letters, numbers and underscores: {0}"
+补充披露项目,Supplemental Disclosure Items
+补充披露项目不能与主报表项目相同,Supplementary disclosure items cannot be the same as main statement items
+补充披露项目只能选择明细项目，不能选择标题或公式行,"For supplementary disclosure items, only detailed items can be selected, and title or formula lines cannot be selected."
+补齐空白主数据配置,Fill in the blank master data configuration
+被冲销凭证,By ReversalVoucher
+要求配置供应商对账范围,It is required to configure the Supplier reconciliation range
+要求配置客户对账范围,Requires configuration of customer reconciliation scope
+要求配置银行对账范围,Requires configuration of bank reconciliation scope
+覆盖原因,Coverage reason
+覆盖操作人,Cover operator
+覆盖时间,Coverage time
+覆盖结算模式,Override billing model
+覆盖销售结算模式,Cover sales settlement model
+规则键,rule key
+规格型号,Specification
+解决时间,Resolution time
+解决确认人,resolve confirmer
+解析版本,parsed version
+计提及支付分录与银行交易金额不一致,The accrual and payment entries are inconsistent with the bank transaction amount
+计提及支付的应付科目,Accounts payable for accrual and payment
+计算逻辑,Calculation logic
+计算银行对账单余额,Calculate bank statement balance
+订单差异,Order differences
+订单差异原因,Reasons for order differences
+订单数量,Order quantity
+记 账 凭 证,Accounting Voucher
+记账人,Posting people
+记账凭证,Accounting Voucher
+记账凭证借贷不平衡：借方 {0}，贷方 {1},"PostingVoucher Loan imbalance: Debit {0}, Credit {1}"
+记账凭证明细,PostingVoucher details
+记账凭证至少需要一条分录,PostingVoucher requires at least one entry
+记账日期,Posting Date
+记账：,Posting：
+设置人,Set up person
+设置公积金分摊规则,Set provident fund allocation rules
+设置开票控制,Set up invoicing controls
+设置时间,Set time
+设置社保分摊规则,Set social security sharing rules
+识别与处理,Identify and process
+识别回单,Identify the receipt
+识别失败,Recognition failed
+识别问题,Identify the problem
+试算包含本期有效草稿；期初仅含已记账数据。早期草稿须先处理，正式报表以实际记账数据为准。,"The trial calculation includes the valid draft of this period; the beginning of the period only contains Posting data. Early drafts must be processed first, and the official report shall be subject to the actual Posting data."
+试算平衡,trial balance
+试算平衡表,trial balance
+该公司尚未配置报表科目映射,The company has not yet configured reporting account mapping
+该公司未启用中国财务,The company has not enabled China Finance
+该凭证不包含需要指定的外部现金流,The Voucher does not contain external cash flows that need to be specified
+该凭证分录超过100行，请打开原凭证按标准流程取消并修订,This Voucher entry exceeds 100 lines. Please open the original Voucher and cancel and revise it according to the standard process.
+该凭证已关联另一交易回单；第一期只支持一笔银行交易对应一张凭证,This Voucher has been associated with another transaction receipt; the first phase only supports one bank transaction corresponding to one Voucher
+该凭证已有有效的现金流量指定单,The Voucher already has a valid cash flow designation order
+该凭证已经存在修订凭证，不能重复修订,This Voucher already has revision Voucher and cannot be revised again.
+该凭证已记账。确认后将取消原凭证、生成修订并重新记账{0}。,"The Voucher has been replaced by Posting. After confirmation, the original Voucher will be canceled, the revision will be generated and Posting{0} will be re-created."
+该分录已变化或不支持表内修改，请刷新报表,This entry has changed or does not support in-table modification. Please refresh the report.
+该单据不包含现金/银行分录,This document does not contain cash/bank entries
+该单据不包含需要指定的外部现金流,This document does not contain external cash flows that need to be specified
+该原件已用于银行回单核对，不能删除、公开或移动；错误批次请先作废,"The original has been used for Bank Receipt verification and cannot be deleted, published or moved; please invalidate the wrong batch first"
+该回单不属于当前批次,This reply does not belong to the current batch
+该回单只补充凭证附件；未创建银行交易，不需要核销,This reply only adds attachment Voucher; no bank transaction is created and Reconciliation is not required.
+该对账范围和期间已存在有效对账单：{0},A valid statement already exists for this reconciliation range and period: {0}
+该展示行由系统计算，不能直接修改科目,This display line is calculated by the system and the account cannot be modified directly.
+该批次尚未成功识别或已作废,The batch has not been successfully identified or has been invalidated
+该摘要已变化或不支持表内修改，请刷新报表,The summary has changed or does not support in-table modification. Please refresh the report.
+该日期及以后含外部现金流的凭证须确认现金流量项目后才能月结；此前凭证继续按科目映射自动归类。,"Voucher that contains external cash flow on this date and after must be confirmed on the cash flow project before it can be settled monthly; before that, Voucher continues to be automatically classified according to account mapping."
+该日期起使用企业会计准则 3.0 模板及正式报表就绪度控制。,Accounting Standards for Business Enterprises 3.0 templates and formal reporting readiness controls will be used from this date.
+该映射已复核；修改归类、科目、期间或金额方向后，系统会自动要求重新复核。,"The mapping has been reviewed; after modifying the classification, account, period or amount direction, the system will automatically request a re-review."
+该月份存在已归档凭证，需单独处理,There is archived Voucher in this month and needs to be processed separately
+该月份存在禁止记账的会计期间,There is an accounting period in this month that prohibits Posting
+该月份存在结账档案包，需单独处理,Period Closing archive package exists in this month and needs to be processed separately
+该月份已处于公司冻结期间,This month is already in the company freeze period
+该月份已完成期末智能结转，请先检查结账及档案状态,"The end-of-period smart carryover has been completed for this month, please check Period Closing and file status first"
+该期间已有损益结转凭证 {0}，但结转科目不是当前设置的 {1},"There has been profit and loss carryforward Voucher {0} during this period, but the carryforward account is not the currently set {1}"
+该期间已经存在损益结转凭证 {0},There is already a profit and loss carryforward during this period Voucher {0}
+该期间已经结账或作废,This period has been Period Closing or is invalid.
+该来源类型不支持表内修改,This source type does not support in-table modification
+该流水号已有回单，但关键数据冲突，不能覆盖,"There is already a receipt for this serial number, but the key data conflicts and cannot be overwritten."
+该科目在当前模板中的映射有效期间与 {0} 重叠,This account overlaps with {0} during the mapping validity period in the current template
+该税务科目的有效期间与 {0} 重叠,The validity period of this tax account overlaps with {0}
+该结账凭证已取消，没有有效会计分录,The Period ClosingVoucher has been canceled and has no valid accounting entries.
+该草稿对应的银行交易已有核销记录，不能直接删除,The bank transaction corresponding to this draft already has a Reconciliation record and cannot be deleted directly.
+该行不能直接修改,This line cannot be modified directly
+该行不能直接修改摘要,This line cannot directly modify the summary
+该行不能直接修改科目,The account cannot be modified directly in this row
+详情,Details
+说明,Description
+请上传 .xlsx 格式的银行流水文件。,Please upload the bank statement file in .xlsx format.
+请上传不超过 20 MB 的 PDF 回单,Please upload a PDF reply not exceeding 20 MB
+请上传本地 PDF 原件，暂不支持远程文件链接,Please upload the local PDF original. Remote file links are not supported yet.
+请作废本批次并重新上传完整、正确的回单。,Please cancel this batch and re-upload a complete and correct reply.
+请允许浏览器打开弹出窗口,Please allow your browser to open pop-ups
+请先保存或取消当前凭证的修改，再编辑另一张凭证,Please save or cancel the modification of the current Voucher before editing another Voucher
+请先保存期末结账凭证,Please save the end of period Period ClosingVoucher first
+请先勾选进项税务发票,Please check Input VAT service invoice first
+请先勾选需要删除的凭证草稿,Please first check the Voucher draft that needs to be deleted
+请先勾选需要处理的凭证,Please check the Voucher that needs to be processed first
+请先勾选需要打印的凭证,Please check the Voucher you want to print first
+请先反结账,Please reverse Period Closing first
+请先启用凭证准备模式，且本期须在生效日期之后,"Please enable Voucher preparation mode first, and this issue must be after the effective date"
+请先在中国财务设置中启用凭证准备模式并设置起始日期,Please enable Voucher preparation mode in China Financial Settings first and set the start date
+请先在中国财务设置中配置本年利润科目,Please configure the current year's profit account in China Financial Settings first.
+请先在凭证编辑面板选择现金流项目,Please select the cash flow project in the Voucher editing panel first
+请先在月末结账单 {0} 中执行反结账,Please first execute the counter Period Closing in the end-of-month Period Closing order {0}
+请先在银行账户填写完整银行账号，用于核对回单本方账号,Please fill in the complete bank account number in the bank account first to verify the account number of the party responsible for the receipt.
+请先完成凭证审核记账,Please complete the Voucher review Posting first
+请先完成损益结转，再确认月末结账,"Please complete the profit and loss carryover first, and then confirm the Period Closing at the end of the month"
+请先完成本期记账和损益结转,Please complete the current period Posting and profit and loss carryover first
+请先完成结账,Please complete Period Closing first
+请先执行“取消”，取消成功后再执行“删除”。,"Please execute ""Cancel"" first, and then execute ""Delete"" after the cancellation is successful."
+请先暂停进行中的月末结账，再调整凭证准备模式,"Please pause the ongoing month-end Period Closing first, and then adjust the Voucher preparation mode"
+请先核对回单、业务依据及重复记账情况并确认,"Please check the receipt, business basis and duplicate Posting first and confirm"
+请先核对并勾选确认,Please check and confirm first
+请先检查并开始，或继续上次处理,"Please check and start first, or continue with last processing"
+请先生成或选择损益结转凭证,Please generate or select profit and loss carryforward Voucher first
+请先进入站点维护模式再执行清理；预览不需要维护模式,Please enter site maintenance mode before performing cleanup; maintenance mode is not required for preview
+请先选择公司,Please select a company first
+请先选择并保存银行账户。,Please select and save a bank account first.
+请刷新并核对凭证版本后再确认,Please refresh and check the Voucher version before confirming
+请勾选未记账凭证的分录行；同张凭证只处理一次,Please check the entry lines without PostingVoucher; the same Voucher will only be processed once
+请填写 0 至 100 之间的{0}公司承担百分比,Please fill in the {0} company’s contribution percentage between 0 and 100
+请填写作废原因,Please fill in the reason for cancellation
+请填写处理原因,Please fill in the reason for processing
+请填写批量审核并记账的处理原因,Please fill in the batch review and processing reason Posting
+请填写有效的试算期间,Please fill in a valid trial period
+请将私有 PDF 原件上传到当前回单导入批次,Please upload the original private PDF to the current receipt import batch
+请将科目添加到根公司 {0},Please add account to root company {0}
+请打开银行流水重新核销；凭证本身已经记账，无需重复提交。,"Please open the bank statement and re-Reconciliation; Voucher itself is already Posting, so there is no need to submit it again."
+请指定已存在的公司完整名称，不支持简称或模糊匹配,Please specify the full name of an existing company. Abbreviation or fuzzy matching is not supported.
+请按分摊明细核对并确认，不能忽略个人承担部分,Please check and confirm according to the apportionment details. Do not ignore the personal share.
+请核对该科目在所选报表中的列报项目、金额方向及适用期间后确认。,"Please confirm after checking the presentation items, amount direction and applicable period of this account in the selected report."
+请根据实际业务判断：收到或支付现金时应列示在哪个现金流量项目。不要用修改映射来调整现金净增加额。,Please judge based on actual business: in which cash flow item should be listed when cash is received or paid. Do not use modify mapping to adjust the net increase in cash.
+请检查凭证后重试,Please check Voucher and try again
+请检查凭证和工作流权限后重试,Please check Voucher and workflow permissions and try again
+请求摘要,Request summary
+请直接填写科目编码,Please fill in the subject code directly
+请确认生成本批回单的记账凭证草稿,Please confirm the draft PostingVoucher that generated this batch of receipts
+请设置{0}计提及支付使用的应付科目,Please set the payable account used for accounting and payment of {0}
+请设置凭证准备模式生效日期,Please set the Voucher preparation mode effective date
+请输入下级科目名称,Please enter the name of the subordinate subject
+请输入科目名称,Please enter the subject name
+请输入科目编码或名称,Please enter the account code or name
+请选择 1 至 300 张凭证,Please select 1 to 300 Voucher
+请选择 1 至 300 张凭证草稿,Please select 1 to 300 Voucher drafts
+请选择一个分组科目作为上级科目,Please select a group subject as the superior subject
+请选择不同于银行科目的对方明细科目,Please select the other party's detailed account that is different from the bank account.
+请选择公司,Select a company
+请选择分组科目后再新增下级科目,Please select group subjects before adding subordinate subjects.
+请选择有权访问的非集团公司,Please select a non-group company that has access
+请选择本公司启用且关联银行科目的公司银行账户,Please select the company bank account that is activated by the company and associated with the bank account
+请选择本公司启用的人民币明细科目,Please select the RMB detailed accounts enabled by our company
+请选择本公司启用的明细科目,Please select the detailed accounts enabled by our company
+请选择至少一张单据,Please select at least one document
+请选择要删除的凭证草稿,Please select the Voucher draft you want to delete
+请选择记账凭证或已提交付款单,Please select PostingVoucher or have submitted the payment order
+请选择需要反结账的月末结账单,Please select the month-end Period Closing order that requires counter Period Closing
+请选择需要处理的凭证,Please select the Voucher that needs to be processed
+请选择需要确认的月末结账单,Please select the month-end Period Closing order that needs to be confirmed
+调整原因,Reason for adjustment
+调整明细数,Adjust details
+调节金额,Adjustment amount
+豁免人,exempt person
+豁免原因,Reason for exemption
+豁免差异,exemption difference
+豁免差异必须上传审批附件,Approval attachments must be uploaded for exemption differences
+豁免必须填写原因,Reasons for exemption must be filled in
+豁免时间,Exemption time
+豁免说明,Exemption instructions
+豁免采购齐套校验,Exemption from purchasing complete sets of verification
+负债,Liabilities
+负债合计,Total liabilities
+负债和所有者权益,Liabilities and Owner's Equity
+负数,negative number
+财务审批人,financial approver
+财务审批时间,Financial approval time
+财务影响及处理方法,Financial impact and treatment methods
+财务报表,financial statements
+财务报表无法生成：{0},Financial statements cannot be generated: {0}
+财务报表模板,financial statement template
+财务报表科目映射,Financial statement account mapping
+财务报表科目映射只能选择末级会计科目，不能选择父科目,"For financial statement account mapping, only the last-level accounting account can be selected, and the parent account cannot be selected."
+财务报表科目映射已复核,Financial statement account mapping reviewed
+财务报表编制基础,Basics of Financial Statement Preparation
+财务报表附注,Notes to Financial Statements
+财务报表附注已提交,Notes to financial statements submitted
+财务账簿,financial books
+财年,fiscal year
+责任人,Responsible person
+账务截止日期恢复至：{0},The accounting deadline is restored to: {0}
+账面未达总笔数,The book balance does not reach the total number of transactions
+货物或服务名称,Goods or services name
+购买方,buyer
+购买方名称,Buyer name
+购买方税号,Buyer’s tax ID number
+购销双方,Buyers and sellers
+贷方,Credit
+贷方合计,CreditTotal
+贷方金额,Credit amount
+贷方（科目币种）,Credit (account currency)
+费用,cost
+费用报销科目,Expense reimbursement account
+资 产,Assets
+资产,assets
+资产总计,Total assets
+资产总计等于负债和所有者权益总计,Total assets equals total liabilities and owners' equity
+资产类别科目,Asset Class Account
+资产类别科目完整,Asset class accounts are complete
+资产负债表,Balance Sheet
+资产负债表勾稽,Balance SheetGoji
+资产负债表平衡,Balance Sheet Balance
+资产负债表日后事项,Balance SheetFuture matters
+资产负债表未勾稽，差异 {0},"Balance Sheet is not checked, difference {0}"
+起始日期,start date
+起始日期不能晚于截止日期,Start date cannot be later than end date
+超收,Overcharge
+超票,Super ticket
+跟随公司设置,Follow company settings
+跳过 {0} 张：,Skip {0} sheets:
+输入科目编码或名称,Enter account code or name
+过账日期,PostingDate
+近三,nearly three
+近三个月,last three months
+这将把公司默认科目恢复为中国模板定义，是否继续？,This will restore the company default account to the Chinese template definition. Do you want to continue?
+这是系统根据科目属性生成的建议。请核对其是否符合本公司的会计政策和报表口径后再确认。,This is a suggestion generated by the system based on the account attributes. Please check whether it complies with the company's accounting policies and reporting standards before confirming.
+进销项,Purchase and sale items
+进销项税务科目已配置,Output VAT transaction account has been configured
+进项,Input
+进项税,Input VAT
+进项税务发票,Input VAT service invoice
+进项税务发票 {0} 不处于已勾选状态,Input VAT service invoice {0} is not checked
+进项税务发票 {0} 与抵扣批次公司不一致,Input VAT service invoice {0} is inconsistent with the deduction batch company
+进项税务发票 {0} 已在未完成抵扣批次中,Input VAT service invoice {0} is already in the uncompleted deduction batch
+进项税务发票 {0} 必须已查验并处于待勾选状态,Input VAT service invoice {0} must have been checked and is in a state to be checked
+进项税务发票分摊金额 {0} 与采购发票金额 {1} 不一致,Input VAT The service invoice apportionment amount {0} is inconsistent with the purchase invoice amount {1}
+进项税务发票已完成查验,Input VAT service invoice has been verified
+进项税票,Input VAT ticket
+进项税票分摊与总账发生额一致,The allocation of Input VAT tickets is consistent with the amount of General Ledger
+进项税认证与抵扣,Input VAT certification and deduction
+进项税认证和抵扣状态只能通过抵扣批次服务变更,Input VAT certification and deduction status can only be changed through the deduction batch service
+追溯调整日记账,Retrospective adjustment date Posting
+追溯调整日记账必须为本公司已提交单据,The date of retrospective adjustment Posting must be the document submitted by the company
+追溯调整日记账必须直接使用配置的未分配利润科目,The retrospective adjustment date Posting must directly use the configured undistributed profit account
+追溯调整日记账日期必须晚于原错报期间截止日,The date of retrospective adjustment Posting must be later than the end of the original misstatement period
+追溯调整科目 {0} 未配置资产负债表映射,Retroactively adjust account {0} and Balance Sheet mapping is not configured
+适用会计科目均已纳入四类报表映射,Applicable accounting accounts have been included in the four types of report mapping
+适用科目均已映射,Applicable accounts have been mapped
+选择“行编码 | 项目名称”。现金或银行科目减少时使用。,"Select ""Row Encoding | Project Name"". Used when cash or bank accounts decrease."
+选择“行编码 | 项目名称”。现金或银行科目增加时使用。,"Select ""Row Encoding | Project Name"". Used when cash or bank accounts are added."
+选择“行编码 | 项目名称”。项目名称用于日常复核，行编码由系统保存。,"Select ""Row Encoding | Project Name"". The project name is used for daily review, and the row code is saved by the system."
+选择一个自然月，系统自动使用该月1日至月末。,"Select a calendar month, and the system automatically uses the first to the end of the month."
+选择公司,Select company
+选择待复核行,Select rows to be reviewed
+选择报表行,Select report row
+选择报表行进行批量复核,Select report rows for batch review
+选择月份,Select month
+选择来源单据时必须填写来源单据类型,The source document type must be filled in when selecting the source document.
+选择的单据必须属于同一个往来单位,The selected documents must belong to the same Party
+选采购应付单,Select purchase and payable order
+选销售应收单,Select sales receivable note
+通过,Pass
+部分入账,Partially credited
+配置就绪度,Configuration readiness
+采购发票,Purchase invoice
+采购发票未提交,Purchase invoice not submitted
+采购对账策略,Procurement reconciliation strategy
+采购应付对账规则,Purchase payable reconciliation rules
+采购拦截明细数,Purchase interception details
+采购收货单,Purchase Receipt single
+采购收货单 {0} 未提交,Purchase Receipt single {0} not submitted
+采购收货单提交后，自动生成并提交采购应收单。,"After the Purchase Receipt document is submitted, the purchase receivable document is automatically generated and submitted."
+采购税费模板,Purchase tax template
+采购订单,Purchase Order
+采购订单关联了不同币种的发票，不能直接合计；请切换采购发票视图逐张核对,Purchase Order is associated with invoices in different currencies and cannot be summed directly; please switch to the purchase invoice view to check them one by one.
+采购订单累计开票数量超出订单,Purchase Order The cumulative invoiced quantity exceeds the order
+采购订单累计收货数量超出订单,Purchase Order The cumulative receipt quantity exceeds the order
+采购豁免明细数,Purchase exemption details
+采购齐套原因,Reasons for purchasing a complete package
+采购齐套状态,Purchase complete set status
+采购齐套豁免必须记录原因、豁免人和豁免时间,"Purchasing a complete set of exemptions must record the reason, exemption person and exemption time"
+重分类来源项目和目标项目不能相同,The reclassification source item and target item cannot be the same
+重分类目标项目,Reclassify target items
+重分类项目必须是明细项目,Reclassification items must be detailed items
+重分类项目必须是模板中的明细项目,Reclassification items must be detailed items in the template
+重大非现金投资和筹资事项,Significant non-cash investments and financing matters
+重新关联仅支持原凭证修订链上的凭证，请先完成原凭证的修订,Reassociation only supports Voucher on the original Voucher revision chain. Please complete the revision of the original Voucher first.
+重新创建修订版,Recreate revision
+重新创建现金流量指定,Recreate cash flow assignments
+重新生成结账档案,Regenerate Period Closing file
+重新结账,rePeriod Closing
+重新载入系统建议,Reload system suggestions
+重置成本,replacement cost
+重要会计估计和判断,Critical Accounting Estimates and Judgments
+重要会计政策摘要,Summary of significant accounting policies
+重要披露,Important disclosures
+重试次数,Number of retries
+重试补齐,Retry to complete
+重述金额,Restated amount
+金融工具及减值,Financial instruments and impairment
+金额,Amount
+金额乘数,Amount multiplier
+金额列“{0}”缺少币种，请先核对来源单据,"The amount column ""{0}"" is missing currency, please check the source document first"
+金额单位,Amount unit
+金额容差,Amount tolerance
+金额容差不能小于零,Amount tolerance cannot be less than zero
+金额币种,Amount currency
+金额必须是有效的非负数，最多两位小数,Amount must be a valid non-negative number with up to two decimal places
+金额按 GL Entry 聚合；期初 + 本期发生 = 期末余额,The amount is aggregated according to GL Entry; beginning of period + occurrence in this period = ending balance
+金额无法识别,Amount cannot be recognized
+金额汇总,Amount summary
+银行与对账,Banking and Reconciliation
+银行与收付款方式科目完整,Bank and payment methods accounts are complete
+银行交易,bank transaction
+银行交易 {0} 与回单同号但日期、金额、方向或币种不一致，已停止处理,"Bank transaction {0} has the same number as the receipt but the date, amount, direction or currency are inconsistent, and processing has been stopped."
+银行交易已变更或取消，请人工核对,"The bank transaction has been changed or canceled, please check manually"
+银行交易已有关联凭证，请选择原凭证，或先完成原流程的撤销核对,"The bank transaction is already associated with Voucher. Please select the original Voucher, or complete the revocation verification of the original process first."
+银行交易已核销其他凭证，请先核对，不能重复制证或关联,"The bank transaction has been Reconciliation and other Voucher, please check first, and cannot be duplicated or related."
+银行内部转账请手工制证并核对两侧流水后关联回单,"For internal transfers within the bank, please prepare a certificate manually and check the flow on both sides before linking the receipt."
+银行凭证尚未完成,Bank Voucher has not been completed yet
+银行及收付款方式,Banking and payment methods
+银行回单,Bank Receipt
+银行回单 PDF,Bank Receipt PDF
+银行回单导入,Bank Receipt import
+银行回单科目规则,Bank Receipt account rules
+银行回单解析器配置不完整：{0},Bank Receipt Incomplete parser configuration: {0}
+银行对账,bank reconciliation
+银行对账必须先生成银行对账快照,Bank reconciliation must first generate a bank reconciliation snapshot
+银行对账必须选择银行账户及其会计科目,Bank reconciliation must select the bank account and its accounting account
+银行对账快照,Bank reconciliation snapshot
+银行对账快照数据,Bank reconciliation snapshot data
+银行对账范围必须选择该公司的银行账户,The bank reconciliation scope must select the company’s bank account
+银行或往来科目,Bank or current account
+银行未匹配笔数,Number of unmatched transactions by the bank
+银行未匹配金额,Bank unmatched amount
+银行流水 {0} 已导入为 {1}，请勿重复导入。,"Bank statement {0} has been imported as {1}, please do not import it again."
+银行流水不存在或已被删除，请刷新后重试,The bank statement does not exist or has been deleted. Please refresh and try again.
+银行流水不存在，无法恢复核销,The bank statement does not exist and cannot be restored Reconciliation
+银行流水不能同时存在收入和支出金额,Bank statements cannot contain income and expenditure amounts at the same time.
+银行流水不能直接删除,Bank statements cannot be deleted directly
+银行流水与已登记回单的交易信息冲突,The bank statement conflicts with the transaction information of the registered receipt.
+银行流水导入失败,Bank statement import failed
+银行流水或 Excel 导入凭证请使用原有批量审核并记账流程,"To import bank statements or Excel to Voucher, please use the original batch review and Posting process."
+银行流水来源,Bank flow source
+银行流水校验失败,Bank transaction verification failed
+银行流水状态已变化，请刷新后重试,"The bank flow status has changed, please refresh and try again."
+银行流水转换,bank flow conversion
+银行流水转换失败,Bank statement conversion failed
+银行科目,Bank account
+银行账户,bank account
+银行账户 {0} 未正确关联公司 {1} 的银行科目,Bank account {0} is not correctly associated with the bank account of company {1}
+银行账户已变更，请刷新后重新上传流水。,"The bank account has been changed, please refresh and re-upload the transaction."
+银行账户币种,Bank account currency
+银行账户必须关联本公司启用的 Bank 明细科目,The bank account must be associated with the Bank detail account enabled by the company
+银行账户未关联会计科目,The bank account is not associated with an accounting account
+销售出库公司不一致,Delivery Note company is inconsistent
+销售出库单,Delivery Note single
+销售出库单 {0} 未启用对账结算模式,Delivery Note order {0} reconciliation settlement mode is not enabled
+销售出库单提交后，自动生成并提交销售应收单。对账结算模式不适用。,"After the Delivery Note document is submitted, the sales receivable document is automatically generated and submitted. Reconciliation settlement mode is not applicable."
+销售出库明细,Delivery Note details
+销售出库明细 {0} 已被其他结算单占用，剩余数量不足,"Delivery Note details {0} has been occupied by other settlement documents, and the remaining quantity is insufficient."
+销售出库明细不存在：{0},Delivery Note detail does not exist: {0}
+销售发票,sales invoice
+销售发票 {0} 关联了不同币种的税票，需按币种分别核对分摊金额,"The sales invoice {0} is associated with tax invoices in different currencies, and the apportioned amounts need to be checked separately by currency."
+销售发票 {0} 必须已提交,Sales Invoice {0} must have been submitted
+销售发票 {0} 的累计开票申请金额不能超过原发票,The cumulative invoicing application amount of sales invoice {0} cannot exceed the original invoice
+销售发票与税票币种不一致，未进行汇率换算,"The currency of the sales invoice and the tax invoice are inconsistent, and the exchange rate conversion is not performed."
+销售发票行 ID,Sales Invoice Line ID
+销售发票金额,Sales invoice amount
+销售应收确认,Sales receivable confirmation
+销售方,seller
+销售方名称,Seller name
+销售方税号,Seller’s tax number
+销售税费模板,sales tax template
+销售结算单,Sales Settlement Statement
+销售结算单已取消，不能生成正式销售发票,The sales settlement document has been canceled and a formal sales invoice cannot be generated.
+销售结算单必须填写公司、客户和币种,"The sales settlement form must fill in the company, customer and currency"
+销售结算单至少需要一条结算明细,The sales settlement document requires at least one settlement detail
+销售结算模式,Sales settlement model
+销售结算规则,Sales Settlement Rules
+销售订单,Sales Order
+销售订单已有已提交出库，不能修改结算模式,Sales Order has been submitted for shipment and the settlement mode cannot be modified.
+销售退货或贷项发票,Sales return or credit invoice
+销售退货或贷项发票必须通过红冲申请处理,Sales returns or credit invoices must be processed through a red flush application
+销项,sales
+销项税,Output VAT
+销项税税票与总账发生额一致,The amount of tax stamp Output VAT is consistent with General Ledger
+错误信息,error message
+阻断项 {0} 个，预警 {1} 个,There are {0} blocking items and {1} warning items.
+附件张数,Number of attachments
+附单据：,Attached documents:
+附注唯一键,Note unique key
+附注快照 SHA-256,Note Snapshot SHA-256
+附注采用的准则必须与公司中国财务设置一致,The standards adopted in the notes must be consistent with the company's financial setup in China
+附言,P.S.
+随时可用存款,Deposits available at any time
+需复核,Need to review
+需要处理的银行流水,Bank statements that need to be processed
+需调整,Need to adjust
+非草稿开票申请不能修改明细,Details cannot be modified for non-draft invoicing applications
+非草稿抵扣批次不能修改税票明细,Tax invoice details cannot be modified for non-draft deduction batches
+页内位置,In-page position
+项目,Project
+预览文件的模式、站点或公司不匹配，未执行清理,"Preview file's pattern, site or company does not match, no cleanup performed"
+预计余额,Estimated balance
+预计税额,Estimated tax amount
+预计负债,Estimated liabilities
+首个报表项目不能设为子行,The first report item cannot be set as a subrow
+首次制定,formulated for the first time
+首次回单原件,The original copy of the first reply
+驳回,Dismiss
+驳回原因,Reason for rejection
+驳回必须填写原因,Reasons for rejection must be filled in
+驳回或取消原因,Reason for rejection or cancellation
+默认保管年限,Default storage period
+默认凭证字,Default Voucher Prefix
+默认成本中心公司不一致,The default cost center company is inconsistent
+默认成本中心有效；财务账簿由原生单据按公司校验,The default cost center is valid; financial books are verified by company based on native documents.
+默认自动递增生成；直接修改后将按手动编码保存,"It is generated automatically by default; after direct modification, it will be saved according to manual coding."
+默认销售结算模式,Default sales settlement mode
+齐套状态,Complete state
+（空）,(empty)
+；但关联银行流水未能自动重新核销，请及时处理,"; However, the associated bank statement cannot be automatically reset to Reconciliation, please handle it in time."
+；关联银行流水 {0} 已自动重新核销,;The associated bank statement {0} has been automatically reset to Reconciliation
+；当前月末结账单尚未保存，请保存后再完成损益结转,";The current month-end Period Closing order has not been saved, please save it before completing the profit and loss carryover."
+；提示：截至 {0} 损益类科目尚未全部结转至 {1}，当前净余额 {2}，需完成月度结转后再作为正式报表使用,"; Tip: As of {0}, all profit and loss accounts have not been transferred to {1}, and the current net balance is {2}, which needs to be completed monthly before being used as a formal report"
+；本期发生额包含损益结转凭证，期末余额按结转后列示,";The amount incurred in the current period includes profit and loss carryover Voucher, and the ending balance is listed after carryforward"
+；系统将安全撤销并恢复银行核销,;The system will safely revoke and restore bank Reconciliation
+往来,Party
+自定义,Custom
+报表类型：,Report Type:
+期间：,Period:
+单位：,Unit:
+资产行次,Asset Line No.
+资产项目,Asset Item
+负债及权益行次,Liabilities and Equity Line No.
+负债及权益项目,Liabilities and Equity Item
+本期金额,Current Period Amount
+本年累计金额,Year-to-Date Amount
+打印时间：,Printed At:
+未识别到{0}文字版回单,No text-based receipt from {0} was detected
+中国银行,Bank of China
+中国农业银行,Agricultural Bank of China
+中国工商银行,Industrial and Commercial Bank of China
+广发银行,China Guangfa Bank
+；费用冲减按负借方列示，反向损益结转按负贷方列示,";Expense deductions are listed at negative Debit, and reverse profit and loss carryforwards are listed at negative Credit"
+1.权益法下可转损益的其他综合收益,1. Other comprehensive income under the equity method that may be reclassified to profit or loss
+1.重新计量设定受益计划变动额,1. Remeasurements of defined benefit plans
+2.其他债权投资公允价值变动,2. Changes in fair value of other debt investments
+2.权益法下不能转损益的其他综合收益,2. Other comprehensive income under the equity method that will not be reclassified to profit or loss
+3.其他权益工具投资公允价值变动,3. Changes in fair value of other equity instrument investments
+3.金融资产重分类计入其他综合收益的金额,3. Amounts reclassified from financial assets to other comprehensive income
+4.企业自身信用风险公允价值变动,4. Changes in fair value attributable to own credit risk
+4.其他债权投资信用减值准备,4. Credit impairment allowances for other debt investments
+5.现金流量套期储备,5. Cash flow hedge reserve
+6.外币财务报表折算差额,6. Foreign currency translation differences
+一、上年年末所有者权益余额,I. Equity at the end of the prior year
+一、经营活动产生的现金流量,I. Cash flows from operating activities
+一、营业收入,I. Operating revenue
+一年内到期的非流动负债,Non-current liabilities due within one year
+一年内到期的非流动资产,Non-current assets due within one year
+三、利润总额,III. Profit before tax
+三、本年增减变动金额,III. Changes during the current year
+三、筹资活动产生的现金流量,III. Cash flows from financing activities
+专项储备,Special reserves
+专项储备变动,Changes in special reserves
+业务招待费,Business entertainment expenses
+二、投资活动产生的现金流量,II. Cash flows from investing activities
+二、本年年初所有者权益余额,II. Equity at the beginning of the current year
+二、营业利润,II. Operating profit
+五、其他综合收益的税后净额,"V. Other comprehensive income, net of tax"
+五、现金及现金等价物净增加额,V. Net increase in cash and cash equivalents
+交易性金融负债,Financial liabilities held for trading
+交易性金融资产,Financial assets held for trading
+使用权资产,Right-of-use assets
+信用减值损失,Credit impairment losses
+债权投资,Debt investments
+偿还债务支付的现金,Cash paid to repay debt
+公允价值变动收益,Gains from changes in fair value
+六、期末现金及现金等价物余额,VI. Closing balance of cash and cash equivalents
+六、综合收益总额,VI. Total comprehensive income
+其中：利息费用（收入以“-”号填列）,Including: Interest expense (income shown as a negative amount)
+其中：原材料,Including: Raw materials
+其中：商品维修费,Including: Product repair expenses
+其中：坏账损失,Including: Bad debt losses
+其中：开办费,Including: Start-up expenses
+其中：政府补助,Including: Government grants
+其中：消费税,Including: Consumption tax
+其中：研究费用,Including: Research expenses
+其他债权投资,Other debt investments
+其他应付款,Other payables
+其他应收款,Other receivables
+其他权益变动,Other changes in equity
+其他权益工具,Other equity instruments
+其他权益工具投资,Investments in other equity instruments
+其他流动负债,Other current liabilities
+其他流动资产,Other current assets
+其他综合收益,Other comprehensive income
+其他非流动负债,Other non-current liabilities
+其他非流动资产,Other non-current assets
+其他非流动金融资产,Other non-current financial assets
+减：存货跌价准备,Less: Allowance for inventory write-downs
+减：库存股,Less: Treasury shares
+减：所得税费用,Less: Income tax expense
+减：累计折旧,Less: Accumulated depreciation
+减：营业外支出,Less: Non-operating expenses
+减：营业成本,Less: Operating costs
+分配股利、利润或偿付利息支付的现金,"Cash paid for dividends, profit distributions and interest"
+利润分配,Profit distribution
+加：会计政策变更,Add: Changes in accounting policies
+加：其他收益,Add: Other income
+加：投资收益,Add: Investment income
+加：期初现金及现金等价物余额,Add: Opening balance of cash and cash equivalents
+加：营业外收入,Add: Non-operating income
+取得借款收到的现金,Cash received from borrowings
+取得子公司及其他营业单位支付的现金净额,Net cash paid to acquire subsidiaries and other business units
+取得投资收益收到的现金,Cash received from investment returns
+合同负债,Contract liabilities
+合同资产,Contract assets
+向所有者分配利润,Profit distributions to owners
+吸收投资收到的现金,Cash received from capital contributions
+周转材料,Reusable materials
+商誉,Goodwill
+四、净利润,IV. Net profit
+四、本年年末所有者权益余额,IV. Equity at the end of the current year
+四、汇率变动对现金及现金等价物的影响,IV. Effect of exchange rate changes on cash and cash equivalents
+固定资产原价,Original cost of fixed assets
+固定资产清理,Fixed assets pending disposal
+固定资产账面价值,Carrying amount of fixed assets
+土地增值税,Land appreciation tax
+在产品,Work in progress
+在建工程,Construction in progress
+城市维护建设税,Urban maintenance and construction tax
+城镇土地使用税、房产税、车船税、印花税,"Urban land use, property, vehicle and vessel taxes, and stamp duty"
+处置固定资产、无形资产和其他长期资产收回的现金净额,"Net cash received from disposal of fixed, intangible and other long-term assets"
+处置子公司及其他营业单位收到的现金净额,Net cash received from disposal of subsidiaries and other business units
+实收资本（或股本）,Paid-in capital (or share capital)
+对所有者的分配,Distributions to owners
+工程物资,Construction materials
+年初所有者权益余额,Equity at the beginning of the year
+年末所有者权益余额,Equity at the end of the year
+广告费和业务宣传费,Advertising and promotion expenses
+库存商品,Finished goods
+应交税费,Taxes payable
+应付债券,Bonds payable
+应付利息,Interest payable
+应付利润,Profit distributions payable
+应付票据,Notes payable
+应付职工薪酬,Employee benefits payable
+应付账款,Accounts payable
+应收利息,Interest receivable
+应收款项融资,Receivables financing
+应收票据,Notes receivable
+应收股利,Dividends receivable
+开发支出,Development expenditure
+所有者投入资本,Capital contributed by owners
+所有者权益内部结转,Transfers within equity
+所有者权益（或股东权益）,Owners' equity (or shareholders' equity)
+所有者权益（或股东权益）合计,Total owners' equity (or shareholders' equity)
+投资性房地产,Investment property
+投资支付的现金,Cash paid for investments
+投资收益,Investment income
+投资活动产生的现金流量净额,Net cash flows from investing activities
+投资活动现金流入小计,Subtotal of investing cash inflows
+投资活动现金流出小计,Subtotal of investing cash outflows
+持有待售负债,Liabilities held for sale
+持有待售资产,Assets held for sale
+提取盈余公积,Appropriation to surplus reserves
+支付其他与投资活动有关的现金,Other cash paid for investing activities
+支付其他与筹资活动有关的现金,Other cash paid for financing activities
+支付其他与经营活动有关的现金,Other cash paid for operating activities
+支付的各项税费,Taxes paid
+支付给职工以及为职工支付的现金,Cash paid to and on behalf of employees
+收到其他与投资活动有关的现金,Other cash received from investing activities
+收到其他与筹资活动有关的现金,Other cash received from financing activities
+收到其他与经营活动有关的现金,Other cash received from operating activities
+收到的税费返还,Tax refunds received
+收回投资收到的现金,Cash received from recovery of investments
+教育费附加、矿产资源补偿费、排污费,"Education surcharge, mineral resource compensation and pollution discharge fees"
+无形资产,Intangible assets
+无法收回的长期债券投资损失,Losses on unrecoverable long-term bond investments
+无法收回的长期股权投资损失,Losses on unrecoverable long-term equity investments
+未分配利润,Retained earnings
+本年净利润,Net profit for the current year
+流动负债,Current liabilities
+流动负债合计,Total current liabilities
+流动资产,Current assets
+流动资产合计,Total current assets
+现金流量勾稽差额（应为零）,Cash flow reconciliation difference (should be zero)
+生产性生物资产,Productive biological assets
+盈余公积,Surplus reserves
+短期借款,Short-term borrowings
+短期投资,Short-term investments
+研发费用,Research and development expenses
+租赁负债,Lease liabilities
+税收滞纳金,Late tax payment surcharges
+税金及附加,Taxes and surcharges
+筹资活动产生的现金流量净额,Net cash flows from financing activities
+筹资活动现金流入小计,Subtotal of financing cash inflows
+筹资活动现金流出小计,Subtotal of financing cash outflows
+管理费用,Administrative expenses
+经营活动现金流入小计,Subtotal of operating cash inflows
+经营活动现金流出小计,Subtotal of operating cash outflows
+股份支付计入所有者权益的金额,Share-based payments recognized in equity
+自然灾害等不可抗力因素造成的损失,Losses caused by natural disasters and other force majeure events
+营业税,Business tax
+衍生金融负债,Derivative financial liabilities
+衍生金融资产,Derivative financial assets
+负债和所有者权益合计,Total liabilities and owners' equity
+负债和所有者权益总计,Total liabilities and equity
+财务费用,Finance costs
+货币资金,Cash and bank balances
+购买商品、接受劳务支付的现金,Cash paid for goods and services
+购建固定资产、无形资产和其他长期资产支付的现金,"Cash paid to acquire or construct fixed, intangible and other long-term assets"
+资产减值损失,Asset impairment losses
+资产合计,Total assets
+资产处置收益,Gains on disposal of assets
+资本公积,Capital reserves
+资源税,Resource tax
+递延所得税负债,Deferred tax liabilities
+递延所得税资产,Deferred tax assets
+递延收益,Deferred income
+销售商品、提供劳务收到的现金,Cash received from sales of goods and services
+销售费用,Selling expenses
+长期借款,Long-term borrowings
+长期债券投资,Long-term bond investments
+长期应付款,Long-term payables
+长期应付职工薪酬,Long-term employee benefits payable
+长期应收款,Long-term receivables
+长期待摊费用,Long-term deferred expenses
+长期股权投资,Long-term equity investments
+非流动负债,Non-current liabilities
+非流动负债合计,Total non-current liabilities
+非流动资产,Non-current assets
+非流动资产合计,Total non-current assets
+预付款项,Prepayments
+预付账款,Prepayments to suppliers
+预收款项,Advances from customers
+预收账款,Advances received from customers
+（一）不能重分类进损益的其他综合收益,(A) Other comprehensive income that will not be reclassified to profit or loss
+（二）将重分类进损益的其他综合收益,(B) Other comprehensive income that will be reclassified to profit or loss
+{0}余额展示调整,Presentation adjustment for {0}
+（科目：{0}）, (Account: {0})
+应付职工薪酬借方余额,Debit balance of employee benefits payable
+应收账款贷方余额,Credit balance of accounts receivable
+应付账款借方余额,Debit balance of accounts payable
+其他应收款贷方余额,Credit balance of other receivables
+其他应付款借方余额,Debit balance of other payables
+应交税费借方余额展示,Presentation of the debit balance of taxes payable
+本期,Current period
+期初,Opening period
+点击修改金额,Click to edit the amount
+该行不能直接修改金额,The amount on this row cannot be edited directly
+外币或汇率换算分录请打开原单修改金额,Open the source document to edit amounts for foreign currency or exchange rate conversion entries
+该来源金额由系统计算，请打开原单修改,This source amount is calculated by the system. Open the source document to change it.
+无法把该金额唯一对应到来源凭证分录,This amount cannot be uniquely matched to a source voucher entry
+该金额为合并或拆分展示结果，请打开原单修改,This amount is displayed as a combined or split result. Open the source document to change it.
+请输入有效金额,Enter a valid amount
+金额最多保留 {0} 位小数,Amounts may have at most {0} decimal places
+第 {0} 行不能同时填写借方和贷方金额,Row {0} cannot have both debit and credit amounts
+第 {0} 行借方和贷方金额不能同时为零,The debit and credit amounts on row {0} cannot both be zero
+借贷不平衡，请把同一张凭证的相关金额修改完成后一起保存,Debits and credits do not balance. Complete the related amount changes for this voucher and save them together.
+关联回单或银行流水的银行收付款金额不能在此修改，请先核对原始回单和银行流水,Bank receipt and payment amounts linked to receipts or bank transactions cannot be edited here. Check the original receipts and bank transactions first.
+凭证内容,Voucher Contents

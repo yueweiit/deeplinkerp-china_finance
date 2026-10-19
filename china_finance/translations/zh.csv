@@ -185,3 +185,583 @@ China Bank Receipt Import,银行回单导入
 China Bank Receipt Import Row,银行回单导入明细
 China Bank Receipt,银行回单
 China Bank Receipt Rule,银行回单科目规则
+-1,-1
+1,1
+Account Number,科目代码
+Accounting Standard Downgrade,会计准则降级
+Actions,操作
+Add Child,添加子项
+Attribute Fallback,属性回退
+Bank Transaction,银行交易流水
+Bank Transaction {0} added as a draft Journal Entry,银行交易 {0} 添加为日记帐分录草稿
+Book Outstanding,优秀图书
+CAP-.YYYY.-.#####,CAP-.YYYY.-.#####
+CCFA-.YYYY.-.#####,CCFA-.YYYY.-.#####
+CFN-.YYYY.-.#####,CFN-.YYYY.-.#####
+CICR-.YYYY.-.#####,CICR-.YYYY.-.#####
+CITD-.YYYY.-.#####,CITD-.YYYY.-.#####
+CNC-.YYYY.-.#####,CNC-.YYYY.-.#####
+CNR-.YYYY.-.#####,CNR-.YYYY.-.#####
+CNV-.YYYY.-.#####,CNV-.YYYY.-.#####
+CPER-.YYYY.-.#####,CPER-.YYYY.-.#####
+CPR-.YYYY.-.#####,CPR-.YYYY.-.#####
+CRD-.YYYY.-.#####,CRD-.YYYY.-.#####
+CSTL-.YYYY.-.#####,CSTL-.YYYY.-.#####
+CTAM-.YYYY.-.#####,CTAM-.YYYY.-.#####
+CTI-.YYYY.-.#####,CTI-.YYYY.-.#####
+CTIC-.YYYY.-.#####,CTIC-.YYYY.-.#####
+CTIR-.YYYY.-.#####,CTIR-.YYYY.-.#####
+CVSI-.YYYY.-.#####,CVSI-.YYYY.-.#####
+China Financial Statement Reclassification Rule,中国财务报表重分类规则
+China Prior Period Error Adjustment,中国前期误差调整
+China Prior Period Error Adjustment Line,中国前期误差调整线
+Collapse All,全部折叠
+Company,公司
+Delete,删除
+Expand All,全部展开
+Formula Row Migration,公式行迁移
+Ledger,会计凭证
+Legacy,遗产
+Loading...,载入中...
+Matched,匹配的
+Needs Attention,需要注意
+No Data,无数据
+Parent Inheritance,父级继承
+Pending,待处理
+Period End Date cannot be greater than Fiscal Year End Date,期间结束日期不可超过财年结束日期
+Period Start Date cannot be greater than Period End Date,期间开始日期不可超过结束日期
+Period Start Date must be {0},期间开始日期必须为{0}
+Purchase Order,采购订单
+Reconciled,已核销
+Refresh,刷新
+SHA-256,SHA-256
+Save,保存
+Timing,时机
+Unmatched,未匹配
+Unreconciled,未核销
+"Company {0} has no China Finance Settings. Configure its accounting standard and activation dates, or select a configured company.",公司 {0} 尚未配置中国财务设置。请配置会计准则及启用日期，或选择已完成配置的公司。
+Invalid language,无效的语言
+1 invoice,1 张发票
+Accept Matching Rule,接受匹配规则
+Accept the rule for the selected transaction,接受所选交易的规则
+Accepted,已接受
+Accepting the suggestion will reconcile both transactions.,接受该建议将核销这两笔交易。
+Account,科目
+Account is required,科目为必填项
+Action,操作
+Action Type,操作类型
+Add Row,添加行
+Add Rule,添加规则
+Add a charge to the payment entry with the difference amount,按差额向付款单添加费用
+Add a charge to the payment entry with the unallocated amount,按未分配金额向付款单添加费用
+Add a row with the difference amount,按差额添加一行
+Add all accounts that you want to split the transaction into.,添加要将交易拆分到的所有科目。
+Against Account,对方科目
+All,全部
+Allocated,已分配
+Amount,金额
+Amount does not match the selected transaction,金额与所选交易不一致
+Amount matches the selected transaction,金额与所选交易一致
+Any debit transaction with the keyword 'Bank Fee'.,任何包含“银行手续费”关键词的借方交易。
+Applies to deposits,适用于收入
+Applies to withdrawals,适用于支出
+Applies to withdrawals and deposits,适用于支出和收入
+Are you sure you want to cancel this {} {}?,确定要取消此{} {}吗？
+Are you sure you want to unmatch the voucher from this transaction?,确定要取消此凭证与该交易的匹配吗？
+Are you sure you want to unreconcile this transaction?,确定要取消此交易的核销吗？
+As of {0},截至 {0}
+Attachments,附件
+Auto Reconcile,自动核销
+Automatic reconciliation failed,自动核销失败
+Automatic reconciliation started,自动核销已开始
+Automatically reconcile matching vouchers in the selected date range?,是否自动核销当前日期范围内匹配的凭证？
+Automatically run rules on unreconciled transactions,自动对未核销交易运行规则
+Back,返回
+Balance,余额
+Balances as per bank statement before {0},{0}之前的银行对账单余额
+Bank Account,银行账户
+"Bank Charges, Salary, etc.",银行手续费、工资等
+Bank Clearance Summary,银行清账汇总
+Bank Entries Created,银行分录已创建
+Bank Entry,银行分录
+Bank Entry Created,银行分录已创建
+"Bank Fee, Salary, etc.",银行手续费、工资等
+Bank GL Account,银行总账科目
+Bank Reconciliation Statement,银行对账单
+Bank Statement Balance as per General Ledger,总账银行对账单余额
+Bank Transactions,银行交易
+Bank account credit for withdrawal,支出时银行账户记贷方
+Bank account debit for deposit,收入时银行账户记借方
+Bank statement imported.,银行流水已导入。
+Banking,银行
+"Based on the above entries, the balance amount (debit or credit) will be set for the last row to balance the journal entry.",系统将根据上述分录，在最后一行自动填入余额金额（借方或贷方），使记账凭证借贷平衡。
+Below is a list of all accounting entries posted against the bank account {0} between {1} and {2}.,以下为银行账户 {0} 在 {1} 至 {2} 期间的所有会计分录。
+Below is a list of all bank transactions imported in the system for the bank account {0} between {1} and {2}.,以下为银行账户 {0} 在 {1} 至 {2} 期间导入系统的所有银行交易。
+Below is a list of all entries posted against the bank account {0} which have not been cleared till {1}.,以下是针对银行账户 {0} 的所有已过账但截至 {1} 尚未清账的分录。
+Beta,测试版
+Bulk Bank Entry,批量银行分录
+Bulk Payment,批量付款
+Bulk Transfer,批量转账
+Calculated Bank Statement Balance,计算的银行对账单余额
+Cancel,取消
+Cash,现金
+Checks and Deposits incorrectly cleared,错误清账的支票和存款
+Cheque/Reference Number,支票/参考号
+Clear Filters,清除筛选
+Clearance Date,核销日期
+Clearance date updated,清账日期已更新
+Cleared,已清账
+Click to pay in full.,点击全额付款。
+Click to set the closing balance as per statement,点击设置对账单期末余额
+Click to set this as the header row.,点击将此行设为表头。
+Close,关闭
+Closing Balance,期末余额
+Closing Balance as of {},截至 {} 的期末余额
+Closing Balance as per statement,对账单期末余额
+Closing Balance as per system,系统期末余额
+Closing balance as per system,系统期末余额
+Closing balance deleted.,期末余额已删除。
+Closing balance is required.,必须填写期末余额。
+Closing balance on bank statement as of {0},截至 {0} 的银行对账单期末余额
+Closing balance set.,期末余额已设置。
+Column Name,列名
+Company is required,公司为必填项
+Complete Match,完全匹配
+Completed,已完成
+Configure Accounts,配置科目
+Configure Accounts for Bank Entry,配置银行分录科目
+Configure Bank Accounts,配置银行账户
+Configure match filters for vouchers,配置凭证匹配筛选条件
+Configure rules to save time when reconciling transactions.,配置规则以提高交易对账效率。
+Configure settings for the banking module,配置银行模块设置
+Confirm,确认
+Conflicting Transactions,冲突交易
+Contains,包含
+Copied to clipboard,已复制到剪贴板
+Cost Center,成本中心
+Cost Center is required,成本中心为必填项
+Could not re-extract the table.,无法重新提取表格。
+Could not save the column mapping.,无法保存列映射。
+Could not save the table settings.,无法保存表格设置。
+Could not update the header row.,无法更新表头行。
+Create,创建
+Create Bank Entry against,银行分录对应类型
+Create New {0},新建 {0}
+"Create a journal entry for expenses, income or split transactions",创建费用、收入或拆分交易的记账凭证
+Create a new entry based on the rule,根据规则创建新分录
+Create a new rule to automatically classify transactions.,创建规则以自动分类交易。
+Credit,贷方
+Credits,收入
+Custom Remarks,自定义备注
+Dark,深色
+Date,日期
+Date Range,日期范围
+Date/Transaction Date/Value Date,日期/交易日期/起息日
+Debit,借方
+Debit/Credit,借方/贷方
+Debits,支出
+Deleting closing balance...,正在删除期末余额…
+Deleting rule...,正在删除规则…
+Deposit,收入
+Description,摘要
+Description/Particulars/Remarks/Narration/Detail,描述/明细/备注/附言/详情
+Detected Amount Format,检测到的金额格式
+Detected Date Format,检测到的日期格式
+Detected Tables,检测到的表格
+Difference,差异
+Do not import,不导入
+Document,单据
+Document Type,单据类型
+"Drag a box to move it, or drag a corner to resize. The table is re-read from the new region automatically.",拖动框选区域，可拖动角点调整大小。系统会自动从新区域重新读取表格。
+Drag to reorder,拖动调整顺序
+"Drop a file here, or click to select a file",将文件拖到此处，或点击选择文件
+"Drop some files here, or click to select files",将文件拖放到此处，或点击选择文件
+Due Date,到期日
+Edit rule,编辑规则
+Edit this rule,编辑此规则
+Enable automatic party matching,启用自动往来单位匹配
+Enable party name/description fuzzy matching,启用往来单位名称/摘要模糊匹配
+Ends with,结尾为
+Enter the closing balance you see in your bank statement for {0} as of the {1},请输入银行账户 {0} 截至 {1} 的对账单期末余额
+Entries below have a posting date after {0} but the clearance date is before {1}.,以下分录的过账日期晚于 {0}，但清账日期早于 {1}。
+Error,错误
+Error uploading attachments,上传附件时发生错误
+Example,示例
+"Example: If the transaction amount is 200, then this will be calculated as {} = {}",示例：如果交易金额为 200，则计算结果为 {} = {}
+Excluded Fee,不含费用
+Existing transactions in the system belonging to the same bank account and date range,系统中属于同一银行账户和日期范围的已有交易
+Failed to delete closing balance.,删除期末余额失败。
+Failed to delete rule.,删除规则失败。
+Failed to run rules evaluation,运行规则评估失败
+Failed to update auto classify transactions settings,更新自动分类交易设置失败
+Failed to update rule priorities,更新规则优先级失败
+File,文件
+Filter by amount,按金额筛选
+"For PDF statements, we auto-detect the tables on each page. You can then confirm each detected table, map its columns, and exclude anything that is not transactions (e.g. ads or summaries). Password-protected PDFs are supported - the password is saved on the bank account and reused.",对于 PDF 银行流水，系统会自动识别每页表格。你可以确认识别出的表格、映射各列，并排除非交易内容（如广告或汇总）。支持受密码保护的 PDF，密码会保存到银行账户并在后续导入时复用。
+"For example, if set to 4, the system will try to find matching transactions in other banks 4 days before and after the transaction date. This is because transactions can clear on different days on different bank accounts.",例如设置为 4 时，系统会在交易日期前后 4 天内查找其他银行的匹配转账，因为不同银行账户的交易可能在不同日期清算。
+"For example, if set to 4, the system will try to find matching transfer transactions in other banks 4 days before and after the transaction date. This is because transactions can clear on different days on different bank accounts.",例如设置为 4 天时，系统会尝试在交易日期前后 4 天内查找其他银行的匹配转账交易，因为不同银行账户的交易可能在不同日期清算。
+"For more information, click on the",如需了解更多信息，请点击下方的
+Force Clear,强制清账
+Force Clear Voucher,强制清账凭证
+Force evaluate all,强制评估全部
+"Force re-evaluate all unreconciled transactions, even if they were previously evaluated",强制重新评估所有未核销交易，即使这些交易之前已经评估过
+GL Account,总账科目
+Get Unpaid Invoices,获取未付款发票
+Get around the system quickly with keyboard shortcuts,使用键盘快捷键快速操作系统
+Go to Desktop,前往桌面端
+Grand Total,总额
+Help,帮助
+"If a party cannot be matched by account number or IBAN, the system will try fuzzy matching using the party name and transaction description.",如果无法通过账号或 IBAN 匹配往来单位，系统将尝试根据往来单位名称和交易摘要进行模糊匹配。
+"If rule matches, then:",如果规则匹配，则：
+"If your bank statement shows a different closing balance, it is because all transactions have not reconciled yet.",如果银行对账单显示的期末余额不同，说明仍有部分交易尚未完成核销。
+Import Bank Statement,导入银行流水
+Import your bank statement to get started.,请先导入银行流水。
+Import {0} transactions,导入 {0} 笔交易
+Imported On,导入时间
+Importing {0} transactions,正在导入 {0} 笔交易
+Importing...,正在导入…
+"In this case, the amount will be calculated as 25% of the transaction amount. If the transaction amount is 200, then this will be calculated as 200 * 0.25 = 50.",在这种情况下，金额将按交易金额的 25% 计算。如果交易金额为 200，则计算结果为 200 * 0.25 = 50。
+Include,包含
+Included Fee,包含费用
+Incorrectly Cleared Entries,错误清账分录
+Incorrectly cleared entries as per the report.,根据报表发现的错误清账分录。
+Invoice No,发票编号
+Invoices,发票
+It takes into account all the transactions that have been posted and subtracts the transactions that have not cleared yet.,该余额包含所有已过账交易，并扣除了尚未清账的交易。
+It's all good!,没有问题！
+Journal Entry,记账凭证
+Journal Template Accounts,记账凭证模板科目
+Keyboard Shortcuts,键盘快捷键
+Last Fiscal Year,上会计年度
+Last Month,上月
+Last Quarter,上季度
+Last Synced Transaction,最后同步交易
+Last Week,上周
+Last Year,上年度
+Leave blank to use the password already saved for this bank account (if any). It is stored encrypted and reused for future statements.,留空则使用已保存的银行账户密码（如有）。密码会加密保存，并在后续流水导入时复用。
+Light,浅色
+Maps To,映射为
+Match,匹配
+Match and Reconcile,匹配与对账
+Match or Create,匹配或创建
+Matched by rule,已按规则匹配
+Matching Rules,匹配规则
+Maximum Amount,最大金额
+Minimum Amount,最小金额
+Mode of Payment,收付款方式
+More,更多
+Multiple Accounts (Journal Template),多个科目（记账凭证模板）
+New Rule,新建规则
+No Match,不匹配
+No accounts configured,未配置科目
+No accounts found.,未找到科目。
+No bank accounts found,未找到银行账户
+No bank statements imported yet,尚未导入银行流水
+No bank transactions found,未找到银行交易
+No company found.,未找到公司。
+No data,暂无数据
+No entries found,未找到分录
+No entries with a payment document in this list.,此列表中没有关联付款单据的分录。
+No invoice linked,未关联发票
+No page image is available for this page.,此页面没有可用的页面图像。
+No reconciliation actions found,未找到对账操作
+No results found.,未找到结果。
+No rows to display.,没有可显示的行。
+No rules setup yet,尚未设置规则
+No tables were extracted from this PDF.,未能从此 PDF 提取表格。
+No transaction selected,未选择交易
+No transactions found for the given filters.,没有找到符合筛选条件的交易。
+No unreconciled transactions found,没有找到未核销交易
+No vouchers found for this transaction,没有找到与此交易匹配的凭证
+Not Cleared,未清账
+Not Reconciled,未核销
+Not Started,未开始
+Number of Transactions,交易笔数
+Number of days to match transfers,转账匹配天数
+Only if the PDF is password protected,仅在 PDF 受密码保护时填写
+Open the settings dialog,打开设置窗口
+Open {0} in a new tab,在新标签页打开 {0}
+Opening Balance,期初余额
+Other Charges / Deductions,其他费用/扣除
+Outstanding,未付金额
+Outstanding Checks and Deposits to clear,待清账支票和存款
+PDF,PDF
+PDF Password,PDF 密码
+Page preview,页面预览
+Page {0} of {1},第 {0} 页，共 {1} 页
+Paid From,付款账户
+Paid From (GL Account),付款方（总账科目）
+Paid To,收款账户
+Paid To (GL Account),收款方（总账科目）
+Paid to,付款方
+Partial Match,部分匹配
+Partially Reconciled,部分核销
+Party,往来单位
+Party Account No.,往来单位账号
+Party IBAN,往来单位 IBAN
+Party Name/Account Holder,往来单位/账户持有人
+Party Type,往来类型
+Party is required,往来单位为必填项
+Payment,付款
+Payment Details,付款详情
+Payment Document,付款单据
+Payment Entry,付款单
+Payment Entry Created,付款单已创建
+Payment Recorded,付款已记录
+Please review the details below and click the 'Import' button to proceed.,请检查以下详情，然后点击“导入”按钮继续。
+Please select a bank account to view the bank clearance summary.,请选择银行账户以查看银行清账汇总。
+Please select a bank account to view the bank reconciliation statement.,请选择银行账户以查看银行对账单。
+Please select a bank and set the date range,请选择银行并设置日期范围
+Please select dates to view the bank clearance summary.,请选择日期以查看银行清账汇总。
+Please select dates to view the bank reconciliation statement.,请选择日期以查看银行对账单。
+Posted On,过账日期
+Posting Date,过账日期
+Posting date does not match the selected transaction,过账日期与所选交易不一致
+Posting date matches the selected transaction,过账日期与所选交易一致
+Preferences,偏好设置
+Preferences updated,偏好设置已更新
+Preview Transactions,预览交易
+Previous Imports,历史导入记录
+Priority,优先级
+Progress,进度
+Q1,第一季度
+Q2,第二季度
+Q3,第三季度
+Q4,第四季度
+Re-extracting,重新提取中…
+Received,收款
+Received from,收款方
+Recommended Action,建议操作
+Reconcile,核销
+Reconciliation History,对账历史
+Reconciliation Type,核销类型
+Reconciling,正在核销
+Record Payment,记录收付款
+"Record a bank journal entry for expenses, income or split transactions",记录费用、收入或拆分交易的银行分录
+"Record a journal entry for expenses, income or split transactions",记录费用、收入或拆分交易的记账凭证
+"Record a journal entry for expenses, income or split transactions.",记录费用、收入或拆分交易的日记账分录。
+Record a payment against a customer or supplier,针对客户或供应商记录收付款
+Record a payment entry against a customer or supplier,针对客户或供应商记录收付款单
+Record a transfer between two bank accounts,记录两个银行账户之间的转账
+Record an internal transfer to another bank/credit card/cash account,记录转入其他银行、信用卡或现金账户的内部转账
+Record an internal transfer to another bank/credit card/cash account.,记录转入其他银行、信用卡或现金账户的内部转账。
+Ref,参考号
+Ref.,参考号
+Reference,参考号
+Reference #,参考号
+Reference Date,参考日期
+Reference Date is required,参考日期为必填项
+Reference Document,引用单据
+Reference date does not match the selected transaction,参考日期与所选交易不一致
+Reference date matches the selected transaction,参考日期与所选交易一致
+Reference does not match the selected transaction,参考号与所选交易不一致
+Reference is required,参考号为必填项
+Reference matches the selected transaction,参考号与所选交易一致
+Reference matches the selected transaction partially,参考号与所选交易部分一致
+Reference/Ref/Transaction ID/Cheque/Check,参考号/参考/交易编号/支票/支票号
+Regex,正则表达式
+Remarks,摘要
+Remove,移除
+Reset Clearing Date,重置清账日期
+Resize column,调整列宽
+"Review each page. In the Table view, map each column, click a row number to set/clear the header row, and exclude anything that is not transactions (ads, summaries).",检查每一页。在表格视图中映射每一列，点击行号设置或取消表头，并排除非交易内容（如广告、汇总）。
+Rule Description,规则说明
+Rule Name,规则名称
+Rule created successfully,规则创建成功
+Rule deleted.,规则已删除。
+Rule matched based on transaction description and other criteria.,规则已根据交易摘要及其他条件匹配。
+Rule name is required,规则名称为必填项
+Rule priorities updated,规则优先级已更新
+Rule updated.,规则已更新。
+Rules evaluation completed,规则评估已完成
+Rules evaluation started,规则评估已开始
+Rules to match against the transaction description,用于匹配交易摘要的规则
+Run Rules,运行规则
+Run on new transactions,对新交易运行
+Run rules automatically,自动运行规则
+Run rules on unreconciled transactions that haven't been evaluated,对尚未评估的未核销交易运行规则
+Run rules on unreconciled transactions that haven't been evaluated yet,对尚未评估的未核销交易运行规则
+Running...,运行中…
+Same day,同一天
+Save the currently opened form,保存当前打开的表单
+Saving,保存中…
+Scheduled job disabled. Transactions will not be auto classified.,计划任务已禁用，交易不会自动分类。
+Scheduled job enabled. Transactions will be auto classified.,计划任务已启用，交易将自动分类。
+Search,搜索
+Search Results,搜索结果
+Search account...,搜索科目…
+Search company...,搜索公司…
+Search transactions,搜索交易
+Select,选择
+Select Account,选择科目
+Select Invoices,选择发票
+Select a bank account to reconcile,请选择银行账户进行对账
+Select a transaction to match and reconcile with vouchers,请选择一笔交易与凭证进行匹配和核销
+Select all,全选
+Select all rows,全选所有行
+Select date,选择日期
+Select number of days,选择天数
+Select row,选择行
+Select row {0},选择第 {0} 行
+Set closing balance as per bank statement,设置银行对账单期末余额
+Set the clearance date for this voucher without reconciling with a bank transaction.,为此凭证设置清账日期，但不与银行交易核销。
+Set up rules to automatically classify transactions. Drag and drop rules to reorder their priority.,设置规则以自动分类交易。拖放规则可调整其优先级。
+Settings,设置
+Shortcut,快捷键
+Show Only Exact Amount,仅显示金额完全匹配
+Single Account,单一科目
+Spent,支出
+Split across {} accounts,拆分到 {} 个科目
+Starts with,开头为
+Statement Details,流水详情
+Statement File,流水文件
+Statement Import Instructions,银行流水导入说明
+Status,状态
+Submit,提交
+Suggest creating a,建议创建
+Suggested,建议
+Suggested Transfer to {0},建议转账至 {0}
+"Switch between light, dark, or system theme",切换浅色、深色或跟随系统主题
+System,跟随系统
+Table,表格
+Table {0},表格 {0}
+The amount format detected in the statement file. This is used to parse the deposit and withdrawal values from each row.,流水文件中检测到的金额格式。系统使用该格式解析每行的收入和支出金额。
+The date format detected in the statement file. This is used to parse the date values.,流水文件中检测到的日期格式。系统使用该格式解析日期。
+The date of the transaction,交易日期
+The description of the transaction,交易摘要
+The document has been created and reconciled. Uploading attachments...,单据已创建并完成核销，正在上传附件…
+The file should contain the following columns with a distinct header row. You can upload most bank statements as is without changing the columns.,文件应包含以下列，并有独立的表头行。大多数银行流水无需修改列即可上传。
+The following documents will be,以下单据将被
+The invoice is not fully allocated as there is a difference of {0}.,发票尚未完全分配，差额为 {0}。
+The opening balance might not match your bank statement. Would you like to reconcile them?,期初余额可能与银行对账单不一致。是否要进行核销？
+The reference number of the transaction,交易参考号
+The system found a mirror transaction ({0}) in another account with the same amount and date.,系统在另一个账户中发现一笔金额和日期相同的镜像交易（{0}）。
+The system will attempt to automatically match a party to a bank transaction based on account number or IBAN.,系统将根据账号或 IBAN 尝试自动匹配银行交易的往来单位。
+The withdrawal or deposit amounts - only required if there's no amount column.,支出或收入金额；仅在没有金额列时需要填写。
+Theme,主题
+There are no accounting entries in the system for the selected account and dates.,系统中没有所选账户和日期范围内的会计分录。
+There are no entries in the system where the clearance date is before the posting date.,系统中没有清账日期早于过账日期的分录。
+There are no transactions in the system for the selected bank account and dates that match the filters.,系统中没有符合筛选条件的所选银行账户交易。
+There are {0} unreconciled transactions before {1}.,{1} 之前有 {0} 笔未核销交易。
+There is one unreconciled transaction before {0}.,{0} 之前有 1 笔未核销交易。
+There was an error while importing the bank statement.,导入银行流水时发生错误。
+There was an error while performing the action.,执行操作时发生错误。
+There was an error.,发生错误。
+This Fiscal Year,本会计年度
+This Month,本月
+This Quarter,本季度
+This Week,本周
+This Year,本年度
+"This can contain ""CR""/""DR"" values or positive/negative values. You could also have a separate column for CR/DR.",此列可以包含“CR”/“DR”值或正负数，也可以单独设置 CR/DR 列。
+This is a formula based value.,这是一个基于公式的值。
+This is auto computed to balance the journal entry.,此值将自动计算以使记账凭证借贷平衡。
+This is not a valid formula. Check the variable used in the formula.,公式无效，请检查公式中使用的变量。
+This is required,此项为必填项
+This is the bank account entry. You cannot edit it.,这是银行账户分录，不可编辑。
+This is the header row. Click to mark the table as having no header.,这是表头行。点击可标记为无表头。
+This is the last row. It will be auto populated based on the bank transaction.,这是最后一行，系统将根据银行交易自动填写。
+This is the row for the bank account. It will be auto populated based on the bank transaction.,这是银行账户行，系统将根据银行交易自动填写。
+This is what the system expects the closing balance to be in your bank statement.,这是系统预计银行对账单应显示的期末余额。
+This report shows all entries in the system where the <strong>clearance date is before the posting date</strong> which is incorrect.,此报表显示所有清账日期早于过账日期的系统分录，这是错误情况。
+This screen is not supported on mobile devices.,此页面不支持移动设备。
+This transaction has been reconciled with the following document(s):,此交易已与以下单据完成核销：
+This will automatically run transaction matching rules on unreconciled transactions every hour.,系统将每小时自动对未核销交易运行交易匹配规则。
+This will be auto-populated if not set.,如果未设置，系统将自动填写。
+"This will just suggest creating a new entry, and will not automatically create it.",系统只会建议创建新分录，不会自动创建。
+"To select more than one transaction at a time, press and hold the shift key.",如需同时选择多笔交易，请按住 Shift 键。
+Total,合计
+Total Amount,总金额
+Total Credit,贷方合计
+Total Credits,贷方合计
+Total Debit,借方合计
+Total Debits,借方合计
+Transaction Date,交易日期
+Transaction Dates,交易日期
+Transaction Matching Rules,交易匹配规则
+Transaction Type,交易类型
+Transaction Unreconciled,交易已取消核销
+Transaction actions work when one or more unreconciled transactions are selected.,选择一笔或多笔未核销交易后，交易操作才可用。
+Transactions to be imported into the system,将导入系统的交易
+Transfer,转账
+Transfer Account,转账账户
+Transfer Recorded,转账已记录
+Transferred Out,转出
+Transferred from,转出账户
+Transferred to,转入账户
+Try adjusting your search or filter criteria.,请尝试调整搜索或筛选条件。
+Type,类型
+Type of check,检查类型
+Unallocated,未分配
+Undo,撤销
+Undo Transaction Reconciliation,撤销交易核销
+Undo {}?,撤销{}？
+Unmatch Transaction?,取消交易匹配？
+Unpaid invoices from {0} for {1}.,{0} 的未付款发票，金额为 {1}。
+Unreconcile,取消核销
+Unreconciled Transactions,未核销交易
+Updating...,正在更新…
+Upload,上传
+"Upload your bank statement file to start the import process. We support CSV, XLSX and PDF files.",上传银行流水文件以开始导入，支持 CSV、XLSX 和 PDF 文件。
+"Upload your bank statement file to start the import process. We support uploading CSV, XLSX, XLS and PDF files. Please make sure the file contains the correct columns.",上传银行流水文件以开始导入，支持 CSV、XLSX、XLS 和 PDF 文件。请确认文件包含正确的列。
+Uploading...,正在上传…
+Use Suggestion,使用建议
+Value,值
+View,查看
+View Instructions,查看说明
+View all reconciliation actions taken in this session,查看本次会话中执行的所有对账操作
+View all reconciliation actions taken in this session.,查看本次会话中的所有对账操作。
+View older transaction,查看较早交易
+View older transactions,查看较早交易
+View transaction,查看交易
+View transactions,查看交易
+Voucher Name,凭证名称
+Voucher Type,凭证类型
+"We support uploading CSV, XLSX, XLS and PDF files. Please make sure the file contains the correct columns.",支持上传 CSV、XLSX、XLS 和 PDF 文件。请确认文件包含正确的列。
+We've auto-detected the details of the statement file.,系统已自动识别流水文件详情。
+We've found 1 existing transaction in the system that conflicts with the transactions in the statement file. Are you sure you want to proceed with the import?,系统发现 1 笔已有交易与流水文件中的交易冲突。确定要继续导入吗？
+We've found 1 transaction in the statement file that will be imported into the system. Please review the details below and click the 'Import' button to proceed.,系统发现流水文件中有 1 笔交易将导入系统。请检查详情，然后点击“导入”按钮继续。
+We've found {0} existing transactions in the system that conflict with the transactions in the statement file. Are you sure you want to proceed with the import?,系统发现 {0} 笔已有交易与流水文件中的交易冲突。确定要继续导入吗？
+Will be auto-populated,将自动填写
+Withdrawal,支出
+Withdrawal/Deposit,支出/收入
+Within 1 day,1 天内
+Within 2 days,2 天内
+Within 3 days,3 天内
+Within 4 days,4 天内
+Within 5 days,5 天内
+You can also add credit or debit values to pre-fill - these support both static values (like 200) or formulas (like transaction_amount * 0.25).,你也可以添加预填的借方或贷方金额，支持固定值（如 200）或公式（如 transaction_amount * 0.25）。
+You can reset the clearing dates of these entries here.,你可以在此重置这些分录的清账日期。
+You can set up the rule to split the transaction across multiple accounts.,你可以设置规则，将交易拆分到多个科目。
+You have not added any bank accounts to your company.,当前公司尚未添加银行账户。
+You have not performed any reconciliations in this session yet.,本次会话尚未执行任何对账操作。
+cancelled,取消
+e.g. Bank Charges,例如：银行手续费
+e.g. Last 3 weeks,例如：最近 3 周
+or,或
+reconciled,已核销
+result,条结果
+results,条结果
+tab below.,页签。
+to,至
+transaction,笔交易
+transaction selected,笔已选交易
+transactions,笔交易
+transactions selected,笔已选交易
+{0} to {1},{0} 至 {1}
+{0} transactions will be imported into the system. Please review the details below and click the 'Import' button to proceed.,{0} 笔交易将导入系统。请检查详情，然后点击“导入”按钮继续。
+{} :,{}：
+{} invoices,{} 张发票
+Unable to load statement mapping. Check the reported error and try again.,无法加载报表科目映射。请处理已提示的错误后重试。
+点击修改金额,点击修改金额
+该行不能直接修改金额,该行不能直接修改金额
+外币或汇率换算分录请打开原单修改金额,外币或汇率换算分录请打开原单修改金额
+该来源金额由系统计算，请打开原单修改,该来源金额由系统计算，请打开原单修改
+无法把该金额唯一对应到来源凭证分录,无法把该金额唯一对应到来源凭证分录
+该金额为合并或拆分展示结果，请打开原单修改,该金额为合并或拆分展示结果，请打开原单修改
+请输入有效金额,请输入有效金额
+金额最多保留 {0} 位小数,金额最多保留 {0} 位小数
+第 {0} 行不能同时填写借方和贷方金额,第 {0} 行不能同时填写借方和贷方金额
+第 {0} 行借方和贷方金额不能同时为零,第 {0} 行借方和贷方金额不能同时为零
+借贷不平衡，请把同一张凭证的相关金额修改完成后一起保存,借贷不平衡，请把同一张凭证的相关金额修改完成后一起保存
+关联回单或银行流水的银行收付款金额不能在此修改，请先核对原始回单和银行流水,关联回单或银行流水的银行收付款金额不能在此修改，请先核对原始回单和银行流水
+凭证内容,凭证内容

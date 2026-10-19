@@ -6,6 +6,9 @@ Entries are corrected through cancellation and amendment so the original
 posting remains auditable.
 """
 
+from frappe import _
+
+
 import frappe
 from frappe.utils import flt, getdate, now_datetime
 
@@ -70,7 +73,7 @@ def repair_aaa_finance(company=COMPANY, apply=False, limit=None):
 	would be amended.
 """
 	if company != COMPANY:
-		frappe.throw("此维护脚本仅允许处理 aaa 的悦为智能技术(东莞)有限公司")
+		frappe.throw(_("此维护脚本仅允许处理 aaa 的悦为智能技术(东莞)有限公司"))
 
 	plan = build_repair_plan(company)
 	if not apply:
@@ -216,11 +219,11 @@ def _account(company, number):
 def split_management_fee_accounts(company=COMPANY, apply=False):
 	"""Validate the source chart's separate property/utilities accounts."""
 	if company != COMPANY:
-		frappe.throw("此维护脚本仅允许处理 aaa 的悦为智能技术(东莞)有限公司")
+		frappe.throw(_("此维护脚本仅允许处理 aaa 的悦为智能技术(东莞)有限公司"))
 
 	property_account = _account(company, "660203")
 	if not property_account:
-		frappe.throw("aaa 缺少 660203 管理费用－物业管理费科目")
+		frappe.throw(_("aaa 缺少 660203 管理费用－物业管理费科目"))
 
 	utilities_before = _account(company, "660204")
 	result = {
@@ -255,11 +258,11 @@ def ensure_detail_accounts(company):
 	accounts = {}
 	parent_6602 = _account(company, "6602")
 	if not parent_6602:
-		frappe.throw("aaa 缺少 6602 管理费用父科目")
+		frappe.throw(_("aaa 缺少 6602 管理费用父科目"))
 	legacy_other_payable = _account(company, "2241")
 	parent_current_liability = frappe.db.get_value("Account", legacy_other_payable, "parent_account")
 	if not parent_current_liability:
-		frappe.throw("aaa 缺少流动负债父科目")
+		frappe.throw(_("aaa 缺少流动负债父科目"))
 
 	for number, label, parent_number, account_type in DETAIL_ACCOUNTS + OTHER_PAYABLE_ACCOUNTS:
 		name = _account(company, number)
@@ -288,7 +291,7 @@ def ensure_detail_accounts(company):
 def normalize_non_party_liability_accounts(company=COMPANY, apply=False):
 	"""Keep aggregated payroll-liability details outside the party subledger."""
 	if company != COMPANY:
-		frappe.throw("此维护脚本仅允许处理 aaa 的悦为智能技术(东莞)有限公司")
+		frappe.throw(_("此维护脚本仅允许处理 aaa 的悦为智能技术(东莞)有限公司"))
 
 	rows = frappe.get_all(
 		"Account",
@@ -322,14 +325,14 @@ def normalize_non_party_liability_accounts(company=COMPANY, apply=False):
 def fix_bank_account(company, account_map):
 	main_bank = account_map.get("100201") or _account(company, "100201")
 	if not main_bank:
-		frappe.throw("aaa 缺少悦为公司的 100201 银行科目")
+		frappe.throw(_("aaa 缺少悦为公司的 100201 银行科目"))
 	rows = frappe.get_all(
 		"Bank Account",
 		filters={"company": company, "bank": "招商银行"},
 		fields=["name", "account"],
 	)
 	if len(rows) != 1:
-		frappe.throw(f"aaa 招商银行公司账户数量异常：{len(rows)}，未自动修改")
+		frappe.throw(_("aaa 招商银行公司账户数量异常：{0}，未自动修改").format(len(rows)))
 	row = rows[0]
 	if row.account != main_bank:
 		doc = frappe.get_doc("Bank Account", row.name)

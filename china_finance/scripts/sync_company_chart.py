@@ -8,6 +8,9 @@ preserved unless a parent must be converted to a group for the requested tree.
 
 from __future__ import annotations
 
+from frappe import _
+
+
 import re
 from collections import Counter
 from pathlib import Path
@@ -41,7 +44,7 @@ def sync_company_chart(file_path, company=COMPANY, apply=False):
 	should make a site backup before calling with ``apply=True``.
 	"""
 	if company != COMPANY:
-		frappe.throw("此同步脚本仅允许处理 aaa 的悦为智能技术(东莞)有限公司")
+		frappe.throw(_("此同步脚本仅允许处理 aaa 的悦为智能技术(东莞)有限公司"))
 
 	source = read_chart(file_path)
 	plan = build_plan(source, company)
@@ -49,7 +52,7 @@ def sync_company_chart(file_path, company=COMPANY, apply=False):
 		return plan
 
 	if frappe.db.exists("GL Entry", {"company": company, "is_cancelled": 0}):
-		frappe.throw("悦为公司已有未冲销总账分录，不能直接同步科目主数据；请先完成迁移方案评估")
+		frappe.throw(_("悦为公司已有未冲销总账分录，不能直接同步科目主数据；请先完成迁移方案评估"))
 
 	try:
 		result = apply_plan(plan, company)
@@ -91,11 +94,11 @@ def read_chart(file_path):
 	try:
 		from openpyxl import load_workbook
 	except ImportError:
-		frappe.throw("当前环境缺少 openpyxl，无法读取科目余额表")
+		frappe.throw(_("当前环境缺少 openpyxl，无法读取科目余额表"))
 
 	path = Path(file_path)
 	if not path.exists():
-		frappe.throw(f"找不到科目表文件：{file_path}")
+		frappe.throw(_("找不到科目表文件：{0}").format(file_path))
 
 	workbook = load_workbook(filename=path, read_only=True, data_only=True)
 	worksheet = workbook.active
@@ -109,13 +112,13 @@ def read_chart(file_path):
 		if not CODE_RE.fullmatch(code) or not name:
 			continue
 		if code in seen:
-			frappe.throw(f"科目表第 {excel_row} 行与第 {seen[code]} 行重复使用编码 {code}")
+			frappe.throw(_("科目表第 {0} 行与第 {1} 行重复使用编码 {2}").format(excel_row, seen[code], code))
 		seen[code] = excel_row
 		rows.append({"code": code, "raw_name": name, "excel_row": excel_row})
 	workbook.close()
 
 	if not rows:
-		frappe.throw("科目表没有读取到数字科目编码")
+		frappe.throw(_("科目表没有读取到数字科目编码"))
 	return rows
 
 
@@ -156,7 +159,7 @@ def build_plan(source, company=COMPANY):
 		else:
 			existing_by_code[code] = account
 	if duplicate_existing:
-		frappe.throw(f"悦为公司存在重复科目编码：{duplicate_existing}")
+		frappe.throw(_("悦为公司存在重复科目编码：{0}").format(duplicate_existing))
 
 	parent_by_code = {str(a.account_number): a for a in existing if a.account_number}
 	root_parents = _root_parent_choices(existing)
@@ -233,7 +236,7 @@ def apply_plan(plan, company=COMPANY):
 		account = existing_by_code.get(code)
 		parent = _get_target_parent(item, source, existing_by_code, root_parents)
 		if not parent:
-			frappe.throw(f"科目 {code} 找不到可用的父科目")
+			frappe.throw(_("科目 {0} 找不到可用的父科目").format(code))
 
 		wants_group = bool(item["is_group"])
 		if not account:

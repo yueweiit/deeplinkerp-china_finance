@@ -4,6 +4,9 @@ This is a bench-only maintenance operation, never an HTTP or migration hook.
 Live business vouchers, bank allocations and non-zero ledgers block deletion.
 """
 
+from frappe import _
+
+
 # Chinese user-facing messages intentionally use Chinese punctuation.
 # ruff: noqa: RUF001
 
@@ -70,9 +73,9 @@ def cleanup_cancelled_finance(
 		or preview.get("site") != frappe.local.site
 		or preview.get("company") != company
 	):
-		frappe.throw("预览文件的模式、站点或公司不匹配，未执行清理")
+		frappe.throw(_("预览文件的模式、站点或公司不匹配，未执行清理"))
 	if not company or not frappe.db.exists("Company", company):
-		frappe.throw("公司不存在")
+		frappe.throw(_("公司不存在"))
 	apply = bool(cint(apply))
 	if apply:
 		_assert_maintenance_window()
@@ -124,7 +127,7 @@ def cleanup_cancelled_finance(
 				_purge_document(doc)
 		for dt, docs in plan["documents"].items():
 			if docs and frappe.db.exists(dt, {"name": ["in", sorted(docs)]}):
-				frappe.throw(f"{dt} 清理后仍有残留，整批回滚")
+				frappe.throw(_("{0} 清理后仍有残留，整批回滚").format(dt))
 		return {**result, "status": "removed", "deleted_document_records": list(trash.values())}
 	except Exception:
 		frappe.db.rollback(save_point=savepoint)
@@ -135,9 +138,9 @@ def _assert_maintenance_window():
 	from frappe.utils.background_jobs import get_jobs
 
 	if not cint(frappe.conf.maintenance_mode):
-		frappe.throw("请先进入站点维护模式再执行清理；预览不需要维护模式")
+		frappe.throw(_("请先进入站点维护模式再执行清理；预览不需要维护模式"))
 	if get_jobs(site=frappe.local.site).get(frappe.local.site):
-		frappe.throw("站点仍有排队或运行中的后台任务，请待任务完成后重试")
+		frappe.throw(_("站点仍有排队或运行中的后台任务，请待任务完成后重试"))
 
 
 def _get_doc(doctype, name, lock=False):
@@ -264,7 +267,7 @@ def _build_plan(preview, include_orphans, lock=False, include_cancelled_ledger_r
 		for name in rows:
 			doc = _get_doc(dt, name, lock)
 			if not doc:
-				frappe.throw("关联记录在扫描期间发生变化，请重新执行")
+				frappe.throw(_("关联记录在扫描期间发生变化，请重新执行"))
 			if doc.get("company") != company:
 				blockers.append({"reason": "关联记录属于其他公司或未指定公司", "doctype": dt, "name": name})
 			documents[dt][name] = doc

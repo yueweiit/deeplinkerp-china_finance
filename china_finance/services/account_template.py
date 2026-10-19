@@ -96,7 +96,7 @@ def build_company_template_chart(company):
 			"Balance Sheet" if account.root_type in {"Asset", "Liability", "Equity"} else "Profit and Loss"
 		)
 		if (parent and parent.root_type != account.root_type) or account.report_type != expected_report:
-			raise ValueError(f"科目 {account.name} 的根类型、报表类型或父级不一致，请核对后再导出模板")
+			raise ValueError(_("科目 {0} 的根类型、报表类型或父级不一致，请核对后再导出模板").format(account.name))
 		children_by_parent[account.parent_account or ""].append(account)
 
 	def build_children(parent_name=""):

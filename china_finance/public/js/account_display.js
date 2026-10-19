@@ -9,7 +9,7 @@
 
 		ControlLink.prototype.setup_awesomeplete = function () {
 			native_setup.call(this);
-			if (this.get_options() !== "Account" || !this.awesomplete) return;
+			if (this.df?.fieldtype !== "Link" || this.df.options !== "Account" || !this.awesomplete) return;
 
 			const native_item = this.awesomplete.item;
 			if (native_item.__china_finance_account_display_patched) return;

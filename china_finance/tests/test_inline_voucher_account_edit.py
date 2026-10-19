@@ -16,7 +16,9 @@ class TestInlineVoucherAccountEdit(unittest.TestCase):
 
 	def setUp(self):
 		self.user = frappe.session.user
+		self.language = frappe.local.lang
 		frappe.set_user("Administrator")
+		frappe.local.lang = "zh"
 		self.point = "inline_account_edit_" + frappe.generate_hash(length=8)
 		frappe.db.savepoint(self.point)
 		self._make_company()
@@ -24,6 +26,7 @@ class TestInlineVoucherAccountEdit(unittest.TestCase):
 	def tearDown(self):
 		frappe.db.rollback(save_point=self.point)
 		frappe.set_user(self.user)
+		frappe.local.lang = self.language
 
 	def _make_company(self):
 		suffix = frappe.generate_hash(length=5).upper()
@@ -275,6 +278,202 @@ class TestInlineVoucherAccountEdit(unittest.TestCase):
 					}
 				],
 			)
+
+	def _amount_changes(self, doc, amount):
+		return [
+			{"field": "credit", "edit_key": f"je:{doc.accounts[0].name}", "value": amount},
+			{"field": "debit", "edit_key": f"je:{doc.accounts[1].name}", "value": amount},
+		]
+
+	def test_draft_amounts_are_saved_together_clear_review_and_do_not_post(self):
+		doc = self._mark_ready(self._journal_entry())
+		rows = self._ledger_rows(doc.name, "待记账")
+		self.assertTrue(all(row["editable_amount"] for row in rows))
+		changes = self._amount_changes(doc, "120.35")
+		preview = source_edit.preview_inline_voucher_changes(
+			doc.doctype, doc.name, str(doc.modified), changes
+		)
+		self.assertFalse(preview["requires_confirmation"])
+		result = source_edit.apply_inline_voucher_changes(doc.doctype, doc.name, str(doc.modified), changes)
+		doc.reload()
+		self.assertFalse(result["posted"])
+		self.assertEqual(doc.accounts[0].credit_in_account_currency, 120.35)
+		self.assertEqual(doc.accounts[1].debit_in_account_currency, 120.35)
+		self.assertEqual(doc.total_debit, 120.35)
+		self.assertEqual(doc.total_credit, 120.35)
+		self.assertFalse(doc.custom_china_ready_hash)
+		self.assertFalse(frappe.db.exists("GL Entry", {"voucher_no": doc.name}))
+
+	def test_invalid_amounts_are_rejected_before_saving(self):
+		doc = self._journal_entry()
+		changes = self._amount_changes(doc, 100)
+		with self.assertRaisesRegex(frappe.ValidationError, "借贷不平衡"):
+			source_edit.preview_inline_voucher_changes(doc.doctype, doc.name, str(doc.modified), changes[:1])
+		for value in (None, True, "NaN", "Infinity", "-Infinity", "not-a-number", "1000000000000"):
+			with self.subTest(value=value), self.assertRaisesRegex(frappe.ValidationError, "有效金额"):
+				source_edit.preview_inline_voucher_changes(
+					doc.doctype, doc.name, str(doc.modified), self._amount_changes(doc, value)
+				)
+		with self.assertRaisesRegex(frappe.ValidationError, "位小数"):
+			source_edit.preview_inline_voucher_changes(
+				doc.doctype, doc.name, str(doc.modified), self._amount_changes(doc, "100.123456789")
+			)
+		with self.assertRaisesRegex(frappe.ValidationError, "同时为零"):
+			source_edit.preview_inline_voucher_changes(
+				doc.doctype, doc.name, str(doc.modified), self._amount_changes(doc, 0)
+			)
+		with self.assertRaisesRegex(frappe.ValidationError, "同时填写"):
+			source_edit.preview_inline_voucher_changes(
+				doc.doctype,
+				doc.name,
+				str(doc.modified),
+				[{"field": "debit", "edit_key": f"je:{doc.accounts[0].name}", "value": 10}],
+			)
+		doc.reload()
+		self.assertEqual(doc.total_debit, 125)
+
+	def test_amount_keys_types_permissions_and_versions_are_checked(self):
+		doc = self._journal_entry()
+		with self.assertRaisesRegex(frappe.ValidationError, "刷新报表"):
+			source_edit.preview_inline_voucher_changes(
+				doc.doctype, doc.name, str(doc.modified),
+				[{"field": "debit", "edit_key": "je:forged-row", "value": 100}],
+			)
+		with self.assertRaises(frappe.TimestampMismatchError):
+			source_edit.apply_inline_voucher_changes(doc.doctype, doc.name, "stale", self._amount_changes(doc, 100))
+		payment = self._payment_entry()
+		self.assertTrue(all(not row["editable_amount"] for row in self._ledger_rows(payment.name, "未记账")))
+		with self.assertRaisesRegex(frappe.ValidationError, "由系统计算"):
+			source_edit.preview_inline_voucher_changes(
+				payment.doctype, payment.name, str(payment.modified),
+				[{"field": "debit", "edit_key": "pe:field:paid_to", "value": 100}],
+			)
+		frappe.set_user("Guest")
+		try:
+			with self.assertRaises(frappe.PermissionError):
+				source_edit.preview_inline_voucher_changes(
+					doc.doctype, doc.name, str(doc.modified), self._amount_changes(doc, 100)
+				)
+		finally:
+			frappe.set_user("Administrator")
+		frappe.db.set_value("Company", self.company, "accounts_frozen_till_date", "2026-08-31")
+		with self.assertRaisesRegex(frappe.ValidationError, "冻结"):
+			source_edit.preview_inline_voucher_changes(
+				doc.doctype, doc.name, str(doc.modified), self._amount_changes(doc, 100)
+			)
+
+	def test_posted_amount_account_and_summary_changes_share_one_amendment(self):
+		doc = self._mark_ready(self._journal_entry())
+		doc.submit()
+		doc.reload()
+		old_number = doc.custom_china_voucher_number
+		changes = self._amount_changes(doc, 100)
+		changes.extend([
+			{"field": "account", "edit_key": f"je:{doc.accounts[1].name}", "value": self.replacement_expense},
+			{"field": "summary", "edit_key": f"je-summary:{doc.accounts[1].name}", "value": "Corrected expense"},
+		])
+		preview = source_edit.preview_inline_voucher_changes(doc.doctype, doc.name, str(doc.modified), changes)
+		self.assertTrue(preview["requires_confirmation"])
+		result = source_edit.apply_inline_voucher_changes(doc.doctype, doc.name, str(doc.modified), changes)
+		doc.reload()
+		amended = frappe.get_doc(doc.doctype, result["source_name"])
+		self.assertEqual(doc.docstatus, 2)
+		self.assertEqual(amended.docstatus, 1)
+		self.assertEqual(amended.total_debit, 100)
+		self.assertEqual(amended.total_credit, 100)
+		self.assertEqual(amended.custom_china_voucher_number, old_number)
+		self.assertEqual(amended.accounts[1].account, self.replacement_expense)
+		self.assertEqual(amended.accounts[1].user_remark, "Corrected expense")
+		self.assertEqual(frappe.db.count(doc.doctype, {"amended_from": doc.name}), 1)
+		comments = frappe.get_all("Comment", filters={
+			"reference_doctype": doc.doctype, "reference_name": amended.name, "comment_type": "Comment",
+		}, pluck="content")
+		self.assertTrue(any("125.0" in text and "100.0" in text and "借方" in text for text in comments))
+		with self.assertRaisesRegex(frappe.ValidationError, "已取消"):
+			source_edit.preview_inline_voucher_changes(doc.doctype, doc.name, str(doc.modified), changes)
+
+	def test_amount_posting_failure_rolls_back_original_and_amendment(self):
+		doc = self._mark_ready(self._journal_entry())
+		doc.submit()
+		doc.reload()
+		with (
+			patch.object(source_edit, "complete_source_voucher_edit", side_effect=frappe.ValidationError("forced failure")),
+			self.assertRaisesRegex(frappe.ValidationError, "forced failure"),
+		):
+			source_edit.apply_inline_voucher_changes(doc.doctype, doc.name, str(doc.modified), self._amount_changes(doc, 100))
+		doc.reload()
+		self.assertEqual(doc.docstatus, 1)
+		self.assertEqual(doc.total_debit, 125)
+		self.assertFalse(frappe.db.exists(doc.doctype, {"amended_from": doc.name}))
+
+	def test_linked_bank_amount_cannot_change_even_before_reconciliation(self):
+		transaction = self._bank_transaction()
+		doc = self._journal_entry()
+		doc.custom_china_bank_transaction = transaction.name
+		doc.save()
+		for posted in (False, True):
+			if posted:
+				self._mark_ready(doc).submit()
+				doc.reload()
+			with self.subTest(posted=posted), self.assertRaisesRegex(frappe.ValidationError, "银行收付款金额不能"):
+				source_edit.apply_inline_voucher_changes(
+					doc.doctype, doc.name, str(doc.modified), self._amount_changes(doc, 100)
+				)
+			doc.reload()
+			self.assertEqual(doc.docstatus, int(posted))
+			self.assertEqual(doc.total_debit, 125)
+			self.assertFalse(frappe.db.exists(doc.doctype, {"amended_from": doc.name}))
+
+	def test_reconciled_expense_split_changes_preserve_bank_amount_and_allocation(self):
+		transaction = self._bank_transaction()
+		doc = self._journal_entry()
+		doc.accounts[1].debit_in_account_currency = 75
+		doc.append("accounts", {
+			"account": self.replacement_expense, "debit_in_account_currency": 50, "cost_center": self.cost_center,
+		})
+		doc.custom_china_bank_transaction = transaction.name
+		doc.save()
+		self._mark_ready(doc).submit()
+		doc.reload()
+		changes = [
+			{"field": "debit", "edit_key": f"je:{doc.accounts[1].name}", "value": 80},
+			{"field": "debit", "edit_key": f"je:{doc.accounts[2].name}", "value": 45},
+		]
+		result = source_edit.apply_inline_voucher_changes(doc.doctype, doc.name, str(doc.modified), changes)
+		amended = frappe.get_doc(doc.doctype, result["source_name"])
+		self.assertEqual(amended.accounts[0].credit_in_account_currency, 125)
+		self.assertEqual(amended.accounts[1].debit_in_account_currency, 80)
+		self.assertEqual(amended.accounts[2].debit_in_account_currency, 45)
+		transaction.reload()
+		self.assertEqual(transaction.status, "Reconciled")
+		self.assertEqual(len(transaction.payment_entries), 1)
+		self.assertEqual(transaction.payment_entries[0].payment_entry, amended.name)
+		self.assertEqual(transaction.payment_entries[0].allocated_amount, 125)
+
+	def test_negative_debit_offset_is_not_converted_to_credit(self):
+		doc = self._journal_entry()
+		doc.accounts[0].credit_in_account_currency = 0
+		doc.accounts[0].debit_in_account_currency = 125
+		doc.accounts[1].debit_in_account_currency = -125
+		doc.save()
+		changes = [
+			{"field": "debit", "edit_key": f"je:{doc.accounts[0].name}", "value": "100.35"},
+			{"field": "debit", "edit_key": f"je:{doc.accounts[1].name}", "value": "-100.35"},
+		]
+		source_edit.apply_inline_voucher_changes(doc.doctype, doc.name, str(doc.modified), changes)
+		doc.reload()
+		self.assertEqual(doc.accounts[1].debit_in_account_currency, -100.35)
+		self.assertEqual(doc.accounts[1].credit_in_account_currency, 0)
+
+	def test_merged_and_foreign_amounts_are_read_only(self):
+		doc = self._journal_entry()
+		row = next(row for row in self._ledger_rows(doc.name, "未记账") if row["account"] == self.expense_account)
+		mapping = source_edit.get_inline_row_edit_metadata(doc, row)
+		row["debit"] = 100
+		self.assertFalse(source_edit.get_inline_amount_edit_metadata(doc, row, mapping)["editable"])
+		doc.multi_currency = 1
+		with self.assertRaisesRegex(frappe.ValidationError, "汇率换算"):
+			source_edit._resolve_inline_changes(doc, self._amount_changes(doc, 100))
 
 	def test_posted_change_reuses_controlled_amendment_and_statutory_number(self):
 		doc = self._mark_ready(self._journal_entry())

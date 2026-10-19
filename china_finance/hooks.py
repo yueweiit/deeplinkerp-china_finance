@@ -113,6 +113,8 @@ doctype_tree_js = {
 }
 
 override_whitelisted_methods = {
+	"frappe.translate.get_boot_translations":
+		"china_finance.services.banking_translations.get_boot_translations",
 	"frappe.desk.doctype.bulk_update.bulk_update.submit_cancel_or_update_docs":
 		"china_finance.services.voucher_batch.submit_cancel_or_update_docs",
 	"frappe.model.workflow.bulk_workflow_approval":

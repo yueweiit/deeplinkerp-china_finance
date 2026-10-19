@@ -98,7 +98,7 @@ class ChinaFinanceBankStatementImportLog(BankStatementImportLog):
 			reference = str(transaction.get("reference") or "").strip()
 			if reference in existing_references:
 				if transaction.get("withdrawal") and transaction.get("deposit"):
-					frappe.throw("银行流水不能同时存在收入和支出金额")
+					frappe.throw(_("银行流水不能同时存在收入和支出金额"))
 				existing_transaction(self.bank_account, {
 					"transaction_id": reference, "posting_date": str(getdate(transaction.get("date"))),
 					"direction": "支出" if transaction.get("withdrawal") else "收入",

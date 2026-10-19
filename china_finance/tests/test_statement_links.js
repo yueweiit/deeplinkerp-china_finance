@@ -36,3 +36,7 @@ context.frappe.query_reports["China Financial Statements"].after_refresh(report)
 report.get_filter_value = () => "Profit and Loss";
 context.frappe.query_reports["China Financial Statements"].after_refresh(report);
 console.log("PASS: all-account links, escaping, route filters, closing explanation and refresh without closing control");
+
+vm.runInContext(fs.readFileSync(path.join(__dirname, "../china_finance/report/china_purchase_reconciliation/china_purchase_reconciliation.js"), "utf8"), context);
+assert.equal(context.frappe.query_reports["China Purchase Reconciliation"].filters, undefined,
+	"Report JSON filters must not be replaced by an empty JavaScript array");

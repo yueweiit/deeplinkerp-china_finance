@@ -38,6 +38,7 @@ function inputHarness() {
 function harness() {
 	const controls = [];
 	const timers = [];
+	const notices = [];
 	const context = vm.createContext({
 		window: { setTimeout: (callback) => timers.push(callback) },
 		document: {},
@@ -45,6 +46,8 @@ function harness() {
 		__: (text) => text,
 		frappe: {
 			query_reports: {},
+			throw(message) { throw new Error(message); },
+			show_alert() {},
 			utils: {
 				escape_html: (value) => String(value),
 				icon: () => "",
@@ -85,12 +88,19 @@ function harness() {
 	});
 	context.window.window = context.window;
 	vm.runInContext(source, context);
+	context.recordNotice = (...args) => notices.push(args);
+	vm.runInContext("show_inline_notice = (...args) => recordNotice(...args)", context);
 	return {
 		context,
 		controls,
 		timers,
+		notices,
 		accountEditor: vm.runInContext("create_inline_account_editor", context),
 		summaryEditor: vm.runInContext("create_inline_summary_editor", context),
+		amountEditor: vm.runInContext("create_inline_amount_editor", context),
+		stageAmount: vm.runInContext("stage_inline_amount_change", context),
+		cancel: vm.runInContext("cancel_inline_voucher_changes", context),
+		save: vm.runInContext("save_inline_voucher_changes", context),
 	};
 }
 
@@ -160,4 +170,130 @@ test("summary editor stays active while typing and keeps space inside the input"
 	});
 	assert.equal(propagationStopped, true);
 	assert.equal(defaultPrevented, false, "space must still be inserted into the input");
+});
+
+function amountReport() {
+	const rows = [
+		{ amount_edit_key: "je:expense", debit: 125, credit: 0 },
+		{ amount_edit_key: "je:bank", debit: 0, credit: 125 },
+	].map(row => ({
+		...row,
+		base_total_amount: 125,
+		editable_amount: true,
+		amount_precision: 2,
+		currency: "CNY",
+		edit_voucher_key: "Journal Entry:JV-1",
+		edit_source_doctype: "Journal Entry",
+		edit_source_name: "JV-1",
+		edit_source_modified: "version-1",
+	}));
+	return {
+		...report(),
+		data: rows,
+		refreshCount: 0,
+		async refresh() { this.refreshCount++; },
+		datatable: {
+			cellmanager: { deactivateEditing() {} },
+			datamanager: { getColumns: () => ["debit", "credit", "base_total_amount"].map(id => ({ id })) },
+			refreshRow() {},
+		},
+	};
+}
+
+test("amount editor uses row numbers, keeps focus, allows signed values and rejects invalid input", () => {
+	const h = harness();
+	const r = amountReport();
+	const editor = h.amountEditor(r, "CNY 125.00", {}, r.data[0], "debit");
+	editor.initValue("CNY 125.00");
+	const control = h.controls[0];
+	assert.equal(control.df.fieldtype, "Currency");
+	assert.equal(control.df.precision, 2);
+	assert.equal(control.$input.value, 125, "formatted currency labels must not be parsed as input");
+	assert.equal(control.focused, true);
+	assert.equal(typeof control.change, "function");
+	control.$input.val("-25.10");
+	control.get_value = () => -25.1;
+	assert.equal(editor.getValue(), -25.1);
+	control.$input.val("");
+	assert.equal(editor.getValue(), 0);
+	control.$input.val("invalid");
+	control.get_value = () => null;
+	assert.throws(() => editor.getValue(), /请输入有效金额/);
+});
+
+test("both amounts stage in one voucher and cancellation restores zero values and totals", () => {
+	const h = harness();
+	const r = amountReport();
+	h.stageAmount(r, r.data[0], "debit", 100);
+	h.stageAmount(r, r.data[1], "credit", 100);
+	assert.equal(r._china_inline_edit_state.changes.size, 2);
+	assert.equal(r.data[0].base_total_amount, 100);
+	assert.equal(r.data[1]._inline_credit_dirty, true);
+	h.stageAmount(r, r.data[0], "credit", -5);
+	h.cancel(r);
+	assert.equal(r._china_inline_edit_state, null);
+	assert.deepEqual(r.data.map(row => [row.debit, row.credit, row.base_total_amount]), [[125, 0, 125], [0, 125, 125]]);
+	assert.equal(r.data[0]._inline_credit_dirty, undefined);
+});
+
+test("changing an amount back clears dirty state and another voucher cannot steal pending edits", () => {
+	const h = harness();
+	const r = amountReport();
+	h.stageAmount(r, r.data[0], "debit", 100);
+	assert.equal(h.amountEditor(r, 125, {}, {...r.data[1], edit_voucher_key: "Journal Entry:JV-2"}, "credit"), false);
+	assert.equal(r._china_inline_edit_state.voucher_key, "Journal Entry:JV-1");
+	h.stageAmount(r, r.data[0], "debit", 125);
+	assert.equal(r._china_inline_edit_state, null);
+	assert.equal(r.data[0]._inline_debit_dirty, false);
+});
+
+test("posted amount changes wait for confirmation then submit both fields in one request", async () => {
+	const h = harness();
+	const r = amountReport();
+	const calls = [];
+	h.context.frappe.call = async args => {
+		calls.push(args);
+		return { message: args.method.includes("preview_") ? { requires_confirmation: true } : { message: "done" } };
+	};
+	h.stageAmount(r, r.data[0], "debit", 100);
+	h.stageAmount(r, r.data[1], "credit", 100);
+	await h.save(r);
+	assert.equal(calls.length, 1);
+	assert.equal(r._china_inline_edit_state.confirming, true);
+	assert.equal(r.refreshCount, 0);
+	await h.save(r, true);
+	assert.equal(calls.length, 2);
+	assert.equal(calls[1].type, "POST");
+	assert.equal(calls[1].args.changes.length, 2);
+	assert.equal(r._china_inline_edit_state, null);
+	assert.equal(r.refreshCount, 1);
+});
+
+test("failed amount preflight preserves staged values for correction and sends no apply request", async () => {
+	const h = harness();
+	const r = amountReport();
+	let calls = 0;
+	h.context.frappe.call = async () => { calls++; throw new Error("unbalanced"); };
+	h.stageAmount(r, r.data[0], "debit", 100);
+	await h.save(r);
+	assert.equal(calls, 1);
+	assert.equal(r.data[0].debit, 100);
+	assert.equal(r._china_inline_edit_state.pending, false);
+	assert.equal(r._china_inline_edit_state.changes.size, 1);
+	assert.equal(r.refreshCount, 0);
+});
+
+test("save waits for the last active amount cell before building its request", async () => {
+	const h = harness();
+	const r = amountReport();
+	const calls = [];
+	h.stageAmount(r, r.data[0], "debit", 100);
+	r.datatable.cellmanager.submitEditing = async () => {
+		await Promise.resolve();
+		h.stageAmount(r, r.data[1], "credit", 100);
+	};
+	h.context.frappe.call = async args => { calls.push(args); return { message: {} }; };
+	await h.save(r);
+	assert.equal(calls[0].args.changes.length, 2);
+	assert.equal(calls[1].args.changes.length, 2);
 });

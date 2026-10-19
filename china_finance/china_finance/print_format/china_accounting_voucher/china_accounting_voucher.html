@@ -1,5 +1,6 @@
 <style>
   @page { size: A4 portrait; margin: 10mm 10mm 8mm; }
+  .print-format { page-size: A4; orientation: Portrait; }
   .cf-voucher-page {
     font-family: "Microsoft YaHei", "Noto Sans CJK SC", Arial, sans-serif;
     color: #111;
@@ -50,7 +51,8 @@
     line-height: 1.35;
     white-space: normal;
     overflow-wrap: break-word;
-    word-break: break-all;
+    word-wrap: break-word;
+    word-break: normal;
   }
   .cf-footnote { margin-top: 8px; color: #666; font-size: 8pt; }
   @media print {
@@ -67,18 +69,18 @@
 
 {% for page in pages %}
 <div class="cf-voucher-page">
-  <div class="cf-title">记 账 凭 证</div>
+  <div class="cf-title">{{ _("记 账 凭 证") }}</div>
   <table class="cf-topline">
     <tr>
-      <td>公司：{{ doc.company }}</td>
-      <td class="cf-right">附单据：{{ doc.attachment_count or 0 }} 张</td>
+      <td>{{ _("公司：") }}{{ doc.company }}</td>
+      <td class="cf-right">{{ _("附单据：") }}{{ doc.attachment_count or 0 }} {{ _("张") }}</td>
     </tr>
   </table>
   <table class="cf-date-line">
     <tr>
-      <td>日期：{{ frappe.utils.format_date(doc.posting_date) }}</td>
+      <td>{{ _("日期：") }}{{ frappe.utils.format_date(doc.posting_date) }}</td>
       <td class="cf-right">
-        凭证号：{{ doc.statutory_number or doc.voucher_word }}
+        {{ _("凭证号：") }}{{ doc.statutory_number or doc.voucher_word }}
         {% if pages|length > 1 %}（{{ loop.index }}/{{ pages|length }}）{% endif %}
       </td>
     </tr>
@@ -87,10 +89,10 @@
   <table class="cf-lines">
     <thead>
       <tr>
-        <th class="cf-summary">摘要</th>
-        <th class="cf-account">会计科目</th>
-        <th class="cf-amount">借方金额</th>
-        <th class="cf-amount">贷方金额</th>
+        <th class="cf-summary">{{ _("摘要") }}</th>
+        <th class="cf-account">{{ _("会计科目") }}</th>
+        <th class="cf-amount">{{ _("借方金额") }}</th>
+        <th class="cf-amount">{{ _("贷方金额") }}</th>
       </tr>
     </thead>
     <tbody>
@@ -109,7 +111,7 @@
               {% else %}
                 {{ (row.account or "").replace(" - " ~ company_abbr, "") if company_abbr else (row.account or "") }}
               {% endif %}
-              {% if row.party %}<div class="cf-subtext">{{ row.party_type or "往来" }}：{{ row.party }}</div>{% endif %}
+              {% if row.party %}<div class="cf-subtext">{{ _(row.party_type) if row.party_type else _("往来") }}：{{ row.party }}</div>{% endif %}
             </td>
             <td class="cf-num">{% if row.debit %}{{ row.get_formatted("debit", doc, currency=voucher_currency) }}{% endif %}</td>
             <td class="cf-num">{% if row.credit %}{{ row.get_formatted("credit", doc, currency=voucher_currency) }}{% endif %}</td>
@@ -118,7 +120,7 @@
       {% endfor %}
       {% if loop.last %}
         <tr class="cf-total">
-          <td colspan="2" class="cf-num">合计</td>
+          <td colspan="2" class="cf-num">{{ _("合计") }}</td>
           <td class="cf-num">{{ doc.get_formatted("total_debit", currency=voucher_currency) }}</td>
           <td class="cf-num">{{ doc.get_formatted("total_credit", currency=voucher_currency) }}</td>
         </tr>
@@ -129,14 +131,14 @@
   {% if loop.last %}
     <table class="cf-signatures">
       <tr>
-        <td>会计主管：__________</td>
-        <td>记账：{{ doc.posted_by or "__________" }}</td>
-        <td>审核：{{ doc.reviewed_by or "__________" }}</td>
-        <td>出纳：__________</td>
-        <td>制单：{{ doc.prepared_by or "__________" }}</td>
+        <td>{{ _("会计主管：__________") }}</td>
+        <td>{{ _("记账：") }}{{ doc.posted_by or "__________" }}</td>
+        <td>{{ _("审核：") }}{{ doc.reviewed_by or "__________" }}</td>
+        <td>{{ _("出纳：__________") }}</td>
+        <td>{{ _("制单：") }}{{ doc.prepared_by or "__________" }}</td>
       </tr>
     </table>
-    <div class="cf-footnote">会计期间：{{ doc.accounting_period or "" }}　币种：{{ voucher_currency }}</div>
+    <div class="cf-footnote">{{ _("会计期间：") }}{{ doc.accounting_period or "" }}　{{ _("币种：") }}{{ voucher_currency }}</div>
   {% endif %}
 </div>
 {% endfor %}

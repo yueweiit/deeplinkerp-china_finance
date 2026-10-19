@@ -315,49 +315,49 @@ const columns = report.get_columns_for_print().filter(col => !col.hidden);
   @media print { thead { display: table-header-group; } tr { page-break-inside: avoid; } }
 </style>
 <div>
-  <div class="cf-title">{%= is_small && is_balance_sheet ? "资产负债表　会小企01表" : is_small && is_profit_loss ? "利润表　会小企02表" : __(report.report_name) %}</div>
+  <div class="cf-title">{%= is_small && is_balance_sheet ? __("资产负债表") + "　会小企01表" : is_small && is_profit_loss ? __("利润表") + "　会小企02表" : __(report.report_name) %}</div>
   <div class="cf-meta">
     <div>
-      {% if (is_small) { %}<span><b>编制单位：</b>{%= filters.company || "" %}</span>{% } else { %}<span><b>公司：</b>{%= filters.company || "" %}</span><span><b>报表类型：</b>{%= filters.statement_type || "" %}</span>{% } %}
+      {% if (is_small) { %}<span><b>{%= __("编制单位：") %}</b>{%= filters.company || "" %}</span>{% } else { %}<span><b>{%= __("公司：") %}</b>{%= filters.company || "" %}</span><span><b>{%= __("报表类型：") %}</b>{%= __(filters.statement_type || "") %}</span>{% } %}
     </div>
     <div>
-      <span><b>{%= is_small ? "税款所属期起止" : "期间" %}：</b>{%= filters.from_date || "" %} 至 {%= filters.to_date || "" %}</span>
-      <span><b>单位：</b>{%= is_small ? "元" : (data.find(row => row.currency)?.currency || "") %}</span>
+      <span><b>{%= is_small ? __("税款所属期起止：") : __("期间：") %}</b>{%= filters.from_date || "" %} {%= __("至") %} {%= filters.to_date || "" %}</span>
+      <span><b>{%= __("单位：") %}</b>{%= is_small ? __("元") : (data.find(row => row.currency)?.currency || "") %}</span>
     </div>
   </div>
   {% if (is_small && is_balance_sheet) { %}
   <table class="cf-table"><thead><tr>
-    <th>资产行次</th><th>资产项目</th><th>期末余额</th><th>年初余额</th>
-    <th>负债及权益行次</th><th>负债及权益项目</th><th>期末余额</th><th>年初余额</th>
+    <th>{%= __("资产行次") %}</th><th>{%= __("资产项目") %}</th><th>{%= __("期末余额") %}</th><th>{%= __("年初余额") %}</th>
+    <th>{%= __("负债及权益行次") %}</th><th>{%= __("负债及权益项目") %}</th><th>{%= __("期末余额") %}</th><th>{%= __("年初余额") %}</th>
   </tr></thead><tbody>
     {% for (let j = 0; j < data.length; j++) { const row = data[j]; %}
       <tr>
-        <td>{%= row.asset_statutory_line_number || "" %}</td><td>{%= row.asset_label || "" %}</td><td class="num">{%= frappe.format(row.asset_amount || 0, {fieldtype:"Currency", options:"currency"}, {}, row) %}</td><td class="num">{%= frappe.format(row.asset_opening_amount || 0, {fieldtype:"Currency", options:"currency"}, {}, row) %}</td>
-        <td>{%= row.liability_equity_statutory_line_number || "" %}</td><td>{%= row.liability_equity_label || "" %}</td><td class="num">{%= frappe.format(row.liability_equity_amount || 0, {fieldtype:"Currency", options:"currency"}, {}, row) %}</td><td class="num">{%= frappe.format(row.liability_equity_opening_amount || 0, {fieldtype:"Currency", options:"currency"}, {}, row) %}</td>
+        <td>{%= row.asset_statutory_line_number || "" %}</td><td>{%= __(row.asset_label || "") %}</td><td class="num">{%= frappe.format(row.asset_amount || 0, {fieldtype:"Currency", options:"currency"}, {}, row) %}</td><td class="num">{%= frappe.format(row.asset_opening_amount || 0, {fieldtype:"Currency", options:"currency"}, {}, row) %}</td>
+        <td>{%= row.liability_equity_statutory_line_number || "" %}</td><td>{%= __(row.liability_equity_label || "") %}</td><td class="num">{%= frappe.format(row.liability_equity_amount || 0, {fieldtype:"Currency", options:"currency"}, {}, row) %}</td><td class="num">{%= frappe.format(row.liability_equity_opening_amount || 0, {fieldtype:"Currency", options:"currency"}, {}, row) %}</td>
       </tr>
     {% } %}
   </tbody></table>
   {% } else if (is_small && is_profit_loss) { %}
-  <table class="cf-table"><thead><tr><th>项目</th><th>行次</th><th>本期金额</th><th>本年累计金额</th></tr></thead><tbody>
+  <table class="cf-table"><thead><tr><th>{%= __("项目") %}</th><th>{%= __("行次") %}</th><th>{%= __("本期金额") %}</th><th>{%= __("本年累计金额") %}</th></tr></thead><tbody>
     {% for (let j = 0; j < data.length; j++) { const row = data[j]; %}
-      <tr><td>{%= row.label || "" %}</td><td>{%= row.statutory_line_number || "" %}</td><td class="num">{%= frappe.format(row.amount || 0, {fieldtype:"Currency", options:"currency"}, {}, row) %}</td><td class="num">{%= frappe.format(row.year_to_date_amount || row.amount || 0, {fieldtype:"Currency", options:"currency"}, {}, row) %}</td></tr>
+      <tr><td>{%= __(row.label || "") %}</td><td>{%= row.statutory_line_number || "" %}</td><td class="num">{%= frappe.format(row.amount || 0, {fieldtype:"Currency", options:"currency"}, {}, row) %}</td><td class="num">{%= frappe.format(row.year_to_date_amount || row.amount || 0, {fieldtype:"Currency", options:"currency"}, {}, row) %}</td></tr>
     {% } %}
   </tbody></table>
   {% } else { %}
   <table class="cf-table">
     <thead><tr>
-      {% for (let i = 0; i < columns.length; i++) { %}<th>{%= columns[i].label || columns[i].name || "" %}</th>{% } %}
+      {% for (let i = 0; i < columns.length; i++) { %}<th>{%= __(columns[i].label || columns[i].name || "") %}</th>{% } %}
     </tr></thead>
     <tbody>
       {% for (let j = 0; j < data.length; j++) { const row = data[j]; %}
         <tr class="{%= row.bold == 1 || row.is_total_row == 1 || row.is_group == 1 ? "cf-bold" : "" %}">
-          {% for (let i = 0; i < columns.length; i++) { const col = columns[i]; const value = col.fieldname ? row[col.fieldname] : row[col.id]; %}<td>{%= value == null ? "" : value %}</td>{% } %}
+          {% for (let i = 0; i < columns.length; i++) { const col = columns[i]; const value = col.fieldname ? row[col.fieldname] : row[col.id]; %}<td>{%= value == null ? "" : col.fieldname === "label" ? __(value) : value %}</td>{% } %}
         </tr>
       {% } %}
     </tbody>
   </table>
   {% } %}
-  <div class="cf-foot">打印时间：{%= frappe.datetime.str_to_user(frappe.datetime.get_datetime_as_string()) %}</div>
+  <div class="cf-foot">{%= __("打印时间：") %}{%= frappe.datetime.str_to_user(frappe.datetime.get_datetime_as_string()) %}</div>
 </div>'''
 
 	values = {

@@ -147,7 +147,7 @@ def execute(filters=None):
 		batch = frappe.get_doc("China Bank Receipt Import", filters.receipt_import)
 		batch.check_permission("read")
 		if batch.company != filters.company:
-			frappe.throw("回单批次与公司不一致")
+			frappe.throw(_("回单批次与公司不一致"))
 		linked = set(
 			frappe.get_all(
 				"China Bank Receipt",
@@ -274,28 +274,30 @@ def get_auxiliary_accounting(entry):
 
 
 def get_columns():
+	# Prepared reports persist columns. Keep source labels so the framework can
+	# translate them for the viewing/exporting user instead of the worker locale.
 	return [
-		{"label": _("凭证字号"), "fieldname": "statutory_number", "fieldtype": "Data", "width": 100},
-		{"label": _("状态"), "fieldname": "voucher_status", "fieldtype": "Data", "width": 85},
-		{"label": _("凭证日期"), "fieldname": "posting_date", "fieldtype": "Date", "width": 130},
+		{"label": "凭证字号", "fieldname": "statutory_number", "fieldtype": "Data", "width": 100},
+		{"label": "状态", "fieldname": "voucher_status", "fieldtype": "Data", "width": 85},
+		{"label": "凭证日期", "fieldname": "posting_date", "fieldtype": "Date", "width": 130},
 		# Keep these fields available to the report filters and export, but hide
 		# them from the daily review grid so the voucher fits on one screen.
 		{
-			"label": _("会计期间"),
+			"label": "会计期间",
 			"fieldname": "accounting_period",
 			"fieldtype": "Data",
 			"width": 110,
 			"hidden": 1,
 		},
 		{
-			"label": _("摘要"),
+			"label": "摘要",
 			"fieldname": "remarks",
 			"fieldtype": "Data",
 			"editable": 1,
 			"width": 270,
 		},
 		{
-			"label": _("科目"),
+			"label": "科目",
 			"fieldname": "account",
 			"fieldtype": "Link",
 			"options": "Account",
@@ -303,7 +305,7 @@ def get_columns():
 			"width": 330,
 		},
 		{
-			"label": _("往来单位"),
+			"label": "往来单位",
 			"fieldname": "party",
 			"fieldtype": "Dynamic Link",
 			"options": "party_type",
@@ -311,32 +313,34 @@ def get_columns():
 			"hidden": 1,
 		},
 		{
-			"label": _("借方"),
+			"label": "借方",
 			"fieldname": "debit",
 			"fieldtype": "Currency",
+			"editable": 1,
 			"options": "currency",
 			"width": 150,
 		},
 		{
-			"label": _("贷方"),
+			"label": "贷方",
 			"fieldname": "credit",
 			"fieldtype": "Currency",
+			"editable": 1,
 			"options": "currency",
 			"width": 150,
 		},
 		{
-			"label": _("本位币金额"),
+			"label": "本位币金额",
 			"fieldname": "base_total_amount",
 			"fieldtype": "Currency",
 			"options": "currency",
 			"width": 160,
 		},
 		{
-			"label": _("本位币"),
+			"label": "本位币",
 			"fieldname": "currency",
 			"fieldtype": "Link",
 			"options": "Currency",
 			"hidden": 1,
 		},
-		{"label": _("操作"), "fieldname": "source_action", "fieldtype": "Data", "width": 260},
+		{"label": "操作", "fieldname": "source_action", "fieldtype": "Data", "width": 260},
 	]
