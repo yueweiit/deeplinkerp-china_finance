@@ -134,7 +134,7 @@
 				this.selected.clear(); this.results = []; this.error = ""; this.onchange("loaded"); return true;
 			} catch (error) {
 				if (request === this.request && revision === this.revision && filters === JSON.stringify(this.filters)) {
-					this.error = error.message || "加载失败，请重试"; this.onchange("error");
+					this.error = error?.message || "加载失败，请重试"; this.onchange("error");
 				}
 				return false;
 			} finally {
@@ -175,7 +175,7 @@
 				});
 				return this.results;
 			} catch (error) {
-				this.results = docs.map((doc) => ({ name: doc.name, ok: false, error: error.message || "请求失败，编辑内容已保留，请核对服务器状态后重试" }));
+				this.results = docs.map((doc) => ({ name: doc.name, ok: false, error: error?.message || "请求失败，编辑内容已保留，请核对服务器状态后重试" }));
 				return this.results;
 			} finally { this.busy = false; this.revision++; this.onchange("processed"); }
 		}

@@ -137,6 +137,31 @@ test("a late loading failure cannot rerender an editor that changed after the re
 	assert.equal(session.doc("CFA-1").remarks, "继续输入");
 });
 
+for (const rejection of [undefined, null]) {
+	test(`loading handles a ${String(rejection)} rejection without a second exception`, async () => {
+		const session = new api.Session({ call: () => Promise.reject(rejection) });
+		session.filters.company = "公司甲";
+		assert.equal(await session.load(), false);
+		assert.match(session.error, /加载失败/);
+		assert.equal(session.loading, false);
+		assert.equal(session.documents.length, 0);
+	});
+
+	test(`processing handles a ${String(rejection)} rejection and preserves every failed edit`, async () => {
+		const session = new api.Session({ call: () => Promise.reject(rejection) });
+		session.documents = [document(), document({ name: "CFA-2" })];
+		session.edit("CFA-1", (doc) => { doc.remarks = "保留修改甲"; });
+		session.edit("CFA-2", (doc) => { doc.remarks = "保留修改乙"; });
+		const results = await session.process(["CFA-1", "CFA-2"], "save");
+		assert.deepEqual(results.map((result) => result.name), ["CFA-1", "CFA-2"]);
+		assert.ok(results.every((result) => result.ok === false && /请求失败.*编辑内容已保留/.test(result.error)));
+		assert.deepEqual([...session.dirty], ["CFA-1", "CFA-2"]);
+		assert.equal(session.doc("CFA-1").remarks, "保留修改甲");
+		assert.equal(session.doc("CFA-2").remarks, "保留修改乙");
+		assert.equal(session.busy, false);
+	});
+}
+
 test("dirty data blocks automatic refresh and cancelled filter changes preserve edits", async () => {
 	let calls = 0;
 	const session = new api.Session({ call: async () => { calls++; return { assignments: [document()], total: 1 }; } });
