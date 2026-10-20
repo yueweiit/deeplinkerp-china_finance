@@ -97,7 +97,10 @@ jobs:
           TYPE: server
         run: |
           cd sites
-          ../env/bin/python -m unittest china_finance.tests.test_framework_patches china_finance.tests.test_prepared_report_notification -v
+          ../env/bin/python -m unittest \
+            china_finance.tests.test_framework_patches \
+            china_finance.tests.test_prepared_report_notification \
+            china_finance.tests.test_company_default_accounts -v
           cd ..
           bench --site test_site set-config allow_tests true
           bench --site test_site run-tests --app china_finance

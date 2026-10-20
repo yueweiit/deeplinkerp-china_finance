@@ -187,7 +187,7 @@ def is_profile_company(company):
 def get_company_accounts_by_number(company):
 	rows = frappe.get_all(
 		"Account", filters={"company": company},
-		fields=["name", "account_name", "account_number", "root_type", "report_type", "account_type", "is_group", "disabled", "parent_account"],
+		fields=["name", "account_name", "account_number", "root_type", "report_type", "account_type", "is_group", "disabled", "parent_account", "lft", "rgt"],
 	)
 	by_number, duplicates = {}, {}
 	for row in rows:
@@ -217,6 +217,23 @@ def get_account_by_number(company, account_number, *, leaf=None, required=True):
 	if leaf is not None and bool(rows[0].is_group) == bool(leaf):
 		frappe.throw(_("科目 {0} 的分组属性不正确").format(rows[0].name))
 	return rows[0]
+
+
+def _company_default_matches(company_doc, fieldname, account, account_type):
+	"""A grouped template default requires a usable leaf in its actual subtree."""
+	selected = company_doc.get(fieldname)
+	if not account.is_group:
+		return selected == account.name
+	if not selected or account.disabled or not account.lft or not account.rgt:
+		return False
+	filters = {
+		"name": selected, "company": company_doc.name, "is_group": 0, "disabled": 0,
+		"root_type": account.root_type, "account_currency": company_doc.default_currency,
+		"lft": [">", account.lft], "rgt": ["<", account.rgt],
+	}
+	if account_type:
+		filters["account_type"] = account_type
+	return bool(frappe.db.exists("Account", filters))
 
 
 def validate_profile(company, include_defaults=True):
@@ -264,14 +281,22 @@ def validate_profile(company, include_defaults=True):
 		company_doc = frappe.get_cached_doc("Company", company)
 		for fieldname, number in get_company_default_accounts(company).items():
 			expected_account = actual.get(number)
-			if expected_account and company_doc.get(fieldname) != expected_account.name:
-				warnings.append(_("公司默认科目 {0} 应为 {1}").format(fieldname, expected_account.name))
-				default_differences.append({
+			account_type = account_type_overrides.get(number, expected.get(number, {}).get("account_type"))
+			if expected_account and not _company_default_matches(company_doc, fieldname, expected_account, account_type):
+				message = (
+					_("公司默认科目 {0} 应为 {1} 下本公司已启用且类型、币种匹配的明细科目")
+					if expected_account.is_group else _("公司默认科目 {0} 应为 {1}")
+				).format(fieldname, expected_account.name)
+				warnings.append(message)
+				difference = {
 					"fieldname": fieldname,
 					"account_number": number,
 					"expected": expected_account.name,
 					"actual": company_doc.get(fieldname),
-				})
+				}
+				if expected_account.is_group:
+					difference["details"] = message
+				default_differences.append(difference)
 	return {
 		"supported": True,
 		"template": profile["template"],
@@ -294,7 +319,9 @@ def apply_company_defaults(company, repair=False):
 	updated = 0
 	for fieldname, number in get_company_default_accounts(company).items():
 		account = accounts.get(number)
-		if not account:
+		# Choosing among descendants is a finance decision. Never write a group,
+		# even when explicitly restoring template defaults.
+		if not account or account.is_group or account.disabled:
 			continue
 		if repair or not company_doc.get(fieldname):
 			if company_doc.get(fieldname) != account.name:
@@ -788,7 +815,7 @@ def _company_default_readiness(company):
 	details = []
 	for issue in issues:
 		if isinstance(issue, dict):
-			details.append(_("{0} 应为科目编号 {1}").format(issue["fieldname"], issue["account_number"]))
+			details.append(issue.get("details") or _("{0} 应为科目编号 {1}").format(issue["fieldname"], issue["account_number"]))
 		else:
 			details.append(issue)
 	return _readiness_item(

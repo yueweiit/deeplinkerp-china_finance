@@ -796,3 +796,4 @@ Unable to load statement mapping. Check the reported error and try again.,无法
 本月有效凭证编号已连续，无需整理,本月有效凭证编号已连续，无需整理
 原字号,原字号
 新字号,新字号
+公司默认科目 {0} 应为 {1} 下本公司已启用且类型、币种匹配的明细科目,公司默认科目 {0} 应为 {1} 下本公司已启用且类型、币种匹配的明细科目

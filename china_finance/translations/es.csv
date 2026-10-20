@@ -480,6 +480,7 @@ records 必须是发票对象数组,Los registros deben ser una serie de objetos
 公司还有进行中的月末结账：{0},La compañía también tiene en curso Cierre del Período de fin de mes: {0}
 公司默认科目,Cuenta predeterminada de la empresa
 公司默认科目 {0} 应为 {1},La cuenta predeterminada de la empresa {0} debe ser {1}.
+公司默认科目 {0} 应为 {1} 下本公司已启用且类型、币种匹配的明细科目,"La cuenta predeterminada de la empresa {0} debe ser una cuenta de detalle habilitada bajo {1}, perteneciente a esta empresa y con el tipo requerido y la moneda de la empresa"
 公司：,Empresa:
 公式,fórmula
 公式汇总项目,Elementos de resumen de fórmula

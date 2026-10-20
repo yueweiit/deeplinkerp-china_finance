@@ -265,6 +265,7 @@ records 必须是发票对象数组,records must be an array of invoice objects
 公司还有进行中的月末结账：{0},The company also has ongoing month-end Period Closing: {0}
 公司默认科目,Company default account
 公司默认科目 {0} 应为 {1},The company's default account {0} should be {1}
+公司默认科目 {0} 应为 {1} 下本公司已启用且类型、币种匹配的明细科目,"Company default account {0} must be an enabled leaf account under {1}, belonging to this company and matching the required type and company currency"
 公司：,Company:
 公式,formula
 公式汇总项目,Formula summary items
