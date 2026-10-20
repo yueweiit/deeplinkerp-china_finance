@@ -12,6 +12,7 @@ from math import isfinite
 
 import frappe
 from frappe import _
+from frappe.query_builder.functions import Count
 from frappe.utils import cint, get_datetime, getdate
 
 from china_finance.services import cash_flow_assignment as core
@@ -182,18 +183,18 @@ def get_assignment_list(company, from_date, to_date, status, search, direction, 
 		filters.append([DOCTYPE, "posting_date", ">=", getdate(from_date)])
 	if to_date:
 		filters.append([DOCTYPE, "posting_date", "<=", getdate(to_date)])
+	assignment = frappe.qb.DocType(DOCTYPE)
 	if direction:
 		matching = frappe.get_list(
 			DOCTYPE,
 			filters=[*filters, [ITEM_DOCTYPE, "cash_direction", "=", direction]],
 			fields=["name"],
-			distinct=True,
-			limit=0,
+			order_by="",
+			run=False,
 		)
-		if not matching:
-			return {"assignments": [], "total": 0, "counts": {**dict.fromkeys(STATUSES, 0), "All": 0}}
 		# Search and direction may match different cash legs of the same parent.
-		filters.append([DOCTYPE, "name", "in", [row.name for row in matching]])
+		# Keep this permission-aware subquery in SQL, rather than loading every ID.
+		filters.append(assignment.name.isin(matching))
 	or_filters = []
 	if search and (term := str(search).strip()):
 		for doctype, fields in (
@@ -213,33 +214,53 @@ def get_assignment_list(company, from_date, to_date, status, search, direction, 
 			),
 		):
 			or_filters.extend([doctype, field, "like", f"%{term}%"] for field in fields)
+		matching_assignments = frappe.get_list(
+			DOCTYPE, fields=["name"], filters=filters, or_filters=or_filters, order_by="", run=False
+		)
+		search_condition = assignment.name.isin(matching_assignments)
 		voucher_filters = {"remarks": ["like", f"%{term}%"]}
 		if company:
 			voucher_filters["company"] = company
-		if matching_vouchers := _readable_voucher_summaries(voucher_filters):
-			or_filters.append([DOCTYPE, "china_accounting_voucher", "in", list(matching_vouchers)])
+		with _quiet_validation():
+			try:
+				matching_vouchers = frappe.get_list(
+					VOUCHER_DOCTYPE, filters=voucher_filters, fields=["name"], order_by="", run=False
+				)
+			except frappe.PermissionError:
+				pass
+			else:
+				search_condition |= assignment.china_accounting_voucher.isin(matching_vouchers)
+		filters.append(search_condition)
 	# get_list applies native role, sharing and Company User Permission filters.
-	# DISTINCT selects parent identities before pagination: a direction/search
-	# match must never truncate the other cash legs in the same document.
-	rows = frappe.get_list(
+	# Aggregate DISTINCT parents in SQL: matching multiple child rows must not
+	# inflate counts, and the tabs count all statuses under the same filters.
+	count_rows = frappe.get_list(
 		DOCTYPE,
 		filters=filters,
-		or_filters=or_filters,
+		fields=["status", Count(assignment.name).distinct().as_("total")],
+		group_by="status",
+		order_by="",
+	)
+	counts = dict.fromkeys(STATUSES, 0)
+	for row in count_rows:
+		if row.status in counts:
+			counts[row.status] = cint(row.total)
+	counts["All"] = sum(cint(row.total) for row in count_rows)
+	total = counts[status]
+	start = max(cint(start), 0)
+	page_length = min(max(cint(page_length), 1), 100)
+	# Fetch only this page's parent identities, then load their complete items.
+	rows = frappe.get_list(
+		DOCTYPE,
+		filters=[*filters, *([[DOCTYPE, "status", "=", status]] if status != "All" else [])],
 		fields=["name", "status", "posting_date", "modified"],
 		order_by="posting_date desc, modified desc, name desc",
 		distinct=True,
-		limit=0,
-	)
-	counts = dict.fromkeys(STATUSES, 0)
-	for row in rows:
-		if row.status in counts:
-			counts[row.status] += 1
-	counts["All"] = len(rows)
-	selected = [row for row in rows if status == "All" or row.status == status]
-	start = max(cint(start), 0)
-	page_length = min(max(cint(page_length), 1), 100)
+		limit=page_length,
+		offset=start,
+	) if total else []
 	documents = []
-	for row in selected[start : start + page_length]:
+	for row in rows:
 		doc = frappe.get_doc(DOCTYPE, row.name)
 		doc.check_permission("read")
 		documents.append(doc)
@@ -249,7 +270,7 @@ def get_assignment_list(company, from_date, to_date, status, search, direction, 
 		else {}
 	)
 	assignments = [serialize_assignment(doc, voucher_summaries) for doc in documents]
-	return {"assignments": assignments, "total": len(selected), "counts": counts}
+	return {"assignments": assignments, "total": total, "counts": counts}
 
 
 def _apply_allocations(doc, payload):

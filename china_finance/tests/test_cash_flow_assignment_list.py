@@ -7,6 +7,7 @@ from unittest.mock import patch
 import frappe
 
 from china_finance.services import cash_flow_assignment as service
+from china_finance.services import cash_flow_assignment_list as list_service
 
 
 class TestCashFlowAssignmentList(unittest.TestCase):
@@ -195,6 +196,38 @@ class TestCashFlowAssignmentList(unittest.TestCase):
 		self.assertEqual(before, frappe.get_doc("China Cash Flow Assignment", mixed.name).as_json())
 		self.assertEqual(len(self.list(page_length=1)["assignments"]), 1)
 		self.assertEqual(self.list(page_length=1)["total"], 2)
+
+	def test_database_pagination_and_status_counts_deduplicate_matching_children(self):
+		first = self.assignment("first", ("收款", "收款"), "2026-07-01")
+		second = self.assignment("second", ("收款", "付款"), "2026-07-02")
+		confirmed = self.assignment("confirmed", ("收款", "收款"), "2026-07-03")
+		cancelled = self.assignment("cancelled", ("收款", "付款"), "2026-07-04")
+		frappe.db.set_value(confirmed.doctype, confirmed.name, {"status": "Confirmed", "docstatus": 1})
+		frappe.db.set_value(cancelled.doctype, cancelled.name, {"status": "Cancelled", "docstatus": 2})
+		queries = []
+		native_sql = frappe.db.sql
+
+		def record_sql(query, *args, **kwargs):
+			if isinstance(query, str) and query.lower().startswith("select") and "tabChina Cash Flow Assignment" in query:
+				queries.append(query.lower())
+			return native_sql(query, *args, **kwargs)
+
+		with patch.object(frappe.db, "sql", side_effect=record_sql), \
+				patch.object(list_service, "serialize_assignment", side_effect=lambda doc, summaries: {
+					"name": doc.name, "items": [row.name for row in doc.items],
+				}):
+			result = self.list(direction="收款", search=self.cash, page_length=1, start=1)
+			all_statuses = self.list(direction="收款", search=self.cash, status="All", page_length=1)
+			last = self.list(direction="收款", search=self.cash, page_length=1, start=2)
+		self.assertEqual(result["counts"], {"Draft": 2, "Confirmed": 1, "Cancelled": 1, "All": 4})
+		self.assertEqual(result["total"], 2)
+		self.assertEqual(result["assignments"][0]["name"], first.name)
+		self.assertEqual(len(result["assignments"][0]["items"]), 2)
+		self.assertEqual(all_statuses["total"], 4)
+		self.assertEqual(all_statuses["assignments"][0]["name"], cancelled.name)
+		self.assertEqual(last["assignments"], [])
+		self.assertTrue(any("count(distinct" in query and "group by" in query for query in queries))
+		self.assertTrue(any("select distinct" in query and "limit 1 offset 1" in query for query in queries))
 
 	def test_search_matches_child_remarks_and_options_use_document_date(self):
 		doc = self.assignment()
