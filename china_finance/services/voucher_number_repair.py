@@ -114,6 +114,13 @@ def reorder_monthly_voucher_numbers(company, accounting_period, voucher_word="�
 def _read_month(scope, start, end, lock=False):
 	rows = _month_rows(scope, start, end, lock)
 	blockers = []
+	from china_finance.services.opening_identity import get_opening_sources
+
+	opening_names = get_opening_sources(scope.company)
+	opening_rows = [row for row in rows if row.source_doctype == "Journal Entry" and row.source_name in opening_names]
+	if any(row.statutory_number for row in opening_rows):
+		blockers.append(_("本期含保留历史字号的期初记录，不能自动重排；请在期初余额查看初始化依据"))
+	rows = [row for row in rows if row not in opening_rows]
 	for row in rows:
 		if (row.docstatus != 1 or row.status != "Posted" or row.source_event != "Posting"
 				or row.reversal_of or row.reversed_by
