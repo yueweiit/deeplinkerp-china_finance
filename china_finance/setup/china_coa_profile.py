@@ -670,33 +670,46 @@ def ensure_cash_scope(company, effective_from):
 		return 0
 	created = 0
 	rules = {
-		"1001": ("库存现金", 1, 0, None),
-		"100201": ("随时可用存款", 1, 0, None),
-		"101201": ("排除项", 0, 1, "银行承兑汇票保证金属于受限资金"),
-		"101299": ("排除项", 0, 0, "其他货币资金是否可随时支用无法由科目编号判断，需财务人员复核。"),
+		"1001": ("库存现金", 1, 0, None, "Cash"),
+		"100201": ("随时可用存款", 1, 0, None, "Bank"),
+		"101201": ("排除项", 0, 1, "银行承兑汇票保证金属于受限资金", None),
+		"101299": ("排除项", 0, 0, "其他货币资金是否可随时支用无法由科目编号判断，需财务人员复核。", None),
 	}
 	if uses_yuewei_company_chart(company):
-		rules["101201"] = ("排除项", 0, 0, "外埠存款是否可随时支用需财务人员复核，不能按保证金认定为受限资金。")
+		rules["101201"] = ("排除项", 0, 0, "外埠存款是否可随时支用需财务人员复核，不能按保证金认定为受限资金。", None)
 	accounts, _duplicates = get_company_accounts_by_number(company)
-	for number, (classification, included, restricted, reason) in rules.items():
+	# Excluded subtrees must take priority over an enclosing included group.
+	for number, (classification, included, restricted, reason, account_type) in sorted(rules.items(), key=lambda item: item[1][1]):
 		account = accounts.get(number)
 		if not account:
 			continue
-		key = f"{company}|{account.name}|{getdate(effective_from)}"
-		effective_to = _available_scope_end(company, account.name, effective_from)
-		if effective_to is False or frappe.db.exists("China Cash Equivalent Scope", {"scope_key": key}):
-			continue
-		frappe.get_doc({
-			"doctype": "China Cash Equivalent Scope", "scope_key": key,
-			"company": company, "account": account.name, "classification": classification,
-			"included": included, "restricted": restricted, "restriction_reason": reason,
-			"effective_from": getdate(effective_from), "effective_to": effective_to, "reviewed": 0,
-			"policy_basis": "按中国科目模板编号自动建议，须由财务人员复核资金可随时支用性。",
-		}).insert(ignore_permissions=True)
-		created += 1
+		filters = {"company": company, "is_group": 0, "disabled": 0, "root_type": "Asset"}
+		if account_type:
+			filters["account_type"] = account_type
+		if account.is_group:
+			if not account.lft or not account.rgt:
+				continue
+			filters.update(lft=[">", account.lft], rgt=["<", account.rgt])
+		else:
+			filters["name"] = account.name
+		# Resolve real descendants, including unnumbered and nested leaf accounts.
+		# Apply exclusion rules before the generic Bank suggestions below.
+		for leaf in frappe.get_all("Account", filters=filters, fields=["name"]):
+			key = f"{company}|{leaf.name}|{getdate(effective_from)}"
+			effective_to = _available_scope_end(company, leaf.name, effective_from)
+			if effective_to is False or frappe.db.exists("China Cash Equivalent Scope", {"scope_key": key}):
+				continue
+			frappe.get_doc({
+				"doctype": "China Cash Equivalent Scope", "scope_key": key,
+				"company": company, "account": leaf.name, "classification": classification,
+				"included": included, "restricted": restricted, "restriction_reason": reason,
+				"effective_from": getdate(effective_from), "effective_to": effective_to, "reviewed": 0,
+				"policy_basis": "按中国科目模板编号自动建议，须由财务人员复核资金可随时支用性。",
+			}).insert(ignore_permissions=True)
+			created += 1
 	# Include company-created bank children as review-required suggestions.
 	for account in frappe.get_all(
-		"Account", filters={"company": company, "is_group": 0, "disabled": 0, "account_type": "Bank"},
+		"Account", filters={"company": company, "is_group": 0, "disabled": 0, "root_type": "Asset", "account_type": "Bank"},
 		fields=["name"],
 	):
 		key = f"{company}|{account.name}|{getdate(effective_from)}"
