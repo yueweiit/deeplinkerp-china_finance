@@ -2,6 +2,7 @@
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
+const vm = require("node:vm");
 const { test } = require("node:test");
 const script = path.resolve(__dirname, "../public/js/china_cash_flow_assignment_list.js");
 const api = fs.existsSync(script) ? require(script) : {};
@@ -352,7 +353,7 @@ function editor_harness(doc = document(), options = {}) {
 	const list = { $frappe_list: element("list"), page: { page_form: element("filters"), wrapper: element("page"),
 		btn_primary: element("save"), set_primary_action() {}, set_secondary_action() {},
 	} };
-	const editor = api.mount(list, root);
+	const editor = (options.api || api).mount(list, root);
 	return { editor, list, writes, dialogs, calls, properties, nodes, node, window_events,
 		async dispatch(event, target, extra = {}) {
 			const matches = (selector) => selector === "[data-edit]" ? !!target.dataset.edit
@@ -364,6 +365,41 @@ function editor_harness(doc = document(), options = {}) {
 			for (const entry of handlers) if (entry.event === event && matches(entry.selector)) await entry.handler({ currentTarget: target, preventDefault() {}, ...extra });
 		},
 	};
+}
+
+for (const [language, labels] of Object.entries({
+	en: { "保存更改": "Save Changes", "确认现金流量指定": "Confirm Cash Flow Assignments", "收款": "Receipt", "指定单": "Assignment" },
+	es: { "保存更改": "Guardar cambios", "确认现金流量指定": "Confirmar asignaciones de flujo de efectivo", "收款": "Cobro", "指定单": "Asignación" },
+})) {
+	test(`${language} translates controls, confirmation and details while retaining API codes`, async () => {
+		const translated = [];
+		const sandbox = { module: { exports: {} }, __: (text, args = []) => {
+			translated.push(text);
+			return (labels[text] || text).replace(/\{(\d+)\}/g, (match, index) => args[index] ?? match);
+		} };
+		vm.runInNewContext(fs.readFileSync(script, "utf8"), sandbox);
+		const localized = sandbox.module.exports;
+		const doc = document(); doc.items[0].cash_flow_row_code = "IN";
+		const h = editor_harness(doc, { api: localized });
+		await h.list.refresh();
+		const html = h.writes.filter((write) => write.kind === "root").at(-1).value;
+		assert.ok(html.includes(labels["收款"]));
+		assert.ok(html.includes('value="收款"'), "direction values must retain their stored API identity");
+		assert.ok(h.writes.some((write) => write.kind === "[data-toolbar]" && write.value.includes(labels["保存更改"])));
+		await h.dispatch("click", { dataset: { action: "confirm-one", name: "CFA-1" } });
+		assert.equal(h.dialogs.at(-1).options.title, labels["确认现金流量指定"]);
+		await h.dispatch("click", { dataset: { action: "details", name: "CFA-1" } });
+		assert.ok(h.dialogs.at(-1).options.fields[0].options.includes(labels["指定单"]));
+		h.editor.session.results = [{ name: doc.name, ok: false, error: "test error" }];
+		h.editor.render();
+		for (const key of ["收付方向", "指定金额", "第 {0} 项说明", "确认整单", "逐单处理结果", "没有整单确认权限"]) {
+			if (key === "第 {0} 项说明") await h.dispatch("click", { dataset: { action: "toggle", name: "CFA-1" } });
+			if (key === "没有整单确认权限") localized.confirmation_issues(document({ can_confirm: false }));
+			assert.ok(translated.includes(key), key);
+		}
+		assert.equal(localized.payload(doc).items[0].cash_flow_row_code, "IN");
+		assert.equal(localized.payload(doc).items[0].assigned_amount, 0.30);
+	});
 }
 
 test("voucher summaries are escaped and accessible in expanded rows and details", async () => {

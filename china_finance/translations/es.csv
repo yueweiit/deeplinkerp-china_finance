@@ -3150,3 +3150,100 @@ Unable to load statement mapping. Check the reported error and try again.,No se 
 本月有效凭证编号已连续，无需整理,Los números de comprobantes activos de este mes ya son consecutivos; no es necesario ordenarlos
 原字号,Número anterior
 新字号,Número nuevo
+{0} 张未保存,{0} sin guardar
+{0} 第 {1} 项指定说明,{0} notas de la asignación {1}
+{0} 第 {1} 项指定金额,{0} importe de la asignación {1}
+{0} 第 {1} 项现金流量项目,{0} partida de flujo de efectivo de la asignación {1}
+{0}（请重新核对）,{0} (requiere revisión)
+上一页,Anterior
+下一页,Siguiente
+仅填空白行，保留已有指定,Rellenar solo filas vacías y conservar las asignaciones existentes
+仅应用于方向匹配且尚未拆分的现金行。更改后需保存。,Se aplica a filas de efectivo sin dividir y con dirección compatible. Guarde después de aplicar los cambios.
+保存更改,Guardar cambios
+保存更改（{0}）,Guardar cambios ({0})
+修订 {0},Revisión {0}
+全部,Todos
+全部方向,Todas las direcciones
+凭证 / 指定状态,Comprobante / Estado de asignación
+凭证与指定详情,Detalles del comprobante y la asignación
+凭证摘要,Descripción del comprobante
+凭证摘要：{0},Descripción del comprobante: {0}
+切换公司,Cambiar empresa
+刷新,Actualizar
+加载失败，请重试,Error al cargar. Inténtelo de nuevo.
+只读,Solo lectura
+填入系统建议,Rellenar sugerencias
+处理中…,Procesando...
+对方科目：{0},Cuentas de contrapartida: {0}
+展开,Expandir
+差额 {0},Diferencia {0}
+已保存 · 待确认,Guardado · Pendiente de confirmación
+已填入 {0} 笔空白且未拆分行的系统建议，请核对后保存。,Se rellenaron sugerencias en {0} filas vacías sin dividir. Revise y guarde.
+已指定 {0} 笔现金明细；方向不匹配、拆分及保留的已有值已跳过。,"Se asignaron {0} filas de efectivo. Se omitieron las filas con dirección incompatible, divisiones o valores conservados."
+已有指定,Ya asignado
+已确认或已取消的单据只读,Los documentos confirmados o cancelados son de solo lectura
+已选 {0} 张,{0} seleccionados
+应用到列表,Aplicar a la lista
+开始日期,Fecha inicial
+开始日期不能晚于结束日期,La fecha inicial no puede ser posterior a la fecha final
+当前条件下没有指定单,No hay asignaciones que coincidan con estos filtros
+待指定,Pendiente de asignación
+打开原始指定单,Abrir asignación original
+拆分指定,Asignación dividida
+指定依据或拆分说明,Justificación de la asignación o de la división
+指定单,Asignación
+指定单状态,Estado de asignación
+按整张单据确认，包含单据内全部现金明细。{0} 张可处理，{1} 张需完善。,"La confirmación incluye todas las filas de efectivo de cada documento. {0} documentos están listos, {1} requieren revisión."
+搜索摘要 / 凭证 / 科目,Buscar descripción / comprobante / cuenta
+收起,Contraer
+整单指定说明,Notas de asignación del documento
+方向,Dirección
+无系统建议,Sin sugerencias
+有尚未保存的指定内容。放弃修改并继续？,Hay asignaciones sin guardar. ¿Descartar los cambios y continuar?
+有未保存更改，自动刷新已暂停。,La actualización automática está en pausa porque hay cambios sin guardar.
+服务器数据已更新；本地编辑已保留，保存后请刷新核对。,Los datos del servidor han cambiado. Sus cambios se conservan. Guarde y actualice para revisarlos.
+服务器未返回此单处理结果，请刷新核对,El servidor no devolvió un resultado para este documento. Actualice para revisarlo.
+未保存,Sin guardar
+未指定,Sin asignar
+未收到有效单据，请刷新核对,No se recibió un documento válido. Actualice para revisarlo.
+本次修改随整单确认提交。职责分离、权限及最新版本由服务器复核；确认后明细只读并纳入现金流量统计。,"Los cambios se guardan al confirmar el documento. El servidor verifica la separación de funciones, los permisos y la versión actual. Las filas confirmadas pasan a ser de solo lectura y se incluyen en los totales de flujo de efectivo."
+横向滚动指定明细,Desplazar horizontalmente los detalles de asignación
+正在加载…,Cargando...
+正在加载指定单…,Cargando asignaciones...
+正在处理整单，请等待结果后再离开。,Se están procesando documentos. Espere los resultados antes de salir.
+正在逐单处理，请等待结果…,Procesando documentos. Espere los resultados...
+此单据只读。,Este documento es de solo lectura.
+没有整单确认权限,No tiene permiso para confirmar este documento
+没有现金明细,No hay filas de efectivo
+状态 / 修订,Estado / Revisión
+现金 / 银行科目,Cuenta de caja / banco
+现金流量指定工作区,Área de asignación de flujo de efectivo
+现金流量指定明细，可横向滚动,Detalles de asignación de flujo de efectivo con desplazamiento horizontal
+确认可处理的 {0} 张,Confirmar {0} documentos listos
+确认所选,Confirmar seleccionados
+确认所选（{0}）,Confirmar seleccionados ({0})
+确认整单,Confirmar documento
+确认现金流量指定,Confirmar asignaciones de flujo de efectivo
+移除,Quitar
+第 {0} 笔尚未指定项目,La fila de efectivo {0} no tiene una partida asignada
+第 {0} 笔指定合计与发生额相差 {1},El total asignado de la fila de efectivo {0} difiere del importe de efectivo en {1}
+第 {0} 笔指定金额须为正数且最多两位小数,El importe asignado de la fila de efectivo {0} debe ser positivo y tener como máximo dos decimales
+第 {0} 笔项目无效或收付方向不匹配,La fila de efectivo {0} tiene una partida no válida o una dirección incompatible
+第 {0} 项说明,Notas de la asignación {0}
+第 {0}–{1} 张，共 {2} 张 · 每页 {3} 张,"{0}–{1} de {2} documentos, {3} por página"
+系统建议：{0},Sugerencia: {0}
+结束日期,Fecha final
+结束日期不能早于开始日期,La fecha final no puede ser anterior a la fecha inicial
+统一指定现金流量项目,Asignar una partida de flujo de efectivo
+统一指定项目,Asignar partida
+记账月份,Mes de contabilización
+说明输入后暂存于列表，请点击保存更改。,Las notas se conservan en la lista. Pulse Guardar cambios para guardarlas.
+请求失败，编辑内容已保留，请核对服务器状态后重试,La solicitud falló. Sus cambios se conservan. Compruebe el estado del servidor antes de reintentar.
+请选择,Seleccione
+请选择现金流量项目,Seleccione una partida de flujo de efectivo
+选择公司后查看现金流量指定单。,Seleccione una empresa para ver las asignaciones de flujo de efectivo.
+选择指定单 {0},Seleccionar asignación {0}
+选择本页可处理指定单,Seleccionar las asignaciones aptas de esta página
+逐单处理结果,Resultados del procesamiento de documentos
+项目与金额已配平,Las partidas y los importes están equilibrados
+项目与金额校验通过,Validación de partidas e importes superada

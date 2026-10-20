@@ -2422,3 +2422,100 @@ records 必须是发票对象数组,records must be an array of invoice objects
 本月有效凭证编号已连续，无需整理,Active voucher numbers for this month are already continuous; no organization is needed
 原字号,Previous Number
 新字号,New Number
+{0} 张未保存,{0} unsaved
+{0} 第 {1} 项指定说明,{0} allocation {1} notes
+{0} 第 {1} 项指定金额,{0} allocation {1} amount
+{0} 第 {1} 项现金流量项目,{0} allocation {1} cash flow item
+{0}（请重新核对）,{0} (review required)
+上一页,Previous
+下一页,Next
+仅填空白行，保留已有指定,Fill blank rows only and preserve existing assignments
+仅应用于方向匹配且尚未拆分的现金行。更改后需保存。,Applies to unsplit cash rows with a matching direction. Save after applying changes.
+保存更改,Save Changes
+保存更改（{0}）,Save Changes ({0})
+修订 {0},Revision {0}
+全部,All
+全部方向,All directions
+凭证 / 指定状态,Voucher / Assignment Status
+凭证与指定详情,Voucher and Assignment Details
+凭证摘要,Voucher Summary
+凭证摘要：{0},Voucher summary: {0}
+切换公司,Switch Company
+刷新,Refresh
+加载失败，请重试,Loading failed. Please try again.
+只读,Read Only
+填入系统建议,Fill Suggestions
+处理中…,Processing...
+对方科目：{0},Counterpart accounts: {0}
+展开,Expand
+差额 {0},Difference {0}
+已保存 · 待确认,Saved · Pending Confirmation
+已填入 {0} 笔空白且未拆分行的系统建议，请核对后保存。,Suggestions filled for {0} blank unsplit rows. Review and save.
+已指定 {0} 笔现金明细；方向不匹配、拆分及保留的已有值已跳过。,"Assigned {0} cash rows. Rows with incompatible directions, splits or preserved values were skipped."
+已有指定,Already Assigned
+已确认或已取消的单据只读,Confirmed or cancelled documents are read only
+已选 {0} 张,{0} selected
+应用到列表,Apply to List
+开始日期,From Date
+开始日期不能晚于结束日期,The start date cannot be after the end date
+当前条件下没有指定单,No assignments match these filters
+待指定,Pending Assignment
+打开原始指定单,Open Original Assignment
+拆分指定,Split Assignment
+指定依据或拆分说明,Assignment evidence or split explanation
+指定单,Assignment
+指定单状态,Assignment Status
+按整张单据确认，包含单据内全部现金明细。{0} 张可处理，{1} 张需完善。,"Confirmation includes all cash rows in each document. {0} documents are ready, {1} need attention."
+搜索摘要 / 凭证 / 科目,Search summary / voucher / account
+收起,Collapse
+整单指定说明,Document Assignment Notes
+方向,Direction
+无系统建议,No Suggestions
+有尚未保存的指定内容。放弃修改并继续？,There are unsaved assignments. Discard changes and continue?
+有未保存更改，自动刷新已暂停。,Automatic refresh is paused because there are unsaved changes.
+服务器数据已更新；本地编辑已保留，保存后请刷新核对。,Server data has changed. Your edits are preserved. Save and refresh to review.
+服务器未返回此单处理结果，请刷新核对,The server did not return a result for this document. Refresh to review.
+未保存,Unsaved
+未指定,Unassigned
+未收到有效单据，请刷新核对,No valid document was returned. Refresh to review.
+本次修改随整单确认提交。职责分离、权限及最新版本由服务器复核；确认后明细只读并纳入现金流量统计。,"Changes are saved with document confirmation. The server verifies separation of duties, permissions and the latest version. Confirmed rows become read only and are included in cash flow totals."
+横向滚动指定明细,Scroll assignment details horizontally
+正在加载…,Loading...
+正在加载指定单…,Loading assignments...
+正在处理整单，请等待结果后再离开。,Documents are being processed. Wait for the results before leaving.
+正在逐单处理，请等待结果…,Processing documents. Please wait for the results...
+此单据只读。,This document is read only.
+没有整单确认权限,You do not have permission to confirm this document
+没有现金明细,No cash rows
+状态 / 修订,Status / Revision
+现金 / 银行科目,Cash / Bank Account
+现金流量指定工作区,Cash Flow Assignment Workspace
+现金流量指定明细，可横向滚动,Cash flow assignment details with horizontal scrolling
+确认可处理的 {0} 张,Confirm {0} Ready Documents
+确认所选,Confirm Selected
+确认所选（{0}）,Confirm Selected ({0})
+确认整单,Confirm Document
+确认现金流量指定,Confirm Cash Flow Assignments
+移除,Remove
+第 {0} 笔尚未指定项目,Cash row {0} has no assigned item
+第 {0} 笔指定合计与发生额相差 {1},Cash row {0} allocation total differs from its cash amount by {1}
+第 {0} 笔指定金额须为正数且最多两位小数,Cash row {0} allocation amount must be positive with at most two decimal places
+第 {0} 笔项目无效或收付方向不匹配,Cash row {0} has an invalid item or incompatible direction
+第 {0} 项说明,Allocation {0} Notes
+第 {0}–{1} 张，共 {2} 张 · 每页 {3} 张,"{0}–{1} of {2} documents, {3} per page"
+系统建议：{0},Suggested: {0}
+结束日期,To Date
+结束日期不能早于开始日期,The end date cannot be before the start date
+统一指定现金流量项目,Assign a Cash Flow Item
+统一指定项目,Assign Item
+记账月份,Posting Month
+说明输入后暂存于列表，请点击保存更改。,Notes are kept in the list. Click Save Changes to save them.
+请求失败，编辑内容已保留，请核对服务器状态后重试,The request failed. Your edits are preserved. Check the server state before retrying.
+请选择,Please Select
+请选择现金流量项目,Select a cash flow item
+选择公司后查看现金流量指定单。,Select a company to view cash flow assignments.
+选择指定单 {0},Select assignment {0}
+选择本页可处理指定单,Select eligible assignments on this page
+逐单处理结果,Document Processing Results
+项目与金额已配平,Items and amounts are balanced
+项目与金额校验通过,Item and amount validation passed
