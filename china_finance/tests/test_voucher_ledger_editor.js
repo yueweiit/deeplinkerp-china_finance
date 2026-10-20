@@ -11,6 +11,25 @@ const source = fs.readFileSync(
 	"utf8"
 );
 
+test("voucher report retains source-document access and China Finance report roles", () => {
+	const metadata = JSON.parse(
+		fs.readFileSync(
+			path.join(root, "china_finance/report/china_voucher_ledger/china_voucher_ledger.json"),
+			"utf8"
+		)
+	);
+	assert.equal(metadata.ref_doctype, "Journal Entry");
+	const roles = new Set(metadata.roles.map((row) => row.role));
+	for (const role of [
+		"China Finance Manager",
+		"China Finance User",
+		"China Voucher Maker",
+		"China Voucher Reviewer",
+		"China Voucher Poster",
+	])
+		assert.ok(roles.has(role), `missing report role: ${role}`);
+});
+
 function inputHarness() {
 	const handlers = {};
 	return {
