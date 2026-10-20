@@ -66,6 +66,7 @@ frappe.query_reports["China Voucher Ledger"] = {
 	},
 	after_datatable_render(datatable) {
 		china_finance.datatable_layout.bind_full_width(frappe.query_report, datatable);
+		bind_inline_voucher_actions(frappe.query_report);
 	},
 	formatter(value, row, column, data, default_formatter) {
 		const formatted = default_formatter(value, row, column, data);
@@ -207,12 +208,25 @@ function render_inline_voucher_actions(report, data) {
 	const common = `data-source-doctype="${source_doctype}" data-source-name="${source_name}" data-voucher-key="${frappe.utils.escape_html(
 		data.edit_voucher_key
 	)}"`;
-	const buttons = [
-		`<button type="button" class="btn btn-xs btn-default china-inline-open-source" ${common}>${__(
-			"打开原单"
-		)}</button>`,
-	];
-	if (active && state.changes.size) {
+	const buttons = [];
+	if (data.is_voucher_first_row)
+		buttons.push(
+			`<button type="button" class="btn btn-xs btn-default china-inline-open-source" ${common}>${__(
+				"打开原单"
+			)}</button>`
+		);
+	if (
+		data.is_voucher_first_row &&
+		(report.data || [data]).some(
+			(row) => row.edit_voucher_key === data.edit_voucher_key && row.editable_split
+		)
+	)
+		buttons.push(
+			`<button type="button" class="btn btn-xs btn-default china-inline-split" ${common}${disabled}>${__(
+				"新增一行"
+			)}</button>`
+		);
+	if (data.is_voucher_first_row && active && state.changes.size) {
 		buttons.push(
 			`<button type="button" class="btn btn-xs btn-primary china-inline-save" ${common}${
 				state.confirming ? " hidden" : ""
@@ -852,16 +866,30 @@ function show_inline_notice(report, message, indicator = "blue", bank_transactio
 function bind_inline_voucher_actions(report) {
 	const page_wrapper = report?.page?.wrapper?.[0] || report?.page?.wrapper;
 	if (!page_wrapper?.addEventListener) return;
+	const previous_wrapper = report._china_inline_action_wrapper;
+	if (previous_wrapper) {
+		previous_wrapper.removeEventListener(
+			"mousedown",
+			report._china_inline_action_pointer_handler,
+			true
+		);
+		previous_wrapper.removeEventListener(
+			"touchstart",
+			report._china_inline_action_pointer_handler,
+			true
+		);
+		previous_wrapper.removeEventListener("click", report._china_inline_action_handler, true);
+	}
+	report._china_inline_action_wrapper = page_wrapper;
 	const action_selector =
-		".china-inline-open-source, .china-inline-save, .china-inline-confirm, .china-inline-cancel";
+		".china-inline-open-source, .china-inline-save, .china-inline-confirm, .china-inline-cancel, .china-inline-split";
 
 	// DataTable focuses a cell on mousedown and scrolls it into view. When the
 	// operation column is only partly visible, that horizontal visibility check
 	// can also change the vertical scroll position. Keep action buttons outside
 	// that cell-navigation path; their click handler below still runs normally.
 	report._china_inline_action_pointer_handler = (event) => {
-		const target =
-			event.target instanceof Element ? event.target : event.target?.parentElement;
+		const target = event.target instanceof Element ? event.target : event.target?.parentElement;
 		const button = target?.closest?.(action_selector);
 		if (!button || !page_wrapper.contains(button)) return;
 		event.stopPropagation();
@@ -869,9 +897,8 @@ function bind_inline_voucher_actions(report) {
 	page_wrapper.addEventListener("mousedown", report._china_inline_action_pointer_handler, true);
 	page_wrapper.addEventListener("touchstart", report._china_inline_action_pointer_handler, true);
 
-	report._china_inline_action_handler = (event) => {
-		const target =
-			event.target instanceof Element ? event.target : event.target?.parentElement;
+	report._china_inline_action_handler = async (event) => {
+		const target = event.target instanceof Element ? event.target : event.target?.parentElement;
 		const editable_value = target?.closest?.(
 			".china-inline-account.is-editable, .china-inline-summary.is-editable, .china-inline-amount.is-editable"
 		);
@@ -885,6 +912,7 @@ function bind_inline_voucher_actions(report) {
 		}
 		const button = target?.closest?.(action_selector);
 		if (!button || !page_wrapper.contains(button)) return;
+		if (button.disabled) return;
 		event.preventDefault();
 		event.stopPropagation();
 		if (button.classList.contains("china-inline-open-source")) {
@@ -893,6 +921,23 @@ function bind_inline_voucher_actions(report) {
 				decodeURIComponent(button.dataset.sourceDoctype),
 				decodeURIComponent(button.dataset.sourceName)
 			);
+		} else if (button.classList.contains("china-inline-split")) {
+			const data = (report.data || []).find(
+				(row) => row.edit_voucher_key === button.dataset.voucherKey && row.editable_split
+			);
+			if (!data) {
+				frappe.msgprint(__("当前凭证没有可新增行的分录，请刷新报表或打开原单处理"));
+				return;
+			}
+			try {
+				await frappe.require("/assets/china_finance/js/voucher_entry_split.js");
+				if (typeof china_finance.voucher_entry_split?.open !== "function") {
+					throw new Error(__("新增一行功能加载失败，请刷新页面后重试"));
+				}
+				await china_finance.voucher_entry_split.open(report, data);
+			} catch (error) {
+				frappe.msgprint(error.message || __("新增一行功能加载失败，请刷新页面后重试"));
+			}
 		} else if (button.classList.contains("china-inline-save")) {
 			save_inline_voucher_changes(report, false);
 		} else if (button.classList.contains("china-inline-confirm")) {

@@ -22,6 +22,10 @@ INLINE_AMOUNT_FIELDS = {
 	"debit": "debit_in_account_currency",
 	"credit": "credit_in_account_currency",
 }
+MAX_INLINE_ENTRY_ROWS = 100
+SPLIT_REFERENCE_FIELDS = (
+	"reference_type", "reference_name", "reference_detail_no", "advance_voucher_type", "advance_voucher_no",
+)
 
 
 def _get_source_document(source_doctype, source_name, *, for_update=False):
@@ -597,6 +601,16 @@ def _inline_amount_reason(doc, row):
 	return None
 
 
+def _inline_split_reason(doc, row):
+	if doc.doctype != "Journal Entry":
+		return _("只有本位币记账凭证支持新增一行")
+	if len(doc.accounts) >= MAX_INLINE_ENTRY_ROWS:
+		return _("新增后分录不能超过 {0} 行").format(MAX_INLINE_ENTRY_ROWS)
+	if any(row.get(field) for field in SPLIT_REFERENCE_FIELDS):
+		return _("关联业务单据的分录请打开原单新增")
+	return _inline_amount_reason(doc, row)
+
+
 def get_inline_amount_edit_metadata(doc, ledger_row, mapping):
 	if doc.doctype != "Journal Entry":
 		return {"editable": False, "reason": _("该来源金额由系统计算，请打开原单修改")}
@@ -669,6 +683,9 @@ def annotate_inline_edit_rows(rows):
 		row["inline_amount_edit_reason"] = (
 			amount_mapping.get("reason") or (None if can_edit else status.get("reason"))
 		)
+		if doc.doctype == "Journal Entry" and amount_mapping.get("editable"):
+			source_row = next(item for item in doc.accounts if f"je:{item.name}" == mapping["edit_key"])
+			row["editable_split"] = bool(can_edit and not _inline_split_reason(doc, source_row))
 	return rows
 
 
@@ -764,6 +781,10 @@ def _parse_inline_changes(changes):
 				frappe.throw(_("摘要只能填写一行内容"))
 			if len(value) > MAX_INLINE_SUMMARY_LENGTH:
 				frappe.throw(_("摘要不能超过 {0} 个字符").format(MAX_INLINE_SUMMARY_LENGTH))
+		elif fieldname == "split":
+			value = change.get("value")
+			if not isinstance(value, dict) or set(value) - {"account", "amount", "summary"}:
+				frappe.throw(_("凭证修改数据不完整，请刷新后重试"))
 		elif fieldname in INLINE_AMOUNT_FIELDS:
 			try:
 				value = Decimal(str(change.get("value")))
@@ -781,9 +802,50 @@ def _parse_inline_changes(changes):
 	return parsed
 
 
+def _resolve_inline_split(doc, edit_key, value):
+	if doc.doctype != "Journal Entry":
+		frappe.throw(_("只有本位币记账凭证支持新增一行"))
+	target = _resolve_inline_edit_target(doc, edit_key)
+	row = _find_child_by_idx(doc, target.parentfield, target.row_idx)
+	reason = _inline_split_reason(doc, row)
+	if reason:
+		frappe.throw(reason)
+	account = str(value.get("account") or "")
+	new_account = _validate_compatible_account(doc, target, account)
+	try:
+		amount = Decimal(str(value.get("amount")))
+	except (InvalidOperation, ValueError):
+		frappe.throw(_("请输入有效金额"))
+	if not amount.is_finite() or amount.adjusted() > 11:
+		frappe.throw(_("请输入有效金额"))
+	debit, credit = (Decimal(str(row.get(field) or 0)) for field in INLINE_AMOUNT_FIELDS)
+	if bool(debit) == bool(credit):
+		frappe.throw(_("原分录金额无效，请打开原单核对"))
+	side = "debit" if debit else "credit"
+	original = debit or credit
+	if not amount or (amount > 0) != (original > 0) or abs(amount) >= abs(original):
+		frappe.throw(_("新增行金额须与原金额同方向，且绝对值大于零、小于原金额的绝对值"))
+	precision = row.precision(INLINE_AMOUNT_FIELDS[side])
+	if amount != amount.quantize(Decimal(1).scaleb(-precision)):
+		frappe.throw(_("金额最多保留 {0} 位小数").format(precision))
+	summary = str(value.get("summary") or "").strip()
+	if summary and (len(summary) > MAX_INLINE_SUMMARY_LENGTH or "\n" in summary or "\r" in summary):
+		frappe.throw(_("新增分录摘要须为一行，且不超过 {0} 个字符").format(MAX_INLINE_SUMMARY_LENGTH))
+	return frappe._dict(
+		change_field="split", edit_key=edit_key, parentfield="accounts", row_idx=row.idx,
+		fieldname=INLINE_AMOUNT_FIELDS[side], side=side, remaining_amount=float(original - amount),
+		split_amount=float(amount), new_account=account, new_account_currency=new_account.account_currency,
+		summary=summary or row.user_remark or "", old_value=f"{row.account}: {original}",
+		new_value=f"{row.account}: {original - amount}; {account}: {amount}; {summary or row.user_remark or ''}",
+	)
+
+
 def _resolve_inline_changes(doc, changes):
 	diffs = []
 	for (change_field, edit_key), value in _parse_inline_changes(changes).items():
+		if change_field == "split":
+			diffs.append(_resolve_inline_split(doc, edit_key, value))
+			continue
 		if change_field in INLINE_AMOUNT_FIELDS:
 			if doc.doctype != "Journal Entry":
 				frappe.throw(_("该来源金额由系统计算，请打开原单修改"))
@@ -851,6 +913,9 @@ def _resolve_inline_changes(doc, changes):
 		)
 	if not diffs:
 		frappe.throw(_("没有检测到需要保存的凭证变化"))
+	split_rows = {diff.row_idx for diff in diffs if diff.change_field == "split"}
+	if any(diff.parentfield == "accounts" and diff.row_idx in split_rows and diff.change_field != "split" for diff in diffs):
+		frappe.throw(_("新增一行不能与同一行的其他修改一起提交，请先保存或取消其他修改"))
 	return diffs
 
 
@@ -866,7 +931,7 @@ def _inline_preflight(doc, modified, changes):
 	if not can_apply:
 		frappe.throw(_("当前凭证不能修改：{0}").format(status.get("reason") or _("不满足修改条件")))
 	diffs = _resolve_inline_changes(doc, changes)
-	if any(diff.change_field in INLINE_AMOUNT_FIELDS for diff in diffs):
+	if any(diff.change_field in {*INLINE_AMOUNT_FIELDS, "split"} for diff in diffs):
 		_validate_inline_amount_changes(doc, diffs)
 	quick_info = status.get("quick_unreconcile")
 	if quick_info and quick_info.get("bank_account"):
@@ -879,6 +944,8 @@ def _inline_preflight(doc, modified, changes):
 def _validate_inline_amount_changes(doc, diffs):
 	proposed = frappe.copy_doc(doc)
 	_apply_inline_diffs(proposed, diffs)
+	if any(diff.change_field == "split" for diff in diffs) and len(proposed.accounts) > MAX_INLINE_ENTRY_ROWS:
+		frappe.throw(_("新增后分录不能超过 {0} 行").format(MAX_INLINE_ENTRY_ROWS))
 	totals = {field: Decimal(0) for field in INLINE_AMOUNT_FIELDS}
 	for row in proposed.accounts:
 		amounts = {field: Decimal(str(row.get(field) or 0)) for field in INLINE_AMOUNT_FIELDS}
@@ -1144,6 +1211,22 @@ def _find_child_by_idx(doc, parentfield, row_idx):
 
 def _apply_inline_diffs(doc, diffs):
 	for diff in diffs:
+		if diff.change_field == "split":
+			target = _find_child_by_idx(doc, "accounts", diff.row_idx)
+			new_row = frappe.copy_doc(target)
+			new_row.idx = 0
+			new_row.docstatus = 0
+			new_row.account = diff.new_account
+			new_row.account_currency = diff.new_account_currency
+			new_row.user_remark = diff.summary
+			for side, fieldname in INLINE_AMOUNT_FIELDS.items():
+				amount = diff.split_amount if side == diff.side else 0
+				new_row.set(side, amount)
+				new_row.set(fieldname, amount)
+			target.set(diff.side, diff.remaining_amount)
+			target.set(diff.fieldname, diff.remaining_amount)
+			doc.append("accounts", new_row)
+			continue
 		if diff.parentfield:
 			target = _find_child_by_idx(doc, diff.parentfield, diff.row_idx)
 			target.set(diff.fieldname, diff.new_value)
@@ -1168,6 +1251,8 @@ def _apply_inline_diffs(doc, diffs):
 
 def _inline_change_label(diffs):
 	fields = {diff.change_field for diff in diffs}
+	if "split" in fields:
+		return _("凭证内容")
 	if fields == {"account"}:
 		return _("科目")
 	if fields == {"summary"}:
@@ -1185,7 +1270,8 @@ def _audit_inline_changes(doc, diffs, *, amended_from=None):
 	lines = [heading]
 	for diff in diffs:
 		field_label = {
-			"account": _("科目"), "summary": _("摘要"), "debit": _("借方"), "credit": _("贷方")
+			"account": _("科目"), "summary": _("摘要"), "debit": _("借方"), "credit": _("贷方"),
+			"split": _("新增一行"),
 		}[diff.change_field]
 		lines.append(
 			"{0}：{1} → {2}".format(

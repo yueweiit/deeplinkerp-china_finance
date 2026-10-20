@@ -3248,3 +3248,27 @@ Unable to load statement mapping. Check the reported error and try again.,No se 
 逐单处理结果,Resultados del procesamiento de documentos
 项目与金额已配平,Las partidas y los importes están equilibrados
 项目与金额校验通过,Validación de partidas e importes superada
+保存新增,Guardar nueva línea
+关联业务单据的分录请打开原单新增,Abra el documento de origen para añadir líneas a apuntes vinculados a documentos comerciales
+原分录金额,Importe del apunte original
+原分录金额无效，请打开原单核对,El importe del apunte original no es válido. Abra el documento de origen para revisarlo
+原科目,Cuenta original
+只有本位币记账凭证支持新增一行,Solo los asientos en la moneda de la empresa permiten añadir una línea
+新增行金额,Importe de la nueva línea
+新增行金额必须大于零，且小于原分录金额的绝对值,El importe de la nueva línea debe ser positivo e inferior al valor absoluto del importe original
+新增行金额须与原金额同方向，且绝对值大于零、小于原金额的绝对值,El importe de la nueva línea debe tener el mismo signo que el original y un valor absoluto positivo inferior al del original
+新增一行,Añadir línea
+新增一行不能与同一行的其他修改一起提交，请先保存或取消其他修改,No se puede añadir una línea y enviar otros cambios en la misma línea. Guarde o descarte primero los otros cambios
+新增后分录不能超过 {0} 行,El comprobante no puede superar {0} apuntes después de añadir una línea
+新增后金额,Importe después de añadir una línea
+新增分录摘要须为一行，且不超过 {0} 个字符,El resumen del nuevo apunte debe tener una sola línea y no superar {0} caracteres
+新增分录摘要（留空沿用原摘要）,Resumen del nuevo apunte (deje vacío para conservar el original)
+新增分录沿用原分录的往来单位、成本中心、项目及辅助维度；需要调整这些信息时请打开原单。,"El nuevo apunte conserva la contraparte, el centro de costos, el proyecto y las dimensiones contables del original. Abra el documento de origen para modificar estos datos."
+新增分录科目,Cuenta del nuevo apunte
+草稿新增一行后仍需重新核对再记账,"Después de añadir una línea al borrador, debe revisarse de nuevo antes de contabilizarlo"
+请先保存或取消当前凭证的修改，再新增一行,Guarde o descarte los cambios del comprobante actual antes de añadir una línea
+预览新增,Vista previa de la nueva línea
+原分录行,Línea del apunte original
+第 {0} 行 · {1} · {2} {3},Línea {0} · {1} · {2} {3}
+当前凭证没有可新增行的分录，请刷新报表或打开原单处理,Este comprobante no tiene apuntes aptos. Actualice el informe o abra el documento de origen
+新增一行功能加载失败，请刷新页面后重试,No se pudo cargar la función para añadir una línea. Actualice la página e inténtelo de nuevo

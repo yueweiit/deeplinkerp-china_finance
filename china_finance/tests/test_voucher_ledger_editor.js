@@ -46,7 +46,9 @@ function harness() {
 		__: (text) => text,
 		frappe: {
 			query_reports: {},
-			throw(message) { throw new Error(message); },
+			throw(message) {
+				throw new Error(message);
+			},
 			show_alert() {},
 			utils: {
 				escape_html: (value) => String(value),
@@ -110,6 +112,124 @@ function report() {
 		datatable: { cellmanager: { deactivateEditing() {} } },
 	};
 }
+
+test("one add-row action appears on the voucher header even if only a later row is eligible", () => {
+	const h = harness();
+	const render = vm.runInContext("render_inline_voucher_actions", h.context);
+	const first = {
+		editable_split: false,
+		edit_source_doctype: "Journal Entry",
+		edit_source_name: "JV-1",
+		edit_voucher_key: "Journal Entry:JV-1",
+		edit_key: "je:first-row",
+		is_voucher_first_row: true,
+	};
+	const second = {
+		...first,
+		editable_split: true,
+		edit_key: "je:second-row",
+		is_voucher_first_row: false,
+	};
+	const current = report();
+	current.data = [first, second, { ...second, edit_key: "je:third-row" }];
+	current._china_inline_edit_state = {
+		voucher_key: first.edit_voucher_key,
+		changes: new Map([["summary", "changed"]]),
+	};
+	assert.match(render(current, first), /china-inline-split/);
+	assert.match(render(current, first), /新增一行/);
+	assert.match(render(current, first), /china-inline-save/);
+	assert.doesNotMatch(
+		render(current, second),
+		/china-inline-split|china-inline-save|china-inline-open-source/
+	);
+	current.data = [first];
+	assert.doesNotMatch(render(current, first), /china-inline-split/);
+});
+
+function actionHarness() {
+	const h = harness();
+	class Element {
+		constructor() {
+			this.dataset = { voucherKey: "Journal Entry:JV-1" };
+			this.classList = { contains: (name) => name === "china-inline-split" };
+		}
+		closest(selector) {
+			return selector.includes("china-inline-split") ? this : null;
+		}
+	}
+	h.context.Element = Element;
+	const listeners = new Map();
+	const wrapper = {
+		contains: () => true,
+		addEventListener: (name, callback) => listeners.set(name, callback),
+		removeEventListener(name, callback) {
+			if (listeners.get(name) === callback) listeners.delete(name);
+		},
+	};
+	const current = {
+		...report(),
+		page: { wrapper },
+		data: [
+			{
+				edit_voucher_key: "Journal Entry:JV-1",
+				edit_key: "je:eligible",
+				editable_split: true,
+			},
+		],
+	};
+	const messages = [];
+	h.context.frappe.msgprint = (message) => messages.push(message);
+	const bind = vm.runInContext("bind_inline_voucher_actions", h.context);
+	const event = { target: new Element(), preventDefault() {}, stopPropagation() {} };
+	return { ...h, current, listeners, bind, messages, click: () => listeners.get("click")(event) };
+}
+
+test("add-row click loads the module and rebind does not duplicate handlers", async () => {
+	const h = actionHarness();
+	const opened = [];
+	let loads = 0;
+	h.context.frappe.require = async () => {
+		loads++;
+		h.context.china_finance.voucher_entry_split = {
+			open: async (...args) => opened.push(args),
+		};
+	};
+	h.bind(h.current);
+	h.bind(h.current);
+	assert.equal(h.listeners.size, 3);
+	await h.click();
+	assert.equal(loads, 1);
+	assert.equal(opened.length, 1);
+	assert.equal(opened[0][0], h.current);
+	assert.equal(opened[0][1].edit_key, "je:eligible");
+});
+
+test("missing rows, failed asset loads and rejected dialog opens show errors", async () => {
+	for (const failure of ["missing", "asset", "dialog"]) {
+		const h = actionHarness();
+		if (failure === "missing") h.current.data = [];
+		h.context.frappe.require = async () => {
+			if (failure === "dialog")
+				h.context.china_finance.voucher_entry_split = {
+					open: async () => {
+						throw Error("dialog failed");
+					},
+				};
+		};
+		h.bind(h.current);
+		await h.click();
+		assert.equal(h.messages.length, 1);
+		assert.match(
+			h.messages[0],
+			failure === "missing"
+				? /没有可新增行/
+				: failure === "asset"
+				? /加载失败/
+				: /dialog failed/
+		);
+	}
+});
 
 test("account editor focuses immediately without validating the existing account", () => {
 	const h = harness();
@@ -176,7 +296,7 @@ function amountReport() {
 	const rows = [
 		{ amount_edit_key: "je:expense", debit: 125, credit: 0 },
 		{ amount_edit_key: "je:bank", debit: 0, credit: 125 },
-	].map(row => ({
+	].map((row) => ({
 		...row,
 		base_total_amount: 125,
 		editable_amount: true,
@@ -191,10 +311,14 @@ function amountReport() {
 		...report(),
 		data: rows,
 		refreshCount: 0,
-		async refresh() { this.refreshCount++; },
+		async refresh() {
+			this.refreshCount++;
+		},
 		datatable: {
 			cellmanager: { deactivateEditing() {} },
-			datamanager: { getColumns: () => ["debit", "credit", "base_total_amount"].map(id => ({ id })) },
+			datamanager: {
+				getColumns: () => ["debit", "credit", "base_total_amount"].map((id) => ({ id })),
+			},
 			refreshRow() {},
 		},
 	};
@@ -208,7 +332,11 @@ test("amount editor uses row numbers, keeps focus, allows signed values and reje
 	const control = h.controls[0];
 	assert.equal(control.df.fieldtype, "Currency");
 	assert.equal(control.df.precision, 2);
-	assert.equal(control.$input.value, 125, "formatted currency labels must not be parsed as input");
+	assert.equal(
+		control.$input.value,
+		125,
+		"formatted currency labels must not be parsed as input"
+	);
 	assert.equal(control.focused, true);
 	assert.equal(typeof control.change, "function");
 	control.$input.val("-25.10");
@@ -232,7 +360,13 @@ test("both amounts stage in one voucher and cancellation restores zero values an
 	h.stageAmount(r, r.data[0], "credit", -5);
 	h.cancel(r);
 	assert.equal(r._china_inline_edit_state, null);
-	assert.deepEqual(r.data.map(row => [row.debit, row.credit, row.base_total_amount]), [[125, 0, 125], [0, 125, 125]]);
+	assert.deepEqual(
+		r.data.map((row) => [row.debit, row.credit, row.base_total_amount]),
+		[
+			[125, 0, 125],
+			[0, 125, 125],
+		]
+	);
 	assert.equal(r.data[0]._inline_credit_dirty, undefined);
 });
 
@@ -240,7 +374,16 @@ test("changing an amount back clears dirty state and another voucher cannot stea
 	const h = harness();
 	const r = amountReport();
 	h.stageAmount(r, r.data[0], "debit", 100);
-	assert.equal(h.amountEditor(r, 125, {}, {...r.data[1], edit_voucher_key: "Journal Entry:JV-2"}, "credit"), false);
+	assert.equal(
+		h.amountEditor(
+			r,
+			125,
+			{},
+			{ ...r.data[1], edit_voucher_key: "Journal Entry:JV-2" },
+			"credit"
+		),
+		false
+	);
 	assert.equal(r._china_inline_edit_state.voucher_key, "Journal Entry:JV-1");
 	h.stageAmount(r, r.data[0], "debit", 125);
 	assert.equal(r._china_inline_edit_state, null);
@@ -251,9 +394,13 @@ test("posted amount changes wait for confirmation then submit both fields in one
 	const h = harness();
 	const r = amountReport();
 	const calls = [];
-	h.context.frappe.call = async args => {
+	h.context.frappe.call = async (args) => {
 		calls.push(args);
-		return { message: args.method.includes("preview_") ? { requires_confirmation: true } : { message: "done" } };
+		return {
+			message: args.method.includes("preview_")
+				? { requires_confirmation: true }
+				: { message: "done" },
+		};
 	};
 	h.stageAmount(r, r.data[0], "debit", 100);
 	h.stageAmount(r, r.data[1], "credit", 100);
@@ -273,7 +420,10 @@ test("failed amount preflight preserves staged values for correction and sends n
 	const h = harness();
 	const r = amountReport();
 	let calls = 0;
-	h.context.frappe.call = async () => { calls++; throw new Error("unbalanced"); };
+	h.context.frappe.call = async () => {
+		calls++;
+		throw new Error("unbalanced");
+	};
 	h.stageAmount(r, r.data[0], "debit", 100);
 	await h.save(r);
 	assert.equal(calls, 1);
@@ -292,7 +442,10 @@ test("save waits for the last active amount cell before building its request", a
 		await Promise.resolve();
 		h.stageAmount(r, r.data[1], "credit", 100);
 	};
-	h.context.frappe.call = async args => { calls.push(args); return { message: {} }; };
+	h.context.frappe.call = async (args) => {
+		calls.push(args);
+		return { message: {} };
+	};
 	await h.save(r);
 	assert.equal(calls[0].args.changes.length, 2);
 	assert.equal(calls[1].args.changes.length, 2);

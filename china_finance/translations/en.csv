@@ -2520,3 +2520,27 @@ records 必须是发票对象数组,records must be an array of invoice objects
 逐单处理结果,Document Processing Results
 项目与金额已配平,Items and amounts are balanced
 项目与金额校验通过,Item and amount validation passed
+保存新增,Save new row
+关联业务单据的分录请打开原单新增,Open the source document to add rows to entries linked to business documents
+原分录金额,Original entry amount
+原分录金额无效，请打开原单核对,The original entry amount is invalid. Open the source document to check it
+原科目,Original account
+只有本位币记账凭证支持新增一行,Only journal entries in the company currency support adding a row
+新增行金额,New row amount
+新增行金额必须大于零，且小于原分录金额的绝对值,The new row amount must be positive and less than the absolute original amount
+新增行金额须与原金额同方向，且绝对值大于零、小于原金额的绝对值,The new row amount must have the same sign as the original amount and a positive absolute value below the original absolute value
+新增一行,Add row
+新增一行不能与同一行的其他修改一起提交，请先保存或取消其他修改,Adding a row cannot be submitted with other changes to the same row. Save or discard the other changes first
+新增后分录不能超过 {0} 行,The voucher cannot exceed {0} entries after adding a row
+新增后金额,Amount after adding a row
+新增分录摘要须为一行，且不超过 {0} 个字符,The new entry summary must be a single line of no more than {0} characters
+新增分录摘要（留空沿用原摘要）,New entry summary (leave blank to keep the original)
+新增分录沿用原分录的往来单位、成本中心、项目及辅助维度；需要调整这些信息时请打开原单。,"The new entry inherits the original party, cost center, project and accounting dimensions. Open the source document to change these details."
+新增分录科目,New entry account
+草稿新增一行后仍需重新核对再记账,"After adding a row, the draft must be reviewed again before posting"
+请先保存或取消当前凭证的修改，再新增一行,Save or discard the current voucher changes before adding a row
+预览新增,Preview new row
+原分录行,Source entry row
+第 {0} 行 · {1} · {2} {3},Row {0} · {1} · {2} {3}
+当前凭证没有可新增行的分录，请刷新报表或打开原单处理,This voucher has no eligible entry rows. Refresh the report or open the source document
+新增一行功能加载失败，请刷新页面后重试,The add-row feature could not be loaded. Refresh the page and try again

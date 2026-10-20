@@ -285,6 +285,153 @@ class TestInlineVoucherAccountEdit(unittest.TestCase):
 			{"field": "debit", "edit_key": f"je:{doc.accounts[1].name}", "value": amount},
 		]
 
+	def _split_changes(self, doc, amount=50, index=1, account=None):
+		return [{"field": "split", "edit_key": f"je:{doc.accounts[index].name}", "value": {
+			"account": account or self.replacement_expense, "amount": amount, "summary": "Split allocation",
+		}}]
+
+	def test_draft_entry_split_adds_one_balanced_row_and_clears_review(self):
+		doc = self._mark_ready(self._journal_entry())
+		rows = self._ledger_rows(doc.name, "待记账")
+		self.assertTrue(all(row["editable_split"] for row in rows))
+		changes = self._split_changes(doc)
+		preview = source_edit.preview_inline_voucher_changes(doc.doctype, doc.name, str(doc.modified), changes)
+		self.assertFalse(preview["requires_confirmation"])
+		result = source_edit.apply_inline_voucher_changes(doc.doctype, doc.name, str(doc.modified), changes)
+		doc.reload()
+		self.assertFalse(result["posted"])
+		self.assertEqual(len(doc.accounts), 3)
+		self.assertEqual([row.idx for row in doc.accounts], [1, 2, 3])
+		self.assertEqual(doc.accounts[1].debit_in_account_currency, 75)
+		self.assertEqual(doc.accounts[2].debit_in_account_currency, 50)
+		self.assertEqual(doc.accounts[2].account, self.replacement_expense)
+		self.assertEqual(doc.accounts[2].cost_center, self.cost_center)
+		self.assertEqual(doc.accounts[2].user_remark, "Split allocation")
+		self.assertEqual(doc.total_debit, doc.total_credit)
+		self.assertFalse(doc.get(preparation.READY_FIELDS[0]))
+		self.assertFalse(frappe.db.exists("China Accounting Voucher", {"source_name": doc.name}))
+
+	def test_posted_entry_split_restores_bank_allocation_and_keeps_original_history(self):
+		transaction = self._bank_transaction()
+		doc = self._reconciled_journal_entry(transaction)
+		number = doc.custom_china_voucher_number
+		changes = self._split_changes(doc)
+		preview = source_edit.preview_inline_voucher_changes(doc.doctype, doc.name, str(doc.modified), changes)
+		self.assertTrue(preview["requires_confirmation"])
+		self.assertEqual(preview["bank_action"], "unreconcile_and_restore")
+		result = source_edit.apply_inline_voucher_changes(doc.doctype, doc.name, str(doc.modified), changes)
+		doc.reload()
+		amended = frappe.get_doc(doc.doctype, result["source_name"])
+		self.assertEqual(doc.docstatus, 2)
+		self.assertEqual(len(doc.accounts), 2)
+		self.assertEqual(amended.docstatus, 1)
+		self.assertEqual(len(amended.accounts), 3)
+		self.assertEqual(amended.custom_china_voucher_number, number)
+		self.assertEqual(amended.accounts[0].credit_in_account_currency, 125)
+		self.assertEqual(amended.accounts[1].debit_in_account_currency, 75)
+		self.assertEqual(amended.accounts[2].debit_in_account_currency, 50)
+		transaction.reload()
+		self.assertEqual(transaction.status, "Reconciled")
+		self.assertEqual(len(transaction.payment_entries), 1)
+		self.assertEqual(transaction.payment_entries[0].payment_entry, amended.name)
+		self.assertEqual(transaction.payment_entries[0].allocated_amount, 125)
+		comments = frappe.get_all("Comment", filters={"reference_doctype": doc.doctype,
+			"reference_name": amended.name, "comment_type": "Comment"}, pluck="content")
+		self.assertTrue(any("新增一行" in text and "Split allocation" in text for text in comments))
+
+	def test_entry_split_validation_rejects_invalid_amounts_targets_and_conflicting_changes(self):
+		doc = self._journal_entry()
+		for amount in (0, 125, 126, -1, "NaN", "Infinity", "bad", "0.123456789"):
+			with self.subTest(amount=amount), self.assertRaises(frappe.ValidationError):
+				source_edit.preview_inline_voucher_changes(doc.doctype, doc.name, str(doc.modified), self._split_changes(doc, amount))
+		with self.assertRaises(frappe.TimestampMismatchError):
+			source_edit.apply_inline_voucher_changes(doc.doctype, doc.name, "stale", self._split_changes(doc))
+		with self.assertRaisesRegex(frappe.ValidationError, "同一行"):
+			source_edit.preview_inline_voucher_changes(doc.doctype, doc.name, str(doc.modified),
+				[*self._split_changes(doc), {"field": "debit", "edit_key": f"je:{doc.accounts[1].name}", "value": 75}])
+		with self.assertRaises(frappe.ValidationError):
+			source_edit.preview_inline_voucher_changes(doc.doctype, doc.name, str(doc.modified), self._split_changes(doc, account=self.foreign_expense))
+		with patch.object(source_edit, "MAX_INLINE_ENTRY_ROWS", 2), self.assertRaisesRegex(frappe.ValidationError, "不能超过"):
+			source_edit.preview_inline_voucher_changes(doc.doctype, doc.name, str(doc.modified), self._split_changes(doc))
+		payment = self._payment_entry()
+		with self.assertRaisesRegex(frappe.ValidationError, "本位币记账凭证"):
+			source_edit.preview_inline_voucher_changes(payment.doctype, payment.name, str(payment.modified), self._split_changes(doc))
+		doc.accounts[1].reference_type = "Sales Invoice"
+		with self.assertRaisesRegex(frappe.ValidationError, "关联业务单据"):
+			source_edit._resolve_inline_changes(doc, self._split_changes(doc))
+		doc.accounts[1].reference_type = None
+		doc.multi_currency = 1
+		with self.assertRaisesRegex(frappe.ValidationError, "外币"):
+			source_edit._resolve_inline_changes(doc, self._split_changes(doc))
+		doc.reload()
+		self.assertEqual(len(doc.accounts), 2)
+
+	def test_entry_split_cannot_divert_linked_bank_amount_to_another_account(self):
+		transaction = self._bank_transaction()
+		doc = self._journal_entry()
+		doc.custom_china_bank_transaction = transaction.name
+		doc.save()
+		with self.assertRaisesRegex(frappe.ValidationError, "银行收付款金额不能"):
+			source_edit.apply_inline_voucher_changes(doc.doctype, doc.name, str(doc.modified), self._split_changes(doc, 50, index=0))
+		doc.reload()
+		self.assertEqual(doc.accounts[0].credit_in_account_currency, 125)
+		self.assertEqual(len(doc.accounts), 2)
+
+	def test_failed_entry_split_posting_rolls_back_cancel_amendment_and_new_row(self):
+		doc = self._mark_ready(self._journal_entry())
+		doc.submit()
+		doc.reload()
+		with patch.object(source_edit, "complete_source_voucher_edit", side_effect=frappe.ValidationError("forced split failure")):
+			with self.assertRaisesRegex(frappe.ValidationError, "forced split failure"):
+				source_edit.apply_inline_voucher_changes(doc.doctype, doc.name, str(doc.modified), self._split_changes(doc))
+		doc.reload()
+		self.assertEqual(doc.docstatus, 1)
+		self.assertEqual(len(doc.accounts), 2)
+		self.assertEqual(doc.accounts[1].debit_in_account_currency, 125)
+		self.assertFalse(frappe.db.exists(doc.doctype, {"amended_from": doc.name}))
+
+	def test_negative_entry_split_keeps_both_parts_on_the_original_side(self):
+		doc = self._journal_entry()
+		doc.accounts[0].credit_in_account_currency = 0
+		doc.accounts[0].debit_in_account_currency = 125
+		doc.accounts[1].debit_in_account_currency = -125
+		doc.save()
+		source_edit.apply_inline_voucher_changes(doc.doctype, doc.name, str(doc.modified), self._split_changes(doc, -50))
+		doc.reload()
+		self.assertEqual(doc.accounts[1].debit_in_account_currency, -75)
+		self.assertEqual(doc.accounts[2].debit_in_account_currency, -50)
+		self.assertEqual(doc.accounts[2].credit_in_account_currency, 0)
+
+	def test_credit_entry_split_keeps_bank_debit_and_both_credit_parts_balanced(self):
+		doc = self._journal_entry()
+		doc.accounts[0].credit_in_account_currency = 0
+		doc.accounts[0].debit_in_account_currency = 125
+		doc.accounts[1].debit_in_account_currency = 0
+		doc.accounts[1].credit_in_account_currency = 125
+		doc.save()
+		source_edit.apply_inline_voucher_changes(doc.doctype, doc.name, str(doc.modified), self._split_changes(doc))
+		doc.reload()
+		self.assertEqual(doc.accounts[0].debit_in_account_currency, 125)
+		self.assertEqual(doc.accounts[1].credit_in_account_currency, 75)
+		self.assertEqual(doc.accounts[2].credit_in_account_currency, 50)
+		self.assertEqual(doc.accounts[2].debit_in_account_currency, 0)
+		self.assertEqual(doc.total_debit, doc.total_credit)
+
+	def test_failed_split_bank_restoration_rolls_back_original_allocation(self):
+		transaction = self._bank_transaction()
+		doc = self._reconciled_journal_entry(transaction)
+		with patch.object(source_edit, "_restore_quick_reconciliation", side_effect=frappe.ValidationError("forced restore failure")):
+			with self.assertRaisesRegex(frappe.ValidationError, "forced restore failure"):
+				source_edit.apply_inline_voucher_changes(doc.doctype, doc.name, str(doc.modified), self._split_changes(doc))
+		doc.reload()
+		transaction.reload()
+		self.assertEqual(doc.docstatus, 1)
+		self.assertEqual(len(doc.accounts), 2)
+		self.assertEqual(transaction.status, "Reconciled")
+		self.assertEqual(len(transaction.payment_entries), 1)
+		self.assertEqual(transaction.payment_entries[0].payment_entry, doc.name)
+		self.assertFalse(frappe.db.exists(doc.doctype, {"amended_from": doc.name}))
+
 	def test_draft_amounts_are_saved_together_clear_review_and_do_not_post(self):
 		doc = self._mark_ready(self._journal_entry())
 		rows = self._ledger_rows(doc.name, "待记账")
