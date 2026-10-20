@@ -143,6 +143,23 @@ class TestOpeningImports(unittest.TestCase):
 		self.assertEqual(result["rows"][0]["debit"], "0.10")
 		self.assertEqual(result["rows"][0]["remarks"], "未建档往来 原摘要")
 
+	def test_native_file_csv_text_and_bytes_parse_identically_with_utf8_size_limit(self):
+		parser = self.parser()
+		content = "\ufeff科目,借方,贷方,摘要\nBank,0.10,0,原单位往来摘要\nEquity,0,0.10,资本来源"
+		try:
+			text_result = parser.parse_import(content=content, filename="opening.csv")
+		except AttributeError:
+			self.fail("Native File.get_content() may return str and must parse without decode errors")
+		self.assertEqual(text_result["errors"], [])
+		self.assertEqual(text_result, parser.parse_import(content=content.encode("utf-8"), filename="opening.csv"))
+		self.assertEqual(text_result["rows"][0]["remarks"], "原单位往来摘要")
+		oversized = "中" * (parser.MAX_BYTES // 3 + 1)
+		for value in (oversized, oversized.encode("utf-8")):
+			result = parser.parse_import(content=value, filename="opening.csv")
+			self.assertEqual(result["rows"], [])
+			self.assertIn("2 MB", result["errors"][0]["message"])
+		self.assertTrue(parser.parse_import(content=content, filename="opening.xlsx")["errors"])
+
 	def test_bad_headers_formulas_and_numeric_values_are_visible_errors(self):
 		for text in ("科目\t未知字段\nBank\t1", "account,account,debit\nBank,Bank,1", "account,debit\nBank,=1+1", "account,debit\nBank,NaN"):
 			with self.subTest(text=text):
@@ -725,6 +742,27 @@ class TestOpeningNative(unittest.TestCase):
 		preview = self.service.preview_import(self.company, text=text)
 		self.assertEqual(preview["errors"], [])
 		self.assertEqual(len(preview["rows"]), 2)
+		# Native File reads decode CSV content to str. Exercise the actual private
+		# file boundary rather than passing only already-decoded pasted text.
+		import csv
+		import io
+		from pathlib import Path
+
+		from frappe.utils.file_manager import save_file
+
+		csv_text = io.StringIO()
+		writer = csv.writer(csv_text)
+		writer.writerow(["科目", "借方", "贷方", "摘要"])
+		writer.writerow([self.bank, "100.00", "0", "原单位往来摘要"])
+		writer.writerow([self.equity, "0", "100.00", "资本来源"])
+		file = save_file("opening-import-" + _native_frappe.generate_hash(length=8) + ".csv", csv_text.getvalue().encode("utf-8"), "Company", self.company, is_private=1)
+		self.addCleanup(Path(file.get_full_path()).unlink, missing_ok=True)
+		stored_file = _native_frappe.get_doc("File", file.name)
+		self.assertIsInstance(stored_file.get_content(), str)
+		uploaded = self.service.preview_import(self.company, file_url=file.file_url)
+		self.assertEqual(uploaded["errors"], [], uploaded)
+		self.assertEqual(len(uploaded["rows"]), 2)
+		self.assertEqual(uploaded["rows"][0]["remarks"], "原单位往来摘要")
 		self.assertEqual(self.counts(), before)
 		self.assertEqual(_native_frappe.db.count(self.service.BATCH, {"company": self.company}), batch_count)
 

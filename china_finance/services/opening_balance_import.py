@@ -31,9 +31,16 @@ def parse_import(text=None, content=None, filename=None):
 	formulas = set()
 	try:
 		if content is not None:
-			if len(content) > MAX_BYTES:
+			# Native File.get_content() decodes text uploads but keeps binary files
+			# as bytes. Enforce a byte limit consistently before parsing either.
+			if not isinstance(content, (str, bytes, bytearray)):
+				raise ValueError("导入文件内容必须是文本或二进制数据")
+			size = len(content.encode("utf-8")) if isinstance(content, str) else len(content)
+			if size > MAX_BYTES:
 				raise ValueError("导入文件不能超过 2 MB")
 			if (filename or "").lower().endswith(".xlsx"):
+				if isinstance(content, str):
+					raise ValueError("XLSX 文件必须是二进制内容")
 				with zipfile.ZipFile(io.BytesIO(content)) as archive:
 					if sum(info.file_size for info in archive.infolist()) > 20 * MAX_BYTES:
 						raise ValueError("Excel 解压后过大")
@@ -49,7 +56,7 @@ def parse_import(text=None, content=None, filename=None):
 				finally:
 					workbook.close()
 			else:
-				text = content.decode("utf-8-sig")
+				text = content if isinstance(content, str) else content.decode("utf-8-sig")
 				table = None
 		else:
 			table = None
