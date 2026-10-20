@@ -285,6 +285,182 @@ class TestInlineVoucherAccountEdit(unittest.TestCase):
 			{"field": "debit", "edit_key": f"je:{doc.accounts[1].name}", "value": amount},
 		]
 
+	def _three_line_delete_voucher(self):
+		doc = self._journal_entry()
+		doc.accounts[1].debit_in_account_currency = 75
+		doc.append("accounts", {"account": self.replacement_expense, "debit_in_account_currency": 50,
+			"cost_center": self.cost_center, "user_remark": "Delete test"})
+		doc.save()
+		return doc
+
+	def _delete_changes(self, doc, deleted=2, remaining=1, amount=125):
+		return [
+			{"field": "delete", "edit_key": f"je:{doc.accounts[deleted].name}", "value": True},
+			{"field": "debit", "edit_key": f"je:{doc.accounts[remaining].name}", "value": amount},
+		]
+
+	def test_delete_draft_row_with_balancing_edit_reindexes_and_clears_review(self):
+		doc = self._mark_ready(self._three_line_delete_voucher())
+		self.assertTrue(all(row["editable_delete"] for row in self._ledger_rows(doc.name, "待记账")))
+		changes = self._delete_changes(doc, deleted=1, remaining=2)
+		preview = source_edit.preview_inline_voucher_changes(doc.doctype, doc.name, str(doc.modified), changes)
+		self.assertFalse(preview["requires_confirmation"])
+		source_edit.apply_inline_voucher_changes(doc.doctype, doc.name, str(doc.modified), changes)
+		doc.reload()
+		self.assertEqual(len(doc.accounts), 2)
+		self.assertEqual([row.idx for row in doc.accounts], [1, 2])
+		self.assertEqual(doc.accounts[1].account, self.replacement_expense)
+		self.assertEqual(doc.accounts[1].debit_in_account_currency, 125)
+		self.assertFalse(doc.get(preparation.READY_FIELDS[0]))
+		self.assertEqual(doc.total_debit, doc.total_credit)
+
+	def test_delete_posted_row_restores_bank_reconciliation_and_preserves_original(self):
+		transaction = self._bank_transaction()
+		doc = self._three_line_delete_voucher()
+		doc.custom_china_bank_transaction = transaction.name
+		doc.save()
+		self._mark_ready(doc).submit()
+		doc.reload()
+		number = doc.custom_china_voucher_number
+		result = source_edit.apply_inline_voucher_changes(doc.doctype, doc.name, str(doc.modified), self._delete_changes(doc))
+		doc.reload()
+		amended = frappe.get_doc(doc.doctype, result["source_name"])
+		self.assertEqual(doc.docstatus, 2)
+		self.assertEqual(len(doc.accounts), 3)
+		self.assertEqual(amended.docstatus, 1)
+		self.assertEqual(len(amended.accounts), 2)
+		self.assertEqual(amended.accounts[1].debit_in_account_currency, 125)
+		self.assertEqual(amended.custom_china_voucher_number, number)
+		transaction.reload()
+		self.assertEqual(transaction.status, "Reconciled")
+		self.assertEqual(transaction.payment_entries[0].payment_entry, amended.name)
+		self.assertEqual(transaction.payment_entries[0].allocated_amount, 125)
+		comments = frappe.get_all("Comment", filters={"reference_doctype": amended.doctype,
+			"reference_name": amended.name}, pluck="content")
+		self.assertTrue(any("删除行" in text and "Delete test" in text for text in comments))
+
+	def test_delete_rejects_unbalanced_insufficient_stale_and_conflicting_changes(self):
+		doc = self._three_line_delete_voucher()
+		changes = self._delete_changes(doc)
+		with self.assertRaisesRegex(frappe.ValidationError, "借贷不平衡"):
+			source_edit.preview_inline_voucher_changes(doc.doctype, doc.name, str(doc.modified), changes[:1])
+		with self.assertRaises(frappe.TimestampMismatchError):
+			source_edit.apply_inline_voucher_changes(doc.doctype, doc.name, "stale", changes)
+		with self.assertRaisesRegex(frappe.ValidationError, "待删除分录"):
+			source_edit.preview_inline_voucher_changes(doc.doctype, doc.name, str(doc.modified),
+				[*changes, {"field": "debit", "edit_key": changes[0]["edit_key"], "value": 25}])
+		with self.assertRaisesRegex(frappe.ValidationError, "至少保留两条"):
+			source_edit.preview_inline_voucher_changes(doc.doctype, doc.name, str(doc.modified),
+				[changes[0], {"field": "delete", "edit_key": f"je:{doc.accounts[1].name}", "value": True}])
+		for value in (False, 1, "true", {}, None):
+			with self.subTest(value=value), self.assertRaises(frappe.ValidationError):
+				source_edit._parse_inline_changes([{**changes[0], "value": value}])
+		doc.reload()
+		self.assertEqual(len(doc.accounts), 3)
+
+	def test_delete_rejects_linked_foreign_rows_and_payment_entries(self):
+		doc = self._three_line_delete_voucher()
+		doc.accounts[2].reference_type = "Sales Invoice"
+		with self.assertRaisesRegex(frappe.ValidationError, "关联业务单据"):
+			source_edit._resolve_inline_changes(doc, self._delete_changes(doc))
+		doc.accounts[2].reference_type = None
+		doc.multi_currency = 1
+		with self.assertRaisesRegex(frappe.ValidationError, "外币"):
+			source_edit._resolve_inline_changes(doc, self._delete_changes(doc))
+		payment = self._payment_entry()
+		with self.assertRaisesRegex(frappe.ValidationError, "本位币记账凭证"):
+			source_edit.preview_inline_voucher_changes(payment.doctype, payment.name, str(payment.modified), self._delete_changes(doc))
+		minimal = self._journal_entry()
+		with self.assertRaisesRegex(frappe.ValidationError, "至少保留两条"):
+			source_edit._resolve_inline_changes(minimal, [{"field": "delete", "edit_key": f"je:{minimal.accounts[1].name}", "value": True}])
+
+	def test_multiple_delete_rows_apply_other_edits_before_reindexing(self):
+		doc = self._three_line_delete_voucher()
+		doc.accounts[1].debit_in_account_currency = 50
+		doc.append("accounts", {"account": self.expense_account, "debit_in_account_currency": 25,
+			"cost_center": self.cost_center})
+		doc.save()
+		changes = [{"field": "delete", "edit_key": f"je:{doc.accounts[index].name}", "value": True} for index in (1, 2)]
+		changes.append({"field": "debit", "edit_key": f"je:{doc.accounts[3].name}", "value": 125})
+		source_edit.apply_inline_voucher_changes(doc.doctype, doc.name, str(doc.modified), changes)
+		doc.reload()
+		self.assertEqual([row.idx for row in doc.accounts], [1, 2])
+		self.assertEqual(doc.accounts[1].debit_in_account_currency, 125)
+
+	def test_delete_cannot_change_linked_bank_amount(self):
+		transaction = self._bank_transaction()
+		doc = self._three_line_delete_voucher()
+		doc.custom_china_bank_transaction = transaction.name
+		doc.save()
+		changes = [
+			{"field": "delete", "edit_key": f"je:{doc.accounts[0].name}", "value": True},
+			{"field": "debit", "edit_key": f"je:{doc.accounts[2].name}", "value": 0},
+			{"field": "credit", "edit_key": f"je:{doc.accounts[2].name}", "value": 75},
+		]
+		with self.assertRaisesRegex(frappe.ValidationError, "银行收付款金额不能"):
+			source_edit.apply_inline_voucher_changes(doc.doctype, doc.name, str(doc.modified), changes)
+		doc.reload()
+		self.assertEqual(len(doc.accounts), 3)
+		self.assertEqual(doc.accounts[0].credit_in_account_currency, 125)
+
+	def test_failed_delete_bank_restoration_rolls_back_rows_and_original(self):
+		transaction = self._bank_transaction()
+		doc = self._three_line_delete_voucher()
+		doc.custom_china_bank_transaction = transaction.name
+		doc.save()
+		self._mark_ready(doc).submit()
+		doc.reload()
+		with patch.object(source_edit, "_restore_quick_reconciliation", side_effect=frappe.ValidationError("forced delete failure")):
+			with self.assertRaisesRegex(frappe.ValidationError, "forced delete failure"):
+				source_edit.apply_inline_voucher_changes(doc.doctype, doc.name, str(doc.modified), self._delete_changes(doc))
+		doc.reload()
+		transaction.reload()
+		self.assertEqual(doc.docstatus, 1)
+		self.assertEqual(len(doc.accounts), 3)
+		self.assertEqual(transaction.status, "Reconciled")
+		self.assertEqual(transaction.payment_entries[0].payment_entry, doc.name)
+		self.assertFalse(frappe.db.exists(doc.doctype, {"amended_from": doc.name}))
+
+	def test_delete_large_source_limits_match_metadata_preview_and_amendment(self):
+		for count in (100, 101):
+			with self.subTest(count=count):
+				doc = frappe.copy_doc(self._journal_entry()).insert(
+					set_name="_InlineDeleteSize-" + frappe.generate_hash(length=12))
+				doc.accounts[1].debit_in_account_currency = 127 - count
+				for _index in range(count - 2):
+					doc.append("accounts", {"account": self.replacement_expense,
+						"debit_in_account_currency": 1, "cost_center": self.cost_center})
+				doc.save()
+				changes = self._delete_changes(doc, deleted=count - 1, amount=128 - count)
+				def metadata():
+					return source_edit.annotate_inline_edit_rows([frappe._dict(
+						source_doctype=doc.doctype, source_name=doc.name,
+						voucher_detail_no=doc.accounts[1].name, account=doc.accounts[1].account,
+						debit=doc.accounts[1].debit, credit=0,
+					)])[0]
+				self.assertTrue(metadata()["editable_delete"])
+				self.assertFalse(source_edit.preview_inline_voucher_changes(
+					doc.doctype, doc.name, str(doc.modified), changes)["requires_confirmation"])
+				# Run the native background-worker submission path synchronously for this rollback-only fixture.
+				self._mark_ready(doc)._submit()
+				doc.reload()
+				self.assertEqual(doc.docstatus, 1)
+				self.assertEqual(len(doc.accounts), count)
+				self.assertEqual(metadata()["editable_delete"], count == 100)
+				if count == 100:
+					self.assertTrue(source_edit.preview_inline_voucher_changes(
+						doc.doctype, doc.name, str(doc.modified), changes)["requires_confirmation"])
+				else:
+					for operation in (source_edit.preview_inline_voucher_changes, source_edit.apply_inline_voucher_changes):
+						with self.assertRaisesRegex(frappe.ValidationError, "超过100行"):
+							operation(doc.doctype, doc.name, str(doc.modified), changes)
+					with self.assertRaisesRegex(frappe.ValidationError, "超过100行"):
+						source_edit.prepare_source_voucher_edit(doc.doctype, doc.name)
+					doc.reload()
+					self.assertEqual(doc.docstatus, 1)
+					self.assertEqual(len(doc.accounts), 101)
+					self.assertFalse(frappe.db.exists(doc.doctype, {"amended_from": doc.name}))
+
 	def _split_changes(self, doc, amount=50, index=1, account=None):
 		return [{"field": "split", "edit_key": f"je:{doc.accounts[index].name}", "value": {
 			"account": account or self.replacement_expense, "amount": amount, "summary": "Split allocation",

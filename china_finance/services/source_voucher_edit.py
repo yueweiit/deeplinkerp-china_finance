@@ -23,7 +23,7 @@ INLINE_AMOUNT_FIELDS = {
 	"credit": "credit_in_account_currency",
 }
 MAX_INLINE_ENTRY_ROWS = 100
-SPLIT_REFERENCE_FIELDS = (
+ENTRY_REFERENCE_FIELDS = (
 	"reference_type", "reference_name", "reference_detail_no", "advance_voucher_type", "advance_voucher_no",
 )
 
@@ -606,9 +606,27 @@ def _inline_split_reason(doc, row):
 		return _("只有本位币记账凭证支持新增一行")
 	if len(doc.accounts) >= MAX_INLINE_ENTRY_ROWS:
 		return _("新增后分录不能超过 {0} 行").format(MAX_INLINE_ENTRY_ROWS)
-	if any(row.get(field) for field in SPLIT_REFERENCE_FIELDS):
+	if any(row.get(field) for field in ENTRY_REFERENCE_FIELDS):
 		return _("关联业务单据的分录请打开原单新增")
 	return _inline_amount_reason(doc, row)
+
+
+def _inline_delete_reason(doc, row):
+	if doc.doctype != "Journal Entry":
+		return _("只有本位币记账凭证支持删除行")
+	if reason := _amendment_size_reason(doc):
+		return reason
+	if len(doc.accounts) <= 2:
+		return _("删除后至少保留两条分录")
+	if any(row.get(field) for field in ENTRY_REFERENCE_FIELDS):
+		return _("关联业务单据的分录请打开原单处理删除")
+	return _inline_amount_reason(doc, row)
+
+
+def _amendment_size_reason(doc):
+	if doc.doctype == "Journal Entry" and doc.docstatus == 1 and len(doc.accounts) > MAX_INLINE_ENTRY_ROWS:
+		return _("该凭证分录超过100行，请打开原凭证按标准流程取消并修订")
+	return None
 
 
 def get_inline_amount_edit_metadata(doc, ledger_row, mapping):
@@ -686,6 +704,8 @@ def annotate_inline_edit_rows(rows):
 		if doc.doctype == "Journal Entry" and amount_mapping.get("editable"):
 			source_row = next(item for item in doc.accounts if f"je:{item.name}" == mapping["edit_key"])
 			row["editable_split"] = bool(can_edit and not _inline_split_reason(doc, source_row))
+			row["editable_delete"] = bool(can_edit and not _inline_delete_reason(doc, source_row))
+			row["inline_entry_count"] = len(doc.accounts)
 	return rows
 
 
@@ -785,6 +805,10 @@ def _parse_inline_changes(changes):
 			value = change.get("value")
 			if not isinstance(value, dict) or set(value) - {"account", "amount", "summary"}:
 				frappe.throw(_("凭证修改数据不完整，请刷新后重试"))
+		elif fieldname == "delete":
+			value = change.get("value")
+			if value is not True:
+				frappe.throw(_("凭证修改数据不完整，请刷新后重试"))
 		elif fieldname in INLINE_AMOUNT_FIELDS:
 			try:
 				value = Decimal(str(change.get("value")))
@@ -845,6 +869,20 @@ def _resolve_inline_changes(doc, changes):
 	for (change_field, edit_key), value in _parse_inline_changes(changes).items():
 		if change_field == "split":
 			diffs.append(_resolve_inline_split(doc, edit_key, value))
+			continue
+		if change_field == "delete":
+			if doc.doctype != "Journal Entry":
+				frappe.throw(_("只有本位币记账凭证支持删除行"))
+			target = _resolve_inline_edit_target(doc, edit_key)
+			row = _find_child_by_idx(doc, "accounts", target.row_idx)
+			reason = _inline_delete_reason(doc, row)
+			if reason:
+				frappe.throw(reason)
+			diffs.append(frappe._dict(
+				change_field="delete", edit_key=edit_key, parentfield="accounts", row_idx=row.idx,
+				old_value=f"{row.account}; {row.debit_in_account_currency}; {row.credit_in_account_currency}; {row.user_remark or ''}",
+				new_value=_("（删除行）"),
+			))
 			continue
 		if change_field in INLINE_AMOUNT_FIELDS:
 			if doc.doctype != "Journal Entry":
@@ -916,6 +954,9 @@ def _resolve_inline_changes(doc, changes):
 	split_rows = {diff.row_idx for diff in diffs if diff.change_field == "split"}
 	if any(diff.parentfield == "accounts" and diff.row_idx in split_rows and diff.change_field != "split" for diff in diffs):
 		frappe.throw(_("新增一行不能与同一行的其他修改一起提交，请先保存或取消其他修改"))
+	deleted_rows = {diff.row_idx for diff in diffs if diff.change_field == "delete"}
+	if any(diff.parentfield == "accounts" and diff.row_idx in deleted_rows and diff.change_field != "delete" for diff in diffs):
+		frappe.throw(_("待删除分录不能同时修改其他内容，请先保存或取消该行修改"))
 	return diffs
 
 
@@ -931,7 +972,7 @@ def _inline_preflight(doc, modified, changes):
 	if not can_apply:
 		frappe.throw(_("当前凭证不能修改：{0}").format(status.get("reason") or _("不满足修改条件")))
 	diffs = _resolve_inline_changes(doc, changes)
-	if any(diff.change_field in {*INLINE_AMOUNT_FIELDS, "split"} for diff in diffs):
+	if any(diff.change_field in {*INLINE_AMOUNT_FIELDS, "split", "delete"} for diff in diffs):
 		_validate_inline_amount_changes(doc, diffs)
 	quick_info = status.get("quick_unreconcile")
 	if quick_info and quick_info.get("bank_account"):
@@ -944,6 +985,8 @@ def _inline_preflight(doc, modified, changes):
 def _validate_inline_amount_changes(doc, diffs):
 	proposed = frappe.copy_doc(doc)
 	_apply_inline_diffs(proposed, diffs)
+	if any(diff.change_field == "delete" for diff in diffs) and len(proposed.accounts) < 2:
+		frappe.throw(_("删除后至少保留两条分录"))
 	if any(diff.change_field == "split" for diff in diffs) and len(proposed.accounts) > MAX_INLINE_ENTRY_ROWS:
 		frappe.throw(_("新增后分录不能超过 {0} 行").format(MAX_INLINE_ENTRY_ROWS))
 	totals = {field: Decimal(0) for field in INLINE_AMOUNT_FIELDS}
@@ -1042,8 +1085,8 @@ def prepare_source_voucher_edit(source_doctype, source_name):
 			"name": source_name,
 		}
 
-	if source_doctype == "Journal Entry" and len(doc.get("accounts") or []) > 100:
-		frappe.throw(_("该凭证分录超过100行，请打开原凭证按标准流程取消并修订"))
+	if reason := _amendment_size_reason(doc):
+		frappe.throw(reason)
 
 	bank_transaction_names = _get_bank_transaction_names(doc)
 	doc.cancel()
@@ -1210,7 +1253,13 @@ def _find_child_by_idx(doc, parentfield, row_idx):
 
 
 def _apply_inline_diffs(doc, diffs):
+	deleted = [
+		_find_child_by_idx(doc, "accounts", diff.row_idx)
+		for diff in diffs if diff.change_field == "delete"
+	]
 	for diff in diffs:
+		if diff.change_field == "delete":
+			continue
 		if diff.change_field == "split":
 			target = _find_child_by_idx(doc, "accounts", diff.row_idx)
 			new_row = frappe.copy_doc(target)
@@ -1247,11 +1296,16 @@ def _apply_inline_diffs(doc, diffs):
 			account_type_field = f"{diff.fieldname}_account_type"
 			if doc.meta.has_field(account_type_field):
 				doc.set(account_type_field, diff.new_account_type)
+	for row in deleted:
+		doc.remove(row)
+	if deleted:
+		for index, row in enumerate(doc.accounts, 1):
+			row.idx = index
 
 
 def _inline_change_label(diffs):
 	fields = {diff.change_field for diff in diffs}
-	if "split" in fields:
+	if fields & {"split", "delete"}:
 		return _("凭证内容")
 	if fields == {"account"}:
 		return _("科目")
@@ -1272,6 +1326,7 @@ def _audit_inline_changes(doc, diffs, *, amended_from=None):
 		field_label = {
 			"account": _("科目"), "summary": _("摘要"), "debit": _("借方"), "credit": _("贷方"),
 			"split": _("新增一行"),
+			"delete": _("删除行"),
 		}[diff.change_field]
 		lines.append(
 			"{0}：{1} → {2}".format(

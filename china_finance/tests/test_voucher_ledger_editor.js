@@ -469,3 +469,83 @@ test("save waits for the last active amount cell before building its request", a
 	assert.equal(calls[0].args.changes.length, 2);
 	assert.equal(calls[1].args.changes.length, 2);
 });
+
+test("delete marks a row, keeps staged balancing changes and cancellation restores both", () => {
+	const h = harness();
+	h.context.frappe.msgprint = (message) => h.notices.push(message);
+	const r = amountReport();
+	r.data[0].debit = 75;
+	r.data.push({
+		...r.data[0],
+		debit: 50,
+		amount_edit_key: "je:extra",
+		is_voucher_first_row: false,
+	});
+	r.data.forEach((row, index) =>
+		Object.assign(row, {
+			edit_key: row.amount_edit_key,
+			editable_delete: true,
+			inline_entry_count: 3,
+			summary_edit_key: `summary:${index}`,
+		})
+	);
+	const stage = vm.runInContext("stage_inline_entry_delete", h.context);
+	assert.equal(stage(r, r.data[2]), true);
+	assert.equal(r.data[2]._inline_deleted, true);
+	assert.equal(r._china_inline_edit_state.changes.get("delete:je:extra").value, true);
+	assert.equal(h.amountEditor(r, 50, {}, r.data[2], "debit"), false);
+	h.stageAmount(r, r.data[0], "debit", 125);
+	assert.equal(r._china_inline_edit_state.changes.size, 2);
+	const render = vm.runInContext("render_inline_voucher_actions", h.context);
+	assert.match(render(r, { ...r.data[0], is_voucher_first_row: true }), /china-inline-delete/);
+	assert.doesNotMatch(render(r, r.data[2]), /china-inline-delete/);
+	h.cancel(r);
+	assert.equal(r._china_inline_edit_state, null);
+	assert.equal(r.data[0].debit, 75);
+	assert.equal(r.data[2]._inline_deleted, undefined);
+});
+
+test("delete refuses conflicting edits, other vouchers and fewer than two remaining rows", () => {
+	const h = harness();
+	const messages = [];
+	h.context.frappe.msgprint = (message) => messages.push(message);
+	const stage = vm.runInContext("stage_inline_entry_delete", h.context);
+	const r = amountReport();
+	r.data.forEach((row) =>
+		Object.assign(row, {
+			edit_key: row.amount_edit_key,
+			editable_delete: true,
+			inline_entry_count: 3,
+		})
+	);
+	h.stageAmount(r, r.data[0], "debit", 100);
+	assert.equal(stage(r, r.data[0]), false);
+	assert.match(messages.pop(), /待删除分录/);
+	assert.equal(stage(r, { ...r.data[1], edit_voucher_key: "other" }), false);
+	assert.match(messages.pop(), /另一张凭证/);
+	h.cancel(r);
+	assert.equal(stage(r, r.data[0]), true);
+	assert.equal(stage(r, r.data[1]), false);
+	assert.match(messages.pop(), /至少保留两条/);
+});
+
+test("pending-delete cells escape summary and account text while retaining currency formatting", () => {
+	const h = harness();
+	h.context.frappe.utils.escape_html = (value) =>
+		String(value)
+			.replaceAll("&", "&amp;")
+			.replaceAll("<", "&lt;")
+			.replaceAll(">", "&gt;")
+			.replaceAll('"', "&quot;");
+	const format = h.context.frappe.query_reports["China Voucher Ledger"].formatter;
+	const value = "<b>费用</b><img src=x onerror=alert(1)>";
+	const row = { _inline_deleted: true, account_label: value };
+	for (const fieldname of ["remarks", "account"]) {
+		const html = format(value, {}, { fieldname }, row, (value) => value);
+		assert.doesNotMatch(html, /<b>|<img/);
+		assert.match(html, /&lt;b&gt;/);
+		assert.match(html, /china-inline-deleted/);
+	}
+	const amount = format(125, {}, { fieldname: "debit" }, row, () => "<div>CNY 125.00</div>");
+	assert.match(amount, /<div>CNY 125\.00<\/div>/);
+});

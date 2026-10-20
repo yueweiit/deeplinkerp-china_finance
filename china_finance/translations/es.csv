@@ -3272,3 +3272,15 @@ Unable to load statement mapping. Check the reported error and try again.,No se 
 第 {0} 行 · {1} · {2} {3},Línea {0} · {1} · {2} {3}
 当前凭证没有可新增行的分录，请刷新报表或打开原单处理,Este comprobante no tiene apuntes aptos. Actualice el informe o abra el documento de origen
 新增一行功能加载失败，请刷新页面后重试,No se pudo cargar la función para añadir una línea. Actualice la página e inténtelo de nuevo
+只有本位币记账凭证支持删除行,Solo los asientos en la moneda de la empresa permiten eliminar líneas
+删除后至少保留两条分录,Deben quedar al menos dos apuntes después de eliminar
+关联业务单据的分录请打开原单处理删除,Abra el documento de origen para eliminar apuntes vinculados a documentos comerciales
+待删除分录不能同时修改其他内容，请先保存或取消该行修改,Un apunte marcado para eliminar no puede tener otros cambios. Guarde o descarte primero los cambios de esa línea
+（删除行）,(Línea eliminada)
+删除行,Eliminar línea
+待删除,Pendiente de eliminar
+已标记待删除，请调整剩余分录金额使借贷平衡，再保存修改；点击取消可恢复。,Marcado para eliminar. Ajuste los importes restantes para equilibrar el debe y el haber y guarde. Cancelar restaura la línea.
+删除行功能加载失败，请刷新页面后重试,No se pudo cargar la función para eliminar líneas. Actualice la página e inténtelo de nuevo
+当前凭证没有可删除的分录，请刷新报表或打开原单处理,Este comprobante no tiene apuntes aptos para eliminar. Actualice el informe o abra el documento de origen
+选中分录后仅标记待删除，请调整剩余金额并统一保存。已记账凭证保存时会生成修订，原凭证历史仍保留。,Seleccionar un apunte solo lo marca para eliminar. Ajuste los importes restantes y guarde todos los cambios juntos. Al guardar un comprobante contabilizado se crea una enmienda y se conserva el historial original.
+标记删除,Marcar para eliminar

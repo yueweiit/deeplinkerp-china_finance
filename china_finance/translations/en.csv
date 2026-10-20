@@ -2544,3 +2544,15 @@ records 必须是发票对象数组,records must be an array of invoice objects
 第 {0} 行 · {1} · {2} {3},Row {0} · {1} · {2} {3}
 当前凭证没有可新增行的分录，请刷新报表或打开原单处理,This voucher has no eligible entry rows. Refresh the report or open the source document
 新增一行功能加载失败，请刷新页面后重试,The add-row feature could not be loaded. Refresh the page and try again
+只有本位币记账凭证支持删除行,Only journal entries in the company currency support deleting rows
+删除后至少保留两条分录,At least two entry rows must remain after deletion
+关联业务单据的分录请打开原单处理删除,Open the source document to delete entry rows linked to business documents
+待删除分录不能同时修改其他内容，请先保存或取消该行修改,A row marked for deletion cannot have other edits. Save or discard the changes to that row first
+（删除行）,(Row deleted)
+删除行,Delete row
+待删除,Pending deletion
+已标记待删除，请调整剩余分录金额使借贷平衡，再保存修改；点击取消可恢复。,"Marked for deletion. Adjust the remaining amounts to balance debits and credits, then save. Cancel restores the row."
+删除行功能加载失败，请刷新页面后重试,The delete-row feature could not be loaded. Refresh the page and try again
+当前凭证没有可删除的分录，请刷新报表或打开原单处理,This voucher has no eligible rows to delete. Refresh the report or open the source document
+选中分录后仅标记待删除，请调整剩余金额并统一保存。已记账凭证保存时会生成修订，原凭证历史仍保留。,Selecting a row only marks it for deletion. Adjust the remaining amounts and save all changes together. Saving a posted voucher creates an amendment and preserves the original history.
+标记删除,Mark for deletion
