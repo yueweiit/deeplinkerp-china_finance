@@ -136,7 +136,7 @@ test("one add-row action appears on the voucher header even if only a later row 
 	const h = harness();
 	const render = vm.runInContext("render_inline_voucher_actions", h.context);
 	const first = {
-		editable_split: false,
+		editable_add: false,
 		edit_source_doctype: "Journal Entry",
 		edit_source_name: "JV-1",
 		edit_voucher_key: "Journal Entry:JV-1",
@@ -145,7 +145,7 @@ test("one add-row action appears on the voucher header even if only a later row 
 	};
 	const second = {
 		...first,
-		editable_split: true,
+		editable_add: true,
 		edit_key: "je:second-row",
 		is_voucher_first_row: false,
 	};
@@ -155,15 +155,15 @@ test("one add-row action appears on the voucher header even if only a later row 
 		voucher_key: first.edit_voucher_key,
 		changes: new Map([["summary", "changed"]]),
 	};
-	assert.match(render(current, first), /china-inline-split/);
+	assert.match(render(current, first), /china-inline-add/);
 	assert.match(render(current, first), /新增一行/);
 	assert.match(render(current, first), /china-inline-save/);
 	assert.doesNotMatch(
 		render(current, second),
-		/china-inline-split|china-inline-save|china-inline-open-source/
+		/china-inline-add|china-inline-save|china-inline-open-source/
 	);
 	current.data = [first];
-	assert.doesNotMatch(render(current, first), /china-inline-split/);
+	assert.doesNotMatch(render(current, first), /china-inline-add/);
 });
 
 function actionHarness() {
@@ -171,10 +171,10 @@ function actionHarness() {
 	class Element {
 		constructor() {
 			this.dataset = { voucherKey: "Journal Entry:JV-1" };
-			this.classList = { contains: (name) => name === "china-inline-split" };
+			this.classList = { contains: (name) => name === "china-inline-add" };
 		}
 		closest(selector) {
-			return selector.includes("china-inline-split") ? this : null;
+			return selector.includes("china-inline-add") ? this : null;
 		}
 	}
 	h.context.Element = Element;
@@ -193,7 +193,7 @@ function actionHarness() {
 			{
 				edit_voucher_key: "Journal Entry:JV-1",
 				edit_key: "je:eligible",
-				editable_split: true,
+				editable_add: true,
 			},
 		],
 	};
@@ -210,7 +210,7 @@ test("add-row click loads the module and rebind does not duplicate handlers", as
 	let loads = 0;
 	h.context.frappe.require = async () => {
 		loads++;
-		h.context.china_finance.voucher_entry_split = {
+		h.context.china_finance.voucher_entry_add = {
 			open: async (...args) => opened.push(args),
 		};
 	};
@@ -230,7 +230,7 @@ test("missing rows, failed asset loads and rejected dialog opens show errors", a
 		if (failure === "missing") h.current.data = [];
 		h.context.frappe.require = async () => {
 			if (failure === "dialog")
-				h.context.china_finance.voucher_entry_split = {
+				h.context.china_finance.voucher_entry_add = {
 					open: async () => {
 						throw Error("dialog failed");
 					},
@@ -548,4 +548,47 @@ test("pending-delete cells escape summary and account text while retaining curre
 	}
 	const amount = format(125, {}, { fieldname: "debit" }, row, () => "<div>CNY 125.00</div>");
 	assert.match(amount, /<div>CNY 125\.00<\/div>/);
+});
+
+test("independent additions keep the original amount and can be cancelled or removed before saving", () => {
+	const h = harness();
+	const r = amountReport();
+	r.render_datatable = () => {
+		r.renderCount = (r.renderCount || 0) + 1;
+	};
+	r.data.forEach((row) =>
+		Object.assign(row, {
+			edit_key: row.amount_edit_key,
+			editable_add: true,
+			inline_entry_count: 2,
+		})
+	);
+	const stage = vm.runInContext("stage_inline_entry_add", h.context);
+	const remove = vm.runInContext("stage_inline_entry_delete", h.context);
+	r.data[0].remarks = "Updated reference summary";
+	const value = {
+		source_row: r.data[0].edit_key,
+		account: "Income - 测试公司",
+		side: "credit",
+		amount: 118811.88,
+		summary: "Income",
+	};
+	assert.equal(stage(r, r.data[0], value), true);
+	assert.equal(stage(r, r.data[0], { ...value, side: "debit", summary: "" }), true);
+	assert.equal(r.data.length, 4);
+	assert.equal(r.data[0].debit, 125);
+	assert.equal(r.data[1].credit, 125);
+	assert.equal(r.data[2].credit, 118811.88);
+	assert.equal(r.data[3].debit, 118811.88);
+	assert.equal(r._china_inline_edit_state.changes.size, 2);
+	assert.equal(r._china_inline_edit_state.changes.get("add:new:1").value.summary, "Income");
+	assert.equal(
+		r._china_inline_edit_state.changes.get("add:new:2").value.summary,
+		"Updated reference summary"
+	);
+	assert.equal(remove(r, r.data[2]), true);
+	assert.equal(r.data.length, 3);
+	h.cancel(r);
+	assert.equal(r.data.length, 2);
+	assert.equal(r._china_inline_edit_state, null);
 });

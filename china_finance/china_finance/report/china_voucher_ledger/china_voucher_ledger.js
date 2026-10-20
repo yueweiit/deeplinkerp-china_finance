@@ -109,6 +109,9 @@ frappe.query_reports["China Voucher Ledger"] = {
 		}
 		if (column.fieldname === "account") {
 			const label = frappe.utils.escape_html(data?.account_label || value || "");
+			const added = data?._inline_added
+				? `<span class="text-warning">${__("待新增")} </span>`
+				: "";
 			const title = frappe.utils.escape_html(
 				data?.editable_account
 					? __("点击选择兼容科目")
@@ -116,7 +119,7 @@ frappe.query_reports["China Voucher Ledger"] = {
 			);
 			const dirty = data?._inline_account_dirty ? " is-dirty" : "";
 			const editable = data?.editable_account ? " is-editable" : " is-read-only";
-			return `<span class="china-inline-account${editable}${dirty}" title="${title}">${label}${
+			return `${added}<span class="china-inline-account${editable}${dirty}" title="${title}">${label}${
 				data?.editable_account ? '<span class="china-inline-account__arrow">▾</span>' : ""
 			}</span>`;
 		}
@@ -235,11 +238,11 @@ function render_inline_voucher_actions(report, data) {
 	if (
 		data.is_voucher_first_row &&
 		(report.data || [data]).some(
-			(row) => row.edit_voucher_key === data.edit_voucher_key && row.editable_split
+			(row) => row.edit_voucher_key === data.edit_voucher_key && row.editable_add
 		)
 	)
 		buttons.push(
-			`<button type="button" class="btn btn-xs btn-default china-inline-split" ${common}${disabled}>${__(
+			`<button type="button" class="btn btn-xs btn-default china-inline-add" ${common}${disabled}>${__(
 				"新增一行"
 			)}</button>`
 		);
@@ -535,8 +538,7 @@ function bind_inline_account_dropdown(control, parent) {
 		const space_below = Math.max(0, viewport_height - input_rect.bottom - edge - gap);
 		const space_above = Math.max(0, input_rect.top - edge - gap);
 		const desired_height = Math.min(300, dropdown.scrollHeight || 300);
-		const open_above =
-			space_below < Math.min(desired_height, 160) && space_above > space_below;
+		const open_above = space_below < Math.min(desired_height, 160) && space_above > space_below;
 		const available_height = open_above ? space_above : space_below;
 
 		dropdown.classList.add("china-inline-account-options");
@@ -723,7 +725,8 @@ function stage_inline_amount_change(report, data, field, value) {
 	else state.changes.set(state_key, { field, edit_key, value: amount });
 	state.confirming = false;
 	for (const row of report.data || []) {
-		if (row.edit_voucher_key !== state.voucher_key || row.amount_edit_key !== edit_key) continue;
+		if (row.edit_voucher_key !== state.voucher_key || row.amount_edit_key !== edit_key)
+			continue;
 		row[field] = amount;
 		row.base_total_amount = Number(row.debit || 0) + Number(row.credit || 0);
 		row[`_inline_${field}_dirty`] = state.changes.has(state_key);
@@ -739,6 +742,29 @@ function stage_inline_entry_delete(report, data) {
 	if (current?.pending) return false;
 	if (current?.voucher_key && current.voucher_key !== data.edit_voucher_key) {
 		frappe.msgprint(__("请先保存或取消当前凭证的修改，再编辑另一张凭证"));
+		return false;
+	}
+	if (data._inline_added) {
+		if (!current) return false;
+		current.changes.delete(inline_change_key("add", data.edit_key));
+		current.originals.delete(inline_change_key("add", data.edit_key));
+		report.data = report.data.filter((row) => row !== data);
+		current.confirming = false;
+		if (!current.changes.size) report._china_inline_edit_state = null;
+		render_inline_voucher_structure(report);
+		show_inline_notice(
+			report,
+			current.changes.size ? __("凭证内容已修改但尚未保存") : "",
+			"blue"
+		);
+		return true;
+	}
+	if (
+		[...(current?.changes?.values() || [])].some(
+			(change) => change.field === "add" && change.value.source_row === data.edit_key
+		)
+	) {
+		frappe.msgprint(__("待删除分录不能作为新增行的参考，请选择其他分录"));
 		return false;
 	}
 	if (
@@ -775,6 +801,86 @@ function stage_inline_entry_delete(report, data) {
 	return true;
 }
 
+function stage_inline_entry_add(report, data, value) {
+	const current = get_inline_edit_state(report);
+	if (current?.pending || !data.editable_add || data._inline_deleted) return false;
+	if (current?.voucher_key && current.voucher_key !== data.edit_voucher_key) {
+		frappe.msgprint(__("请先保存或取消当前凭证的修改，再编辑另一张凭证"));
+		return false;
+	}
+	const changes = [...(current?.changes?.values() || [])];
+	const count =
+		Number(data.inline_entry_count) +
+		changes.filter((item) => item.field === "add").length -
+		changes.filter((item) => item.field === "delete").length;
+	if (count >= 100) {
+		frappe.msgprint(__("新增后分录不能超过 {0} 行", [100]));
+		return false;
+	}
+	const state = ensure_inline_edit_state(report, data);
+	state.next_entry_id = (state.next_entry_id || 0) + 1;
+	value = { ...value, summary: value.summary || data.remarks || "" };
+	const edit_key = `new:${state.next_entry_id}`;
+	const key = inline_change_key("add", edit_key);
+	state.changes.set(key, { field: "add", edit_key, value });
+	state.originals.set(key, { field: "add", edit_key });
+	state.confirming = false;
+	const new_row = {
+		...data,
+		edit_key,
+		amount_edit_key: null,
+		summary_edit_key: null,
+		summary_edit_group: null,
+		_inline_added: true,
+		_inline_deleted: false,
+		_inline_account_dirty: false,
+		_inline_summary_dirty: false,
+		_inline_debit_dirty: false,
+		_inline_credit_dirty: false,
+		account: value.account,
+		account_label: account_display_label(value.account, report.get_filter_value("company")),
+		debit: value.side === "debit" ? value.amount : 0,
+		credit: value.side === "credit" ? value.amount : 0,
+		base_total_amount: value.amount,
+		remarks: value.summary || data.remarks || "",
+		is_voucher_first_row: false,
+		row_id: edit_key,
+		entry_idx: null,
+		posting_date: null,
+		statutory_number: null,
+		accounting_period: null,
+		source_name: null,
+		source_doctype: null,
+		voucher_status: null,
+		editable_account: false,
+		editable_summary: false,
+		editable_amount: false,
+		editable_add: false,
+		editable_delete: true,
+		inline_edit_reason: __("新增行请先保存，或删除待新增行后重新添加"),
+		inline_summary_edit_reason: __("新增行请先保存，或删除待新增行后重新添加"),
+		inline_amount_edit_reason: __("新增行请先保存，或删除待新增行后重新添加"),
+	};
+	let insert_at = 0;
+	(report.data || []).forEach((row, index) => {
+		if (row.edit_voucher_key === state.voucher_key) insert_at = index + 1;
+	});
+	report.data.splice(insert_at, 0, new_row);
+	render_inline_voucher_structure(report);
+	show_inline_notice(
+		report,
+		__("新增行已暂存，原行金额不变。请调整相关金额使借贷平衡，再保存修改。"),
+		"orange"
+	);
+	return true;
+}
+
+function render_inline_voucher_structure(report) {
+	const scroll = capture_voucher_ledger_scroll(report);
+	report.render_datatable();
+	if (scroll) restore_voucher_ledger_scroll(report, scroll);
+}
+
 function refresh_inline_voucher_rows(report, voucher_key) {
 	(report.data || []).forEach((data, index) => {
 		if (data.edit_voucher_key !== voucher_key || !report.datatable) return;
@@ -788,6 +894,9 @@ function refresh_inline_voucher_rows(report, voucher_key) {
 function cancel_inline_voucher_changes(report, show_message = true) {
 	const state = get_inline_edit_state(report);
 	if (!state) return;
+	const has_added_rows = (report.data || []).some(
+		(row) => row.edit_voucher_key === state.voucher_key && row._inline_added
+	);
 	for (const original of state.originals.values()) {
 		for (const row of report.data || []) {
 			if (row.edit_voucher_key !== state.voucher_key) continue;
@@ -813,7 +922,12 @@ function cancel_inline_voucher_changes(report, show_message = true) {
 		}
 	}
 	report._china_inline_edit_state = null;
-	refresh_inline_voucher_rows(report, state.voucher_key);
+	if (has_added_rows) {
+		report.data = report.data.filter(
+			(row) => !(row.edit_voucher_key === state.voucher_key && row._inline_added)
+		);
+		render_inline_voucher_structure(report);
+	} else refresh_inline_voucher_rows(report, state.voucher_key);
 	show_inline_notice(report, show_message ? __("未保存的凭证修改已取消") : "", "blue");
 }
 
@@ -960,7 +1074,7 @@ function bind_inline_voucher_actions(report) {
 	}
 	report._china_inline_action_wrapper = page_wrapper;
 	const action_selector =
-		".china-inline-open-source, .china-inline-save, .china-inline-confirm, .china-inline-cancel, .china-inline-split, .china-inline-delete";
+		".china-inline-open-source, .china-inline-save, .china-inline-confirm, .china-inline-cancel, .china-inline-add, .china-inline-delete";
 
 	// DataTable focuses a cell on mousedown and scrolls it into view. When the
 	// operation column is only partly visible, that horizontal visibility check
@@ -999,20 +1113,22 @@ function bind_inline_voucher_actions(report) {
 				decodeURIComponent(button.dataset.sourceDoctype),
 				decodeURIComponent(button.dataset.sourceName)
 			);
-		} else if (button.classList.contains("china-inline-split")) {
+		} else if (button.classList.contains("china-inline-add")) {
 			const data = (report.data || []).find(
-				(row) => row.edit_voucher_key === button.dataset.voucherKey && row.editable_split
+				(row) => row.edit_voucher_key === button.dataset.voucherKey && row.editable_add
 			);
 			if (!data) {
 				frappe.msgprint(__("当前凭证没有可新增行的分录，请刷新报表或打开原单处理"));
 				return;
 			}
 			try {
-				await frappe.require("/assets/china_finance/js/voucher_entry_split.js");
-				if (typeof china_finance.voucher_entry_split?.open !== "function") {
+				await frappe.require("/assets/china_finance/js/voucher_entry_add.js");
+				if (typeof china_finance.voucher_entry_add?.open !== "function") {
 					throw new Error(__("新增一行功能加载失败，请刷新页面后重试"));
 				}
-				await china_finance.voucher_entry_split.open(report, data);
+				await china_finance.voucher_entry_add.open(report, data, (row, value) =>
+					stage_inline_entry_add(report, row, value)
+				);
 			} catch (error) {
 				frappe.msgprint(error.message || __("新增一行功能加载失败，请刷新页面后重试"));
 			}
