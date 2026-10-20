@@ -576,6 +576,14 @@ def _master_evidence(doc, lock=False):
 	return {"records": records, "dimensions": {field: {"options": definition.options, "reqd": definition.reqd} for field, definition in definitions.items()}}
 
 
+def _historical_party_warnings(doc, lock=False):
+	if doc.get("mode") not in ("Takeover", "Adjustment"):
+		return []
+	rows = _rows(doc)
+	accounts = {name: frappe.db.get_value("Account", {"name": name, "company": doc.get("company")}, ["account_name", "account_type"], as_dict=True, for_update=lock) for name in sorted({row.get("account") for row in rows if row.get("account")})}
+	return exact.historical_party_warnings(rows, accounts)
+
+
 def _preview(doc, lock=False):
 	errors = _validation_errors(doc, lock=lock)
 	evidence = []
@@ -602,7 +610,7 @@ def _preview(doc, lock=False):
 	except ValueError:
 		totals = {"debit": "0.00", "credit": "0.00", "difference": "0.00"}
 	return {
-		"fingerprint": exact.fingerprint(payload), "errors": errors, "warnings": [], "totals": totals,
+		"fingerprint": exact.fingerprint(payload), "errors": errors, "warnings": _historical_party_warnings(doc, lock=lock), "totals": totals,
 		"actions": {"creates_journal_entry": doc.get("mode") != "Takeover" and bool(delta), "historical_takeover": doc.get("mode") == "Takeover", "delta_rows": len(delta), "can_activate": not errors},
 		"delta_rows": delta if doc.get("mode") == "Adjustment" else [], "version": doc.get("version"),
 		"master_fingerprint": master_fingerprint,

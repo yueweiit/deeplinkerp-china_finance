@@ -100,6 +100,27 @@ class TestOpeningArithmetic(unittest.TestCase):
 		changed = [dict(original[0], debit="20", base_debit="20"), dict(original[1], debit="10", base_debit="10")]
 		self.assertFalse(module.historical_rows_match(changed, original))
 
+	def test_unlinked_historical_parties_are_row_warnings_and_never_inferred(self):
+		import copy
+
+		module = core(self)
+		if not hasattr(module, "historical_party_warnings"):
+			self.fail("Unlinked historical counterparty warnings are missing")
+		rows = [
+			{"row_id": "one", "account": "Other Receivable", "remarks": "原始单位名称"},
+			{"row_id": "two", "account": "Bank", "remarks": "员工张某备用金"},
+			{"row_id": "three", "account": "Bank", "remarks": "供应商甲往来", "party_type": "Supplier", "party": "SUP-1"},
+			{"row_id": "four", "account": "Bank", "remarks": "期初银行存款"},
+		]
+		before = copy.deepcopy(rows)
+		warnings = module.historical_party_warnings(rows, {"Other Receivable": {"account_name": "其他应收款", "account_type": ""}, "Bank": {"account_name": "银行存款", "account_type": "Bank"}})
+		self.assertEqual(len(warnings), 2)
+		self.assertIn("第1行", warnings[0])
+		self.assertIn("其他应收款", warnings[0])
+		self.assertIn("待补充", warnings[0])
+		self.assertIn("第2行", warnings[1])
+		self.assertEqual(rows, before)
+
 	def test_fingerprint_binds_saved_version_sources_and_verbatim_remarks(self):
 		module = core(self)
 		data = {"company": "Company", "version": 2, "rows": self.rows(), "sources": [{"name": "JE", "hash": "abc"}]}

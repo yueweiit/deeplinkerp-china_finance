@@ -127,7 +127,34 @@ class TestAccountTemplateIntegration(IntegrationTestCase):
 		self.assertEqual(settings.accounting_standard, "小企业会计准则")
 		status = validate_profile(company.name)
 		self.assertEqual(status["status"], "Ready", status["errors"])
-		self.assertEqual(status["warnings"], [])
+		self.assertEqual(status["errors"], [])
+		company.reload()
+		construction = frappe.db.get_value(
+			"Account", {"company": company.name, "account_number": "1604"}, ["name", "is_group"], as_dict=True
+		)
+		self.assertTrue(construction.is_group)
+		# A grouped default needs a finance user's choice; initialization must not
+		# select one of the construction accounts on the user's behalf.
+		self.assertIsNone(company.capital_work_in_progress_account)
+		warning = frappe._("公司默认科目 {0} 应为 {1} 下本公司已启用且类型、币种匹配的明细科目").format(
+			"capital_work_in_progress_account", construction.name
+		)
+		self.assertEqual(status["warnings"], [warning])
+		self.assertEqual(status["default_differences"], [{
+			"fieldname": "capital_work_in_progress_account",
+			"account_number": "1604",
+			"expected": construction.name,
+			"actual": None,
+			"details": warning,
+		}])
+		for fieldname, number in get_company_default_accounts(company.name).items():
+			if fieldname == "capital_work_in_progress_account":
+				continue
+			with self.subTest(default_account=fieldname):
+				self.assertEqual(
+					company.get(fieldname),
+					frappe.db.get_value("Account", {"company": company.name, "account_number": number}),
+				)
 		self.assertEqual(settings.coa_template, COMPANY_TEMPLATE)
 		self.assertEqual(settings.coa_hash, status["hash"])
 		capitalized = frappe.db.get_value("Account", {"company": company.name, "account_number": "530102"})

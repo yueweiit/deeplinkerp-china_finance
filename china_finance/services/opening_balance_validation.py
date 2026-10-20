@@ -130,6 +130,21 @@ def delta_rows(target, previous, precision=2):
 	return result
 
 
+def historical_party_warnings(rows, accounts):
+	"""Keep legacy unit/employee text visible without inventing formal links."""
+	words = ("往来", "供应商", "客户", "员工", "职工", "备用金", "借支", "借款", "代垫", "暂付款", "暂收款")
+	warnings = []
+	for index, row in enumerate(rows, 1):
+		if row.get("party_type") and row.get("party"):
+			continue
+		account = accounts.get(row.get("account")) or {}
+		label = str(account.get("account_name") or row.get("account") or "未选科目")
+		receivable_payable = account.get("account_type") in ("Receivable", "Payable") or "应收" in label or "应付" in label
+		if receivable_payable or any(word in str(row.get("remarks") or "") for word in words):
+			warnings.append("第{0}行（{1}）：往来档案待补充，原摘要中的单位或人员信息尚未关联正式往来档案。".format(index, label))
+	return warnings
+
+
 def fingerprint(payload):
 	return hashlib.sha256(json.dumps(payload, sort_keys=True, ensure_ascii=False, default=str, allow_nan=False).encode()).hexdigest()
 
