@@ -354,6 +354,11 @@ _journal_entry_events["validate"] = [
 	"china_finance.services.bank_receipt_import.validate_linked_voucher",
 	"china_finance.services.voucher_preparation.validate_preparation",
 ]
+_journal_entry_events["before_cancel"] = [
+	"china_finance.services.opening_balance.guard_linked_opening_source",
+	*_journal_entry_events.get("before_cancel", []),
+]
+_journal_entry_events["before_update_after_submit"] = "china_finance.services.opening_balance.guard_linked_opening_source"
 
 # Scheduled Tasks
 # ---------------

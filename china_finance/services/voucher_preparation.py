@@ -11,6 +11,8 @@ import frappe
 from frappe import _
 from frappe.utils import cint, flt, getdate, now_datetime
 
+from china_finance.services.opening_identity import is_opening_draft
+
 READY_FIELDS = ("custom_china_ready_hash", "custom_china_ready_by", "custom_china_ready_on")
 REVIEW_ROLES = ("System Manager", "Accounts Manager", "China Finance Manager", "China Voucher Reviewer")
 HEAD_FIELDS = (
@@ -119,6 +121,10 @@ def validate_preparation(doc, method=None):
 
 
 def guard_submission(doc, method=None):
+	from china_finance.services.opening_balance import validate_native_opening_preparation
+
+	if doc.doctype == "Journal Entry" and validate_native_opening_preparation(doc):
+		return
 	if doc.doctype == "Journal Entry" and mode_enabled(doc.company, doc.posting_date):
 		if not is_ready(doc):
 			frappe.throw(_("凭证尚未核对，或核对后内容已改变。请在查凭证中重新核对后记账。"))
@@ -130,11 +136,12 @@ def draft_documents(company, from_date, to_date):
 		frappe.get_doc("Journal Entry", row.name)
 		for row in frappe.get_list(
 			"Journal Entry",
-			filters={"company": company, "docstatus": 0, "posting_date": ["between", [from_date, to_date]]},
-			fields=["name"],
+			filters={"company": company, "docstatus": 0, "posting_date": ["between", [from_date, to_date]], "is_opening": ["!=", "Yes"]},
+			fields=["name", "is_opening"],
 			order_by="posting_date, creation, name",
 			limit_page_length=0,
 		)
+		if not is_opening_draft(frappe._dict(doctype="Journal Entry", is_opening=row.is_opening))
 	]
 
 
@@ -232,6 +239,10 @@ def review_preview(names):
 
 
 def cash_plan(doc):
+	from china_finance.services.opening_identity import is_opening_draft
+
+	if is_opening_draft(doc):
+		return {"rows": [], "options": [], "error": ""}
 	from china_finance.services.cash_equivalent_scope import get_cash_scope_accounts
 	from china_finance.services.cash_flow_assignment import (
 		INFLOW_ROWS,
@@ -481,7 +492,7 @@ def trial_balance(company, from_date, to_date):
 	docs = draft_documents(company, from_date, to_date)
 	all_names = frappe.get_all(
 		"Journal Entry",
-		filters={"company": company, "docstatus": 0, "posting_date": ["between", [from_date, to_date]]},
+		filters={"company": company, "docstatus": 0, "posting_date": ["between", [from_date, to_date]], "is_opening": ["!=", "Yes"]},
 		pluck="name",
 	)
 	if len(docs) != len(all_names):
@@ -493,7 +504,7 @@ def trial_balance(company, from_date, to_date):
 		)
 	}
 	ledger = frappe.db.sql(
-		"""SELECT account, posting_date, debit, credit FROM `tabGL Entry`
+			"""SELECT account, posting_date, is_opening, debit, credit FROM `tabGL Entry`
 		WHERE company=%s AND posting_date<=%s AND is_cancelled=0 FOR UPDATE""",
 		(company, to_date),
 		as_dict=True,
@@ -514,7 +525,7 @@ def trial_balance(company, from_date, to_date):
 	)
 	for row in ledger:
 		item = values[row.account]
-		if getdate(row.posting_date) < getdate(from_date):
+		if getdate(row.posting_date) < getdate(from_date) or row.is_opening == "Yes":
 			item["opening"] += flt(row.debit) - flt(row.credit)
 		else:
 			item["posted_debit"] += flt(row.debit)
@@ -546,7 +557,7 @@ def trial_balance(company, from_date, to_date):
 			}
 		)
 	earlier = frappe.db.count(
-		"Journal Entry", {"company": company, "docstatus": 0, "posting_date": ["<", from_date]}
+		"Journal Entry", {"company": company, "docstatus": 0, "posting_date": ["<", from_date], "is_opening": ["!=", "Yes"]}
 	)
 	return {
 		"rows": rows,

@@ -1,0 +1,111 @@
+{
+ "actions": [],
+ "autoname": "hash",
+ "creation": "2026-10-20 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "row_id",
+  "account",
+  "party_type",
+  "party",
+  "account_currency",
+  "exchange_rate",
+  "debit",
+  "credit",
+  "base_debit",
+  "base_credit",
+  "remarks",
+  "dimensions_json"
+ ],
+ "fields": [
+  {
+   "fieldname": "row_id",
+   "fieldtype": "Data",
+   "label": "行标识",
+   "read_only": 1
+  },
+  {
+   "fieldname": "account",
+   "fieldtype": "Link",
+   "label": "会计科目",
+   "options": "Account",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "party_type",
+   "fieldtype": "Link",
+   "label": "往来类型",
+   "options": "DocType"
+  },
+  {
+   "fieldname": "party",
+   "fieldtype": "Dynamic Link",
+   "label": "往来单位",
+   "options": "party_type"
+  },
+  {
+   "fieldname": "account_currency",
+   "fieldtype": "Link",
+   "label": "科目币种",
+   "options": "Currency"
+  },
+  {
+   "fieldname": "exchange_rate",
+   "fieldtype": "Float",
+   "label": "汇率",
+   "precision": "9"
+  },
+  {
+   "fieldname": "debit",
+   "fieldtype": "Currency",
+   "label": "借方原币",
+   "options": "account_currency",
+   "precision": "9",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "credit",
+   "fieldtype": "Currency",
+   "label": "贷方原币",
+   "options": "account_currency",
+   "precision": "9",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "base_debit",
+   "fieldtype": "Currency",
+   "label": "借方本位币",
+   "options": "currency",
+   "precision": "9"
+  },
+  {
+   "fieldname": "base_credit",
+   "fieldtype": "Currency",
+   "label": "贷方本位币",
+   "options": "currency",
+   "precision": "9"
+  },
+  {
+   "fieldname": "remarks",
+   "fieldtype": "Small Text",
+   "label": "摘要",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "dimensions_json",
+   "fieldtype": "Code",
+   "label": "会计维度",
+   "options": "JSON"
+  }
+ ],
+ "modified": "2026-10-20 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "China Finance",
+ "name": "China Opening Balance Line",
+ "owner": "Administrator",
+ "permissions": [],
+ "track_changes": 0,
+ "istable": 1,
+ "editable_grid": 1
+}

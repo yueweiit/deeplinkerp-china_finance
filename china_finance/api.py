@@ -218,6 +218,8 @@ def deployment_health(company=None):
 			"print_format": bool(frappe.db.exists("Print Format", "China Accounting Voucher")),
 			"voucher_sync_issue": bool(frappe.db.exists("DocType", "China Voucher Sync Issue")),
 			"cash_flow_assignment": bool(frappe.db.exists("DocType", "China Cash Flow Assignment")),
+			"opening_balance": bool(frappe.db.exists("DocType", "China Opening Balance")),
+			"opening_balance_page": bool(frappe.db.exists("Page", "china-opening-balances")),
 			"prior_period_error_adjustment": bool(
 				frappe.db.exists("DocType", "China Prior Period Error Adjustment")
 			),

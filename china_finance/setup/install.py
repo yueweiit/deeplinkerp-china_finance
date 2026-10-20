@@ -53,6 +53,7 @@ ADMIN_NAVIGATION_GROUPS = (
 	)),
 	(
 		"启用与基础设置", "settings", (
+			("china-opening-balances", "期初余额", "Page"),
 			("China Finance Settings", "中国财务设置", "DocType"),
 			("China Reconciliation Scope", "对账范围配置", "DocType"),
 			("China Tax Account Mapping", "税务科目映射", "DocType"),

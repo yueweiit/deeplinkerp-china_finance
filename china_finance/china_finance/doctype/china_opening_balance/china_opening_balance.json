@@ -1,0 +1,217 @@
+{
+ "actions": [],
+ "autoname": "hash",
+ "creation": "2026-10-20 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "company",
+  "opening_date",
+  "currency",
+  "mode",
+  "status",
+  "version",
+  "revision",
+  "rows",
+  "root_batch",
+  "previous_batch",
+  "current_active",
+  "initialization_key",
+  "adjustment_key",
+  "source_names_json",
+  "activation_fingerprint",
+  "receipt_json",
+  "activated_by",
+  "activated_on"
+ ],
+ "fields": [
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "label": "公司",
+   "options": "Company",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "opening_date",
+   "fieldtype": "Date",
+   "label": "期初日期",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "currency",
+   "fieldtype": "Link",
+   "label": "本位币",
+   "options": "Currency",
+   "read_only": 1
+  },
+  {
+   "fieldname": "mode",
+   "fieldtype": "Select",
+   "label": "模式",
+   "options": "New\nTakeover\nAdjustment",
+   "default": "New",
+   "reqd": 1,
+   "in_list_view": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "状态",
+   "options": "Draft\nActive",
+   "default": "Draft",
+   "reqd": 1,
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "version",
+   "fieldtype": "Int",
+   "label": "保存版本",
+   "default": "1",
+   "read_only": 1
+  },
+  {
+   "fieldname": "revision",
+   "fieldtype": "Int",
+   "label": "期初版本",
+   "default": "1",
+   "read_only": 1
+  },
+  {
+   "fieldname": "rows",
+   "fieldtype": "Table",
+   "label": "期初分录",
+   "options": "China Opening Balance Line"
+  },
+  {
+   "fieldname": "root_batch",
+   "fieldtype": "Link",
+   "label": "初始化批次",
+   "options": "China Opening Balance",
+   "read_only": 1
+  },
+  {
+   "fieldname": "previous_batch",
+   "fieldtype": "Link",
+   "label": "前一期初版本",
+   "options": "China Opening Balance",
+   "read_only": 1
+  },
+  {
+   "fieldname": "current_active",
+   "fieldtype": "Link",
+   "label": "当前启用版本",
+   "options": "China Opening Balance",
+   "read_only": 1
+  },
+  {
+   "fieldname": "initialization_key",
+   "fieldtype": "Data",
+   "label": "公司初始化键",
+   "unique": 1,
+   "hidden": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "adjustment_key",
+   "fieldtype": "Data",
+   "label": "调整前置版本键",
+   "unique": 1,
+   "hidden": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "source_names_json",
+   "fieldtype": "Code",
+   "label": "历史来源",
+   "options": "JSON",
+   "read_only": 1
+  },
+  {
+   "fieldname": "activation_fingerprint",
+   "fieldtype": "Data",
+   "label": "启用预览指纹",
+   "read_only": 1
+  },
+  {
+   "fieldname": "receipt_json",
+   "fieldtype": "Code",
+   "label": "启用回执",
+   "options": "JSON",
+   "read_only": 1
+  },
+  {
+   "fieldname": "activated_by",
+   "fieldtype": "Link",
+   "label": "启用人",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "activated_on",
+   "fieldtype": "Datetime",
+   "label": "启用时间",
+   "read_only": 1
+  }
+ ],
+ "modified": "2026-10-20 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "China Finance",
+ "name": "China Opening Balance",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "report": 1,
+   "export": 1
+  },
+  {
+   "role": "Accounts Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "report": 1,
+   "export": 1
+  },
+  {
+   "role": "China Finance Manager",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "report": 1,
+   "export": 1
+  },
+  {
+   "role": "China Finance User",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "report": 1,
+   "export": 1
+  },
+  {
+   "role": "Accounts User",
+   "read": 1,
+   "write": 1,
+   "create": 1,
+   "report": 1,
+   "export": 1
+  },
+  {
+   "role": "China Finance Auditor",
+   "read": 1,
+   "report": 1,
+   "export": 1
+  }
+ ],
+ "track_changes": 1,
+ "sort_field": "modified",
+ "sort_order": "DESC"
+}

@@ -41,6 +41,10 @@ def _get_source_document(source_doctype, source_name, *, for_update=False):
 
 
 def _permission_blockers(doc):
+	from china_finance.services.opening_identity import is_opening_draft
+
+	if is_opening_draft(doc) and doc.docstatus == 1:
+		return [_("期初余额请在期初余额页面整批调整，不能作为普通凭证修改")]
 	blockers = []
 	if doc.docstatus == 0:
 		if not doc.has_permission("write"):

@@ -142,6 +142,13 @@ def execute(filters=None):
 	entries = [
 		entry for entry in entries if frappe.has_permission(entry.source_doctype, "read", entry.source_name)
 	]
+	from china_finance.services.opening_identity import get_opening_sources
+
+	opening_names = get_opening_sources(filters.company)
+	entries = [
+		entry for entry in entries
+		if entry.source_doctype != "Journal Entry" or entry.source_name not in opening_names
+	]
 	entries.extend(draft_rows)
 	if filters.get("receipt_import"):
 		batch = frappe.get_doc("China Bank Receipt Import", filters.receipt_import)
