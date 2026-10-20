@@ -155,6 +155,9 @@ frappe.query_reports["China Voucher Ledger"] = {
 		return formatted;
 	},
 	onload(report) {
+		frappe.require("/assets/china_finance/js/voucher_numbering.js", () =>
+			china_finance.voucher_numbering.bind_report(report)
+		);
 		frappe.require("/assets/china_finance/js/voucher_preparation.js", () =>
 			china_finance.preparation.bind_report(report)
 		);

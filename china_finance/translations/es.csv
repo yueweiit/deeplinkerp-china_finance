@@ -3126,3 +3126,27 @@ Unable to load statement mapping. Check the reported error and try again.,No se 
 现金流检查设置,Configuración de comprobaciones del flujo de efectivo
 月结暂不强制确认现金流项目；未确认事项仍需后续核对，年结和正式报表的确认要求不变。,La confirmación del flujo de efectivo se aplaza temporalmente para el cierre mensual. Las partidas pendientes aún requieren revisión; los requisitos para el cierre anual y los informes oficiales no cambian.
 本次结账包含草表快照；请处理快照中的未完成检查，并按结账修订流程生成完整的正式快照后再导出。,Este cierre contiene instantáneas de informes en borrador. Resuelva sus comprobaciones pendientes y genere instantáneas oficiales completas mediante el proceso de revisión del cierre antes de exportar.
+凭证整理编号,Ordenar la numeración de comprobantes
+编号整理版本,Versión de numeración
+凭证 {0} 的状态或来源不支持整理编号,El estado o el origen del comprobante {0} no permite ordenar su numeración
+凭证 {0} 的取消审计尚未完成，请先处理冲销同步问题,La auditoría de cancelación del comprobante {0} está incompleta. Resuelva primero la sincronización de la reversión.
+凭证 {0} 的分录哈希不一致，请先检查凭证完整性,El hash de los asientos del comprobante {0} no coincide. Compruebe primero su integridad.
+请填写凭证字，例如记、收、付或转，不要填写流水号,"Introduzca un prefijo de comprobante, como 记, 收, 付 o 转, sin número secuencial"
+整理原因不能超过 500 个字符,El motivo no puede superar los 500 caracteres
+请先暂停月末结账，再整理本期凭证编号,Pause el cierre mensual antes de ordenar los números de comprobantes de este período
+本期存在待处理的冲销同步问题，不能整理编号,Hay problemas pendientes de sincronización de reversiones que impiden ordenar la numeración de este período
+不能整理编号：{0},No se puede ordenar la numeración: {0}
+凭证整理编号：{0} → {1}；批次 {2}；原因：{3}。取消历史、分录及金额未变更。,"Numeración de comprobantes: {0} → {1}; lote {2}; motivo: {3}. El historial de cancelaciones, los asientos y los importes no cambian."
+凭证整理编号：公司 {0}，期间 {1}，凭证字 {2}；有效 {3} 张，保留取消历史 {4} 张；流水号 {5} → {6}；批次 {7}；原因：{8}。,"Numeración de comprobantes: empresa {0}, período {1}, prefijo {2}; {3} comprobantes activos, {4} cancelados conservados; secuencia {5} → {6}; lote {7}; motivo: {8}."
+请先保存或取消当前凭证的修改，再整理编号,Guarde o descarte los cambios pendientes del comprobante antes de ordenar la numeración
+预览编号,Vista previa de números
+请确认受影响的打印件和导出文件需要重新生成,Confirme que se deben generar de nuevo las impresiones y exportaciones afectadas
+凭证编号已整理，批次 {0}。请重新运行报表，并重新生成受影响的打印件和导出文件。,Los números de comprobantes se han ordenado en el lote {0}. Ejecute de nuevo el informe y regenere las impresiones y exportaciones afectadas.
+确认整理,Confirmar numeración
+整理原因,Motivo de la numeración
+已确认受影响的打印件和导出文件需要重新生成,Confirmo que se deben generar de nuevo las impresiones y exportaciones afectadas
+重新预览,Ver de nuevo
+有效凭证 {0} 张，保留取消历史 {1} 张，需改号 {2} 张；整理后下一字号为 {3}。,"{0} comprobantes activos, {1} cancelados conservados, {2} números por cambiar; el siguiente número será {3}."
+本月有效凭证编号已连续，无需整理,Los números de comprobantes activos de este mes ya son consecutivos; no es necesario ordenarlos
+原字号,Número anterior
+新字号,Número nuevo

@@ -139,6 +139,12 @@ override_doctype_class = {
 	"Period Closing Voucher": "china_finance.overrides.period_closing_voucher.ChinaFinancePeriodClosingVoucher",
 }
 
+extend_doctype_class = {
+	"Journal Entry": ["china_finance.overrides.source_voucher_lock.CompanyFirstSourceVoucherLock"],
+	"Payment Entry": ["china_finance.overrides.source_voucher_lock.CompanyFirstSourceVoucherLock"],
+	"Period Closing Voucher": ["china_finance.overrides.source_voucher_lock.CompanyFirstSourceVoucherLock"],
+}
+
 # Svg Icons
 # ------------------
 # include app icons in desk

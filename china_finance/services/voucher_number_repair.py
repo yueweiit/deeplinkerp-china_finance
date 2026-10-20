@@ -13,6 +13,7 @@ from frappe import _
 from frappe.utils import cint, get_last_day, getdate
 
 from china_finance.services import voucher as voucher_service
+from china_finance.services.month_end import lock_company
 
 
 def reorder_monthly_voucher_numbers(company, accounting_period, voucher_word="记", apply=0,
@@ -37,8 +38,13 @@ def reorder_monthly_voucher_numbers(company, accounting_period, voucher_word="�
 			frappe.throw(_("执行时必须提供预览中的 expected_plan_hash 和修复原因 reason"))
 		frappe.db.savepoint(savepoint)
 	try:
+		if apply:
+			lock_company(company)
+			company_doc = frappe.get_doc("Company", company, for_update=True)
+			company_doc.check_permission("read")
 		# Number allocation takes this same lock. Re-read the plan under the lock
-		# so a newly submitted voucher invalidates a stale preview.
+		# so a newly submitted voucher invalidates a stale preview. Formal source
+		# saves take this company lock before Frappe locks the source document.
 		sequence = frappe.db.get_value("China Voucher Sequence", {"sequence_key": sequence_key},
 			["name", "current_value"], as_dict=True, for_update=bool(apply))
 		rows, blockers = _read_month(scope, start, end, lock=bool(apply))
@@ -97,6 +103,8 @@ def reorder_monthly_voucher_numbers(company, accounting_period, voucher_word="�
 				max(cint(sequence.current_value), numbers[-1]), update_modified=False)
 		result.update(applied=True, batch_id=batch)
 		return result
+	except frappe.QueryDeadlockError:
+		raise
 	except Exception:
 		if apply:
 			frappe.db.rollback(save_point=savepoint)
@@ -104,19 +112,7 @@ def reorder_monthly_voucher_numbers(company, accounting_period, voucher_word="�
 
 
 def _read_month(scope, start, end, lock=False):
-	rows = frappe.db.sql(
-		"""SELECT name, company, posting_date, fiscal_year, accounting_period,
-			voucher_word, sequence_number, statutory_number, voucher_key, source_doctype,
-			source_name, source_event, source_key, source_hash, status, docstatus,
-			reversal_of, reversed_by, modified
-		FROM `tabChina Accounting Voucher`
-		WHERE company=%s AND voucher_word=%s
-			AND (accounting_period=%s OR posting_date BETWEEN %s AND %s)
-			AND (source_doctype IN ('Journal Entry', 'Payment Entry', 'Period Closing Voucher')
-				OR sequence_number > 0)
-		ORDER BY name""" + (" FOR UPDATE" if lock else ""),
-		(scope.company, scope.voucher_word, scope.accounting_period, start, end), as_dict=True,
-	)
+	rows = _month_rows(scope, start, end, lock)
 	blockers = []
 	for row in rows:
 		if (row.docstatus != 1 or row.status != "Posted" or row.source_event != "Posting"
@@ -145,30 +141,48 @@ def _read_month(scope, start, end, lock=False):
 	return rows, blockers
 
 
-def _protected_periods(company_doc, start, end, rows):
+def _month_rows(scope, start, end, lock=False):
+	index_hint = " FORCE INDEX (`company_voucher_period_date`)" if lock else ""
+	rows = frappe.db.sql(
+		f"""SELECT name, company, posting_date, fiscal_year, accounting_period,
+			voucher_word, sequence_number, statutory_number, voucher_key, source_doctype,
+			source_name, source_event, source_key, source_hash, status, docstatus,
+			reversal_of, reversed_by, modified
+		FROM `tabChina Accounting Voucher`{index_hint}
+		WHERE company=%s AND voucher_word=%s
+			AND (accounting_period=%s OR posting_date BETWEEN %s AND %s)
+			AND (source_doctype IN ('Journal Entry', 'Payment Entry', 'Period Closing Voucher')
+				OR sequence_number > 0)
+		ORDER BY name""" + (" FOR UPDATE" if lock else ""),
+		(scope.company, scope.voucher_word, scope.accounting_period, start, end), as_dict=True,
+	)
+	return rows
+
+
+def _protected_periods(company_doc, start, end, rows, lock=False):
 	blockers = []
 	frozen = company_doc.get("accounts_frozen_till_date")
 	if frozen and getdate(frozen) >= start:
 		blockers.append(_("该月份已处于公司冻结期间"))
-	if frappe.db.exists("China Closing Run", {"company": company_doc.name,
-			"from_date": ["<=", end], "to_date": [">=", start], "status": "Closed"}):
+	if frappe.db.get_value("China Closing Run", {"company": company_doc.name,
+			"from_date": ["<=", end], "to_date": [">=", start], "status": "Closed"}, "name", for_update=lock):
 		blockers.append(_("该月份已完成期末智能结转，请先检查结账及档案状态"))
-	if frappe.db.exists("China Closing Run", {"company": company_doc.name,
-			"from_date": ["<=", end], "to_date": [">=", start], "archive_package": ["is", "set"]}):
+	if frappe.db.get_value("China Closing Run", {"company": company_doc.name,
+			"from_date": ["<=", end], "to_date": [">=", start], "archive_package": ["is", "set"]}, "name", for_update=lock):
 		blockers.append(_("该月份存在结账档案包，需单独处理"))
 	closed = frappe.db.sql("""SELECT p.name FROM `tabAccounting Period` p
 		INNER JOIN `tabClosed Document` d ON d.parent=p.name AND d.parenttype='Accounting Period'
 		WHERE p.company=%s AND p.disabled=0 AND p.start_date<=%s AND p.end_date>=%s
 			AND d.closed=1 AND d.document_type IN ('Journal Entry', 'Payment Entry', 'Period Closing Voucher')
-		LIMIT 1""", (company_doc.name, end, start))
+		LIMIT 1""" + (" FOR UPDATE" if lock else ""), (company_doc.name, end, start))
 	if closed:
 		blockers.append(_("该月份存在禁止记账的会计期间"))
 	for doctype in ("China Accounting Voucher", *voucher_service.FORMAL_VOUCHER_SOURCES):
 		names = [row.name if doctype == "China Accounting Voucher" else row.source_name
 			for row in rows if doctype == "China Accounting Voucher" or row.source_doctype == doctype]
-		if names and frappe.db.exists("China Electronic Document", {"company": company_doc.name,
+		if names and frappe.db.get_value("China Electronic Document", {"company": company_doc.name,
 				"reference_doctype": doctype, "reference_name": ["in", names],
-				"status": ["!=", "Superseded"]}):
+				"status": ["!=", "Superseded"]}, "name", for_update=lock):
 			blockers.append(_("该月份存在已归档凭证，需单独处理"))
 			break
 	return blockers

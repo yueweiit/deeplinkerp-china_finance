@@ -833,7 +833,7 @@ def validate_deployment_schema():
 		"China Cash Flow Assignment Item": ("gl_entry", "cash_account", "cash_flow_row_code", "assigned_amount"),
 		"China Prior Period Error Adjustment": ("company", "journal_entry", "prior_period_end", "evidence_file", "status"),
 		"China Prior Period Error Adjustment Line": ("account", "statement_type", "row_code", "amount"),
-		"China Voucher Sequence": ("sequence_key", "current_value"),
+		"China Voucher Sequence": ("sequence_key", "current_value", "numbering_revision"),
 		"China Tax Invoice": ("invoice_key", "invoice_number", "gross_amount", "file_hash"),
 		"China Invoice Control Rule": ("company", "requirement", "effective_from"),
 		"China Sales Invoice Control": ("sales_invoice", "requirement", "reason"),

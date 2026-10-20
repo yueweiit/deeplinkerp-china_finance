@@ -6,6 +6,16 @@ from frappe.utils import flt, getdate
 from china_finance.services.voucher import assign_voucher_number, calculate_entries_hash
 
 
+def on_doctype_update():
+	# Keep monthly locking reads inside one company's numbering scope. Without
+	# a usable range index, InnoDB can lock snapshots belonging to other companies.
+	frappe.db.add_index(
+		"China Accounting Voucher",
+		["company", "voucher_word", "accounting_period", "posting_date"],
+		"company_voucher_period_date",
+	)
+
+
 class ChinaAccountingVoucher(Document):
 	def validate(self):
 		self.posting_date = getdate(self.posting_date)
@@ -36,4 +46,3 @@ class ChinaAccountingVoucher(Document):
 		for fieldname in protected:
 			if self.get(fieldname) != old.get(fieldname):
 				frappe.throw(_("已记账凭证不允许修改字段：{0}").format(self.meta.get_label(fieldname)))
-

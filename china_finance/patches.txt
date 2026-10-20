@@ -65,3 +65,4 @@ china_finance.patches.v0_6_20.remove_stale_small_enterprise_automatic_mappings
 china_finance.patches.v0_6_21.number_period_closing_vouchers
 china_finance.patches.v0_6_22.correct_statement_reconciliation
 china_finance.patches.v0_6_23.bind_financial_currencies
+china_finance.patches.v0_6_24.index_voucher_numbering_scope

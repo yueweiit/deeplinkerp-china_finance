@@ -11,6 +11,7 @@ from frappe import _
 from frappe.model.workflow import get_workflow_name
 from frappe.utils import cint, flt, getdate
 
+from china_finance.services.month_end import lock_company
 from china_finance.services.voucher import _complete_voucher_workflow, get_company, get_posting_date
 
 EDITABLE_SOURCE_DOCTYPES = ("Journal Entry", "Payment Entry")
@@ -23,13 +24,13 @@ INLINE_AMOUNT_FIELDS = {
 }
 
 
-def _get_source_document(source_doctype, source_name):
+def _get_source_document(source_doctype, source_name, *, for_update=False):
 	if source_doctype not in EDITABLE_SOURCE_DOCTYPES:
 		frappe.throw(_("查凭证只支持修改记账凭证和收付款凭证"))
-	if not source_name or not frappe.db.exists(source_doctype, source_name):
+	if not source_name or not frappe.db.get_value(source_doctype, source_name, "name", for_update=for_update):
 		frappe.throw(_("来源凭证不存在"))
 
-	doc = frappe.get_doc(source_doctype, source_name)
+	doc = frappe.get_doc(source_doctype, source_name, for_update=for_update)
 	if not doc.has_permission("read"):
 		frappe.throw(_("无权查看来源凭证"), frappe.PermissionError)
 	return doc
@@ -945,20 +946,23 @@ def preview_inline_account_changes(source_doctype, source_name, modified, change
 	return preview_inline_voucher_changes(source_doctype, source_name, modified, changes)
 
 
-def _lock_source_row(source_doctype, source_name):
-	table = {
-		"Journal Entry": "tabJournal Entry",
-		"Payment Entry": "tabPayment Entry",
-	}[source_doctype]
-	frappe.db.sql(f"SELECT name FROM `{table}` WHERE name=%s FOR UPDATE", (source_name,))
+def _get_locked_source_document(source_doctype, source_name):
+	# Number organization and month-end work take the company lock first.
+	# Never hold a source/bank lock while waiting for that shared lock.
+	doc = _get_source_document(source_doctype, source_name)
+	lock_company(doc.company)
+	current = _get_source_document(source_doctype, source_name, for_update=True)
+	if current.company != doc.company:
+		# A draft may have moved companies before we acquired its lock. Taking
+		# another company's lock now would reintroduce the reversed lock order.
+		frappe.throw(_("凭证已被其他人修改，请刷新后重试"), frappe.TimestampMismatchError)
+	return current
 
 
 @frappe.whitelist()
 def prepare_source_voucher_edit(source_doctype, source_name):
 	"""Open a draft or atomically cancel-and-create an amendment for a submitted voucher."""
-	doc = _get_source_document(source_doctype, source_name)
-	_lock_source_row(source_doctype, source_name)
-	doc = _get_source_document(source_doctype, source_name)
+	doc = _get_locked_source_document(source_doctype, source_name)
 	status = _build_status(doc)
 	if not status["can_edit"]:
 		frappe.throw(_("当前凭证不能修改：{0}").format(status["reason"] or _("不满足修改条件")))
@@ -1070,7 +1074,7 @@ def _remove_quick_reconciliation(doc, quick_info=None):
 @frappe.whitelist()
 def complete_source_voucher_edit(source_doctype, source_name):
 	"""Automatically review and post an amended voucher after its real edit is saved."""
-	doc = _get_source_document(source_doctype, source_name)
+	doc = _get_locked_source_document(source_doctype, source_name)
 	if doc.docstatus != 0 or not doc.get("amended_from"):
 		frappe.throw(_("只有已保存的修订草稿才能自动审核并记账"))
 
@@ -1255,6 +1259,10 @@ def apply_inline_voucher_changes(source_doctype, source_name, modified, changes)
 	frappe.db.savepoint(savepoint)
 	try:
 		return _apply_inline_voucher_changes(source_doctype, source_name, modified, changes)
+	except frappe.QueryDeadlockError:
+		# InnoDB already rolled back the transaction (including its savepoints).
+		# Preserve the retryable error for the request's full rollback/retry.
+		raise
 	except Exception:
 		frappe.db.rollback(save_point=savepoint)
 		raise
@@ -1267,9 +1275,7 @@ def apply_inline_account_changes(source_doctype, source_name, modified, changes)
 
 
 def _apply_inline_voucher_changes(source_doctype, source_name, modified, changes):
-	doc = _get_source_document(source_doctype, source_name)
-	_lock_source_row(source_doctype, source_name)
-	doc = _get_source_document(source_doctype, source_name)
+	doc = _get_locked_source_document(source_doctype, source_name)
 	status, diffs = _inline_preflight(doc, modified, changes)
 	change_label = _inline_change_label(diffs)
 

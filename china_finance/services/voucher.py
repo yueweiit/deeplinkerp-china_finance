@@ -1033,7 +1033,7 @@ def _formal_sequence_key(voucher):
 
 def _get_or_create_formal_sequence(voucher, sequence_key):
 	row = frappe.db.sql(
-		"SELECT name, current_value FROM `tabChina Voucher Sequence` WHERE sequence_key=%s FOR UPDATE",
+		"SELECT name, current_value, numbering_revision FROM `tabChina Voucher Sequence` WHERE sequence_key=%s FOR UPDATE",
 		(sequence_key,),
 		as_dict=True,
 	)
@@ -1056,7 +1056,7 @@ def _get_or_create_formal_sequence(voucher, sequence_key):
 		pass
 
 	row = frappe.db.sql(
-		"SELECT name, current_value FROM `tabChina Voucher Sequence` WHERE sequence_key=%s FOR UPDATE",
+		"SELECT name, current_value, numbering_revision FROM `tabChina Voucher Sequence` WHERE sequence_key=%s FOR UPDATE",
 		(sequence_key,),
 		as_dict=True,
 	)
@@ -1065,7 +1065,7 @@ def _get_or_create_formal_sequence(voucher, sequence_key):
 	return row[0]
 
 
-def _get_inherited_formal_number(voucher):
+def _get_inherited_formal_number(voucher, numbering_revision=0):
 	"""Return the original posting number for an amended formal source document."""
 	if voucher.source_doctype == "Period Closing Voucher":
 		# Reclosing after supplementary postings must take the new month-end
@@ -1075,7 +1075,11 @@ def _get_inherited_formal_number(voucher):
 		return None
 	if not frappe.db.has_column(voucher.source_doctype, "amended_from"):
 		return None
-	amended_from = frappe.db.get_value(voucher.source_doctype, voucher.source_name, "amended_from")
+	# The transaction may have started a consistent read before waiting for
+	# number organization. Both lookups must see the current numbering version.
+	amended_from = frappe.db.get_value(
+		voucher.source_doctype, voucher.source_name, "amended_from", for_update=True
+	)
 	if not amended_from:
 		return None
 	original = frappe.db.get_value(
@@ -1092,8 +1096,11 @@ def _get_inherited_formal_number(voucher):
 			"voucher_word",
 			"sequence_number",
 			"statutory_number",
+			"source_key",
+			"voucher_key",
 		],
 		as_dict=True,
+		for_update=True,
 	)
 	if not original:
 		return None
@@ -1103,20 +1110,25 @@ def _get_inherited_formal_number(voucher):
 	):
 		# Moving an amendment to another fiscal period/凭证字 starts a new sequence.
 		return None
+	if numbering_revision and original.voucher_key != _organized_voucher_key(original, numbering_revision):
+		# A source cancelled before the latest organization no longer owns its old number.
+		return None
 	return original
 
 
-def _get_formal_high_water_mark(voucher):
+def _get_formal_high_water_mark(voucher, active_only=False):
 	"""Find the largest existing formal number without renumbering history."""
 	row = frappe.db.sql(
 		"""
 		SELECT COALESCE(MAX(sequence_number), 0) AS max_sequence
-		FROM `tabChina Accounting Voucher`
+		FROM `tabChina Accounting Voucher` FORCE INDEX (`company_voucher_period_date`)
 		WHERE company=%s AND fiscal_year=%s AND accounting_period=%s
 			AND voucher_word=%s AND source_event IN ('Posting', 'Manual')
 			AND docstatus=1
+			AND (%s=0 OR status='Posted')
+		FOR UPDATE
 		""",
-		(voucher.company, voucher.fiscal_year, voucher.accounting_period, voucher.voucher_word),
+		(voucher.company, voucher.fiscal_year, voucher.accounting_period, voucher.voucher_word, int(active_only)),
 		as_dict=True,
 	)
 	return cint(row[0].max_sequence) if row else 0
@@ -1130,6 +1142,12 @@ def _next_formal_sequence(sequence_value, high_water_mark):
 def _build_amendment_voucher_key(voucher):
 	"""Keep an amended snapshot unique even when it inherits the original字号."""
 	return f"amendment|{voucher.source_key}"
+
+
+def _organized_voucher_key(voucher, revision):
+	scope = hashlib.sha256(_formal_sequence_key(voucher).encode()).hexdigest()
+	source = hashlib.sha256(voucher.source_key.encode()).hexdigest()
+	return f"organized|{scope}|{revision}|{cint(voucher.sequence_number):08d}|{source}"
 
 
 def assign_voucher_number(voucher):
@@ -1153,19 +1171,20 @@ def assign_voucher_number(voucher):
 		frappe.throw(_("公司 {0} 未启用中国财务设置").format(voucher.company))
 	sequence_key = _formal_sequence_key(voucher)
 	sequence_row = _get_or_create_formal_sequence(voucher, sequence_key)
-	inherited = _get_inherited_formal_number(voucher)
+	revision = cint(sequence_row.get("numbering_revision"))
+	inherited = _get_inherited_formal_number(voucher, revision)
 	if inherited and inherited.statutory_number:
 		voucher.sequence_number = inherited.sequence_number
 		voucher.statutory_number = inherited.statutory_number
-		voucher.voucher_key = _build_amendment_voucher_key(voucher)
+		voucher.voucher_key = _organized_voucher_key(voucher, revision) if revision else _build_amendment_voucher_key(voucher)
 		return
 
 	sequence = _next_formal_sequence(
-		sequence_row.get("current_value"), _get_formal_high_water_mark(voucher)
+		sequence_row.get("current_value"), _get_formal_high_water_mark(voucher, active_only=bool(revision))
 	)
 	voucher.sequence_number = sequence
 	voucher.statutory_number = f"{voucher.voucher_word}{sequence}"
-	voucher.voucher_key = f"{sequence_key}|{sequence:08d}"
+	voucher.voucher_key = _organized_voucher_key(voucher, revision) if revision else f"{sequence_key}|{sequence:08d}"
 	frappe.db.set_value(
 		"China Voucher Sequence",
 		sequence_row["name"],

@@ -2398,3 +2398,27 @@ records 必须是发票对象数组,records must be an array of invoice objects
 现金流检查设置,Cash Flow Check Settings
 月结暂不强制确认现金流项目；未确认事项仍需后续核对，年结和正式报表的确认要求不变。,Cash flow confirmation is temporarily deferred for monthly closing. Outstanding items still require review; confirmation requirements for year-end closing and official reports remain unchanged.
 本次结账包含草表快照；请处理快照中的未完成检查，并按结账修订流程生成完整的正式快照后再导出。,This closing contains draft report snapshots. Resolve their outstanding checks and generate complete official snapshots through the closing revision process before exporting.
+凭证整理编号,Organize Voucher Numbers
+编号整理版本,Numbering Revision
+凭证 {0} 的状态或来源不支持整理编号,The status or source of voucher {0} does not support number organization
+凭证 {0} 的取消审计尚未完成，请先处理冲销同步问题,The cancellation audit for voucher {0} is incomplete. Resolve the reversal synchronization issue first.
+凭证 {0} 的分录哈希不一致，请先检查凭证完整性,The entry hash for voucher {0} does not match. Check the integrity of the voucher first.
+请填写凭证字，例如记、收、付或转，不要填写流水号,"Enter a voucher prefix, such as 记, 收, 付 or 转, without a sequence number"
+整理原因不能超过 500 个字符,The reason must not exceed 500 characters
+请先暂停月末结账，再整理本期凭证编号,Pause monthly closing before organizing voucher numbers for this period
+本期存在待处理的冲销同步问题，不能整理编号,Pending reversal synchronization issues prevent number organization for this period
+不能整理编号：{0},Cannot organize voucher numbers: {0}
+凭证整理编号：{0} → {1}；批次 {2}；原因：{3}。取消历史、分录及金额未变更。,"Voucher number organization: {0} → {1}; batch {2}; reason: {3}. Cancellation history, entries and amounts are unchanged."
+凭证整理编号：公司 {0}，期间 {1}，凭证字 {2}；有效 {3} 张，保留取消历史 {4} 张；流水号 {5} → {6}；批次 {7}；原因：{8}。,"Voucher number organization: company {0}, period {1}, prefix {2}; {3} active vouchers, {4} cancelled vouchers retained; sequence {5} → {6}; batch {7}; reason: {8}."
+请先保存或取消当前凭证的修改，再整理编号,Save or cancel pending voucher edits before organizing numbers
+预览编号,Preview Numbers
+请确认受影响的打印件和导出文件需要重新生成,Confirm that affected printouts and exports need to be regenerated
+凭证编号已整理，批次 {0}。请重新运行报表，并重新生成受影响的打印件和导出文件。,Voucher numbers have been organized in batch {0}. Run the report again and regenerate affected printouts and exports.
+确认整理,Confirm Organization
+整理原因,Reason for Organization
+已确认受影响的打印件和导出文件需要重新生成,I acknowledge that affected printouts and exports need to be regenerated
+重新预览,Preview Again
+有效凭证 {0} 张，保留取消历史 {1} 张，需改号 {2} 张；整理后下一字号为 {3}。,"{0} active vouchers, {1} cancelled vouchers retained, {2} numbers to change; the next voucher number will be {3}."
+本月有效凭证编号已连续，无需整理,Active voucher numbers for this month are already continuous; no organization is needed
+原字号,Previous Number
+新字号,New Number
