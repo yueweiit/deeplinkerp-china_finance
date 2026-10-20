@@ -18,7 +18,11 @@ def _append_profit_and_loss_exclusions(conditions, parameters, alias="gle"):
 	Some imported or manually created closing entries use the ordinary
 	``Journal Entry`` voucher type instead of ``Period Closing Voucher``. They
 	transfer income and expense balances to equity and must not be counted as
-	ordinary-period activity in the Profit and Loss statement.
+	ordinary-period activity in the Profit and Loss statement. Imported remarks
+	can contain provenance instead of the closing label, so also recognize a
+	balanced transfer consisting only of P&L accounts and the company's
+	configured current-year profit account. Never infer closing from an expense
+	credit alone: bank refunds and interest receipts remain ordinary activity.
 	"""
 	conditions.append(f"{alias}.voucher_type!='Period Closing Voucher'")
 	conditions.append(
@@ -33,6 +37,31 @@ def _append_profit_and_loss_exclusions(conditions, parameters, alias="gle"):
 					AND (
 						TRIM(COALESCE(je.user_remark, ''))=%(profit_and_loss_closing_remark)s
 						OR TRIM(COALESCE(je.remark, ''))=%(profit_and_loss_closing_remark)s
+						OR (
+							COALESCE(je.is_opening, 'No')='No'
+							AND EXISTS (
+								SELECT 1
+								FROM `tabJournal Entry Account` detail
+								LEFT JOIN `tabAccount` account ON account.name=detail.account
+								INNER JOIN `tabChina Finance Settings` settings ON settings.company=je.company
+								INNER JOIN `tabAccount` closing_account
+									ON closing_account.name=settings.profit_loss_account
+									AND closing_account.company=je.company
+									AND closing_account.root_type='Equity' AND closing_account.is_group=0
+								WHERE detail.parent=je.name AND detail.parenttype='Journal Entry'
+								GROUP BY detail.parent
+								HAVING SUM(CASE WHEN account.name IS NULL
+									OR account.company!=je.company OR account.is_group!=0
+									OR (account.name!=closing_account.name
+										AND COALESCE(account.root_type, '') NOT IN ('Income', 'Expense'))
+									THEN 1 ELSE 0 END)=0
+								AND SUM(CASE WHEN account.name=closing_account.name
+									THEN ABS(detail.debit-detail.credit) ELSE 0 END)>0
+								AND SUM(CASE WHEN account.root_type IN ('Income', 'Expense')
+									THEN ABS(detail.debit-detail.credit) ELSE 0 END)>0
+								AND ABS(SUM(detail.debit-detail.credit))<0.005
+							)
+						)
 					)
 			)
 		)"""
