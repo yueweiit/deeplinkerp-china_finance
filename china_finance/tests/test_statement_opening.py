@@ -316,3 +316,34 @@ class TestStatementOpening(IntegrationTestCase):
 		self.assertIn("3,510.91", html)
 		self.assertIn("<td class='num'></td>", html)
 		self.assertIn(doc.name, html)
+
+	def test_statutory_exports_use_direct_opening_instead_of_comparative_amount(self):
+		from china_finance.services.statutory_reporting import _build_excel, _build_pdf_html
+
+		doc = self.baseline().submit()
+		payload = self.report()
+		for row in payload["rows"]:
+			row["comparison_amount"] = 0
+		snapshot = SimpleNamespace(statement_type="Balance Sheet", from_date="2026-01-01", to_date="2026-09-30",
+			template_version="3.0", amount_unit="元", approved_by="Administrator", approved_on="2026-10-21 12:00:00",
+			data_json=json.dumps(payload, ensure_ascii=False))
+		with zipfile.ZipFile(io.BytesIO(_build_excel([snapshot], self.company))) as archive:
+			ns = {"m": "http://schemas.openxmlformats.org/spreadsheetml/2006/main"}
+			strings = ["".join(node.itertext()) for node in ElementTree.fromstring(archive.read("xl/sharedStrings.xml"))]
+			table = ElementTree.fromstring(archive.read("xl/worksheets/sheet1.xml"))
+			values = []
+			for row in table.findall("m:sheetData/m:row", ns):
+				cells = {}
+				for cell in row:
+					text = cell.findtext("m:v", default="", namespaces=ns)
+					cells[cell.attrib["r"].rstrip("0123456789")] = strings[int(text)] if cell.attrib.get("t") == "s" else text
+				values.append(cells)
+			original = next(row for row in values if row.get("B", "").strip() == "固定资产原价")
+			net = next(row for row in values if row.get("B", "").strip() == "固定资产账面价值")
+			self.assertEqual(original.get("D", ""), "")
+			self.assertEqual(float(net["D"]), 3510.91)
+			self.assertEqual(float(net["C"]), 20)
+			self.assertIn(doc.source_sha256, strings)
+		html = _build_pdf_html([snapshot], self.company)
+		self.assertIn("3,510.91", html)
+		self.assertIn(doc.source_sha256, html)

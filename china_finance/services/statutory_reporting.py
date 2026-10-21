@@ -230,6 +230,12 @@ def _snapshot_rows(snapshot):
 	return payload, payload.get("rows", [])
 
 
+def _balance_sheet_opening_value(row, payload):
+	# New source-backed snapshots carry a directly confirmed year opening.
+	# Keep historical snapshots' comparative-column semantics unchanged.
+	return row.get("opening_amount") if payload.get("opening_source") else row.get("comparison_amount")
+
+
 def _get_notes_payload(snapshots):
 	for snapshot in snapshots:
 		payload, _rows = _snapshot_rows(snapshot)
@@ -248,6 +254,11 @@ def _build_excel(snapshots, company):
 	audit_rows = []
 	for snapshot in snapshots:
 		payload, rows = _snapshot_rows(snapshot)
+		if source := payload.get("opening_source"):
+			audit_rows.append([STATEMENT_LABELS[snapshot.statement_type], _("报表年初基准"),
+				source.get("name"), source.get("source_period_end"), source.get("fingerprint")])
+			audit_rows.append([STATEMENT_LABELS[snapshot.statement_type], _("来源文件SHA-256"),
+				source.get("name"), source.get("source_sha256"), ""])
 		for check in payload.get("checks", []):
 			audit_rows.append([
 				STATEMENT_LABELS.get(snapshot.statement_type, snapshot.statement_type),
@@ -306,8 +317,9 @@ def _build_excel(snapshots, company):
 		if snapshot.statement_type == "Balance Sheet":
 			asset_end = next((index for index, row in enumerate(rows) if row.get("row_code") == "TOTAL_ASSETS"), len(rows) - 1)
 			left, right = rows[: asset_end + 1], rows[asset_end + 1 :]
-			worksheet.write_row(3 if _is_small_enterprise_snapshot(payload) else 2, 0, ["资产行次", "资产项目", "期末余额", "年初余额" if _is_small_enterprise_snapshot(payload) else "比较期余额"], header)
-			worksheet.write_row(3 if _is_small_enterprise_snapshot(payload) else 2, 5, ["负债及权益行次", "负债及权益项目", "期末余额", "年初余额" if _is_small_enterprise_snapshot(payload) else "比较期余额"], header)
+			opening_label = _("年初余额") if _is_small_enterprise_snapshot(payload) or payload.get("opening_source") else _("比较期余额")
+			worksheet.write_row(3 if _is_small_enterprise_snapshot(payload) else 2, 0, ["资产行次", "资产项目", "期末余额", opening_label], header)
+			worksheet.write_row(3 if _is_small_enterprise_snapshot(payload) else 2, 5, ["负债及权益行次", "负债及权益项目", "期末余额", opening_label], header)
 			for index in range(max(len(left), len(right))):
 				for offset, row_set in ((0, left), (5, right)):
 					if index >= len(row_set):
@@ -317,7 +329,11 @@ def _build_excel(snapshots, company):
 					worksheet.write(index + start_row, offset, row.get("statutory_line_number") or "", text_format)
 					worksheet.write(index + start_row, offset + 1, ("　" * int(row.get("indent", 0))) + (row.get("label") or ""), text_format)
 					worksheet.write_number(index + start_row, offset + 2, flt(row.get("amount")), amount)
-					worksheet.write_number(index + start_row, offset + 3, flt(row.get("comparison_amount")), amount)
+					opening = _balance_sheet_opening_value(row, payload)
+					if opening is None or row.get("row_type") == "Heading":
+						worksheet.write_blank(index + start_row, offset + 3, None, amount)
+					else:
+						worksheet.write_number(index + start_row, offset + 3, flt(opening), amount)
 			worksheet.set_column(0, 0, 10)
 			worksheet.set_column(1, 1, 28)
 			worksheet.set_column(2, 3, 18)
@@ -436,12 +452,14 @@ def _build_pdf_html(snapshots, company):
 		if snapshot.statement_type == "Balance Sheet":
 			asset_end = next((index for index, row in enumerate(rows) if row.get("row_code") == "TOTAL_ASSETS"), len(rows) - 1)
 			left, right = rows[: asset_end + 1], rows[asset_end + 1 :]
-			comparison_label = "年初余额" if _is_small_enterprise_snapshot(payload) else "比较期"
+			comparison_label = _("年初余额") if _is_small_enterprise_snapshot(payload) or payload.get("opening_source") else _("比较期余额")
 			parts.append(f"<table><thead><tr><th>资产行次</th><th>资产项目</th><th>期末余额</th><th>{comparison_label}</th><th>负债及权益行次</th><th>负债及权益项目</th><th>期末余额</th><th>{comparison_label}</th></tr></thead><tbody>")
 			for index in range(max(len(left), len(right))):
 				cells = []
 				for row in ((left[index] if index < len(left) else {}), (right[index] if index < len(right) else {})):
-					cells.extend([row.get("statutory_line_number") or "", ("　" * int(row.get("indent", 0))) + (row.get("label") or ""), f"{flt(row.get('amount')):,.2f}", f"{flt(row.get('comparison_amount')):,.2f}"])
+					opening = _balance_sheet_opening_value(row, payload)
+					opening_text = "" if opening is None or row.get("row_type") == "Heading" else f"{flt(opening):,.2f}"
+					cells.extend([row.get("statutory_line_number") or "", ("　" * int(row.get("indent", 0))) + (row.get("label") or ""), f"{flt(row.get('amount')):,.2f}", opening_text])
 				parts.append("<tr>" + "".join(f"<td>{frappe.utils.escape_html(str(cell))}</td>" for cell in cells) + "</tr>")
 			parts.append("</tbody></table>")
 		else:
@@ -491,6 +509,14 @@ def _build_pdf_html(snapshots, company):
 
 
 def _append_pdf_audit(parts, payload):
+	if source := payload.get("opening_source"):
+		parts.append(
+			"<h2>" + frappe.utils.escape_html(_("报表年初基准")) + "</h2><p>"
+			+ frappe.utils.escape_html(str(source.get("name") or "")) + "<br>"
+			+ frappe.utils.escape_html(_("来源文件SHA-256")) + ": "
+			+ frappe.utils.escape_html(str(source.get("source_sha256") or "")) + "<br>"
+			+ frappe.utils.escape_html(str(source.get("fingerprint") or "")) + "</p>"
+		)
 	checks = payload.get("checks", [])
 	reclassifications = payload.get("reclassifications", [])
 	if not checks and not reclassifications:
