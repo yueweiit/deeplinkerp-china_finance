@@ -172,13 +172,14 @@ def execute_native_trial_balance(filters, activity_balance=False):
 		"include_default_book_entries": 1,
 		"show_net_values": 1,
 		"show_group_accounts": 1,
-		"show_zero_values": filters.get("show_zero_values", 0),
+		"show_zero_values": 1,
 		"with_period_closing_entry_for_opening": 1,
 		"with_period_closing_entry_for_current_period": 1,
 	})
 	columns, data = execute_trial_balance(native_filters)
-	_adjust_opening_entries_by_posting_date(data, filters)
+	_adjust_opening_entries_by_posting_date(data, native_filters)
 	_apply_expense_turnover_presentation(data, native_filters)
+	_filter_native_zero_rows(data, filters.get("show_zero_values"))
 	_keep_numbered_group_accounts(data)
 	_format_native_account_labels(columns, data, filters.company)
 	if activity_balance:
@@ -230,92 +231,80 @@ def _format_native_account_labels(columns, rows, company):
 
 
 def _adjust_opening_entries_by_posting_date(rows, filters):
-	"""Remove future-dated opening entries from native trial-balance opening totals.
-
-	ERPNext treats every ``is_opening=Yes`` entry as an opening balance, even when
-	its posting date is later than the report start. For a branch opened on a
-	later date, that makes the balance appear before the opening voucher existed.
-	"""
+	"""Remove future initialization using native filters and signed leaf balances."""
 	if not rows or not filters.get("from_date"):
 		return
-
-	conditions = [
-		"gle.company = %(company)s",
-		"gle.is_cancelled = 0",
-		"gle.is_opening = 'Yes'",
-		"gle.posting_date >= %(from_date)s",
-	]
-	params = {"company": filters.company, "from_date": filters.from_date, "to_date": filters.to_date}
-	for fieldname in ("finance_book", "cost_center", "project"):
-		value = filters.get(fieldname)
-		if value:
-			conditions.append(f"gle.{fieldname} = %({fieldname})s")
-			params[fieldname] = value
-	opening_by_account = frappe.db.sql(
-		f"""
-		SELECT gle.account, SUM(gle.debit) AS debit, SUM(gle.credit) AS credit
-		FROM `tabGL Entry` gle
-		WHERE {' AND '.join(conditions)}
-		GROUP BY gle.account
-		""",
-		params,
-		as_dict=True,
-	)
-	if not opening_by_account:
+	# These native modes do not include future opening GL in their opening base.
+	if frappe.get_single_value("Accounts Settings", "ignore_is_opening_check_for_reporting"):
 		return
+	if not frappe.get_single_value("Accounts Settings", "ignore_account_closing_balance") and frappe.db.exists(
+		"Period Closing Voucher", {"company": filters.company, "docstatus": 1, "period_end_date": ("<", filters.from_date)}
+	):
+		return
+	from erpnext.accounts.report.financial_statements import apply_additional_conditions
+	from erpnext.accounts.report.trial_balance.trial_balance import calculate_total_row
+	from frappe.query_builder.functions import Sum
 
-	account_values = {row.account: (flt(row.debit), flt(row.credit)) for row in opening_by_account}
-	closing_by_account = frappe.db.sql(
-		f"""
-		SELECT gle.account, SUM(gle.debit) AS debit, SUM(gle.credit) AS credit
-		FROM `tabGL Entry` gle
-		WHERE {' AND '.join(conditions)} AND gle.posting_date > %(to_date)s
-		GROUP BY gle.account
-		""",
-		params,
-		as_dict=True,
+	gle = frappe.qb.DocType("GL Entry")
+	query = (
+		frappe.qb.from_(gle)
+		.select(gle.account, Sum(gle.debit).as_("debit"), Sum(gle.credit).as_("credit"))
+		.where((gle.company == filters.company) & (gle.is_cancelled == 0))
+		.where((gle.is_opening == "Yes") & (gle.posting_date > filters.to_date))
+		.groupby(gle.account)
 	)
-	closing_values = {row.account: (flt(row.debit), flt(row.credit)) for row in closing_by_account}
-	total_debit = sum(value[0] for value in account_values.values())
-	total_credit = sum(value[1] for value in account_values.values())
-	total_closing_debit = sum(value[0] for value in closing_values.values())
-	total_closing_credit = sum(value[1] for value in closing_values.values())
-	accounts = frappe.db.get_all(
-		"Account",
-		filters={"company": filters.company, "disabled": 0},
-		fields=["name", "lft", "rgt", "is_group"],
-	)
-	account_index = {account.name: account for account in accounts}
+	# Exactly the same cost-center subtree, project, book and dimension scope as
+	# the native report, rather than another set of equality-only filters.
+	future = apply_additional_conditions("GL Entry", query, None, False, filters.copy()).run(as_dict=True)
+	if not future:
+		return
+	future_net = {item.account: flt(item.debit) - flt(item.credit) for item in future}
+	by_account = {row["account"]: row for row in rows if row.get("account") and not row.get("warn_if_negative")}
+	balance_fields = ("opening_debit", "opening_credit", "closing_debit", "closing_credit")
+	for row in by_account.values():
+		if row.get("is_group_account"):
+			for field in balance_fields:
+				row[field] = 0
+		else:
+			for prefix in ("opening", "closing"):
+				# Native rows are already netted. Removing gross columns separately
+				# loses balances whenever the result changes from debit to credit.
+				net = flt(row.get(prefix + "_debit")) - flt(row.get(prefix + "_credit")) - future_net.get(row["account"], 0)
+				if abs(net) < 0.000000001:
+					net = 0
+				row[prefix + "_debit"], row[prefix + "_credit"] = max(net, 0), max(-net, 0)
+	# Rebuild groups from corrected leaves, preserving opposite-side children.
+	for row in by_account.values():
+		if row.get("is_group_account"):
+			continue
+		parent = row.get("parent_account")
+		visited = set()
+		while parent in by_account and parent not in visited:
+			visited.add(parent)
+			for field in balance_fields:
+				by_account[parent][field] += flt(row.get(field))
+			parent = by_account[parent].get("parent_account")
 	for row in rows:
 		if row.get("warn_if_negative"):
-			row["opening_debit"] = max(flt(row.get("opening_debit")) - total_debit, 0)
-			row["opening_credit"] = max(flt(row.get("opening_credit")) - total_credit, 0)
-			row["closing_debit"] = max(flt(row.get("closing_debit")) - total_closing_debit, 0)
-			row["closing_credit"] = max(flt(row.get("closing_credit")) - total_closing_credit, 0)
-			for fieldname in ("opening_debit", "opening_credit", "closing_debit", "closing_credit"):
-				if abs(flt(row.get(fieldname))) < 0.005:
-					row[fieldname] = 0
-			continue
-		account = account_index.get(row.get("account"))
-		if not account:
-			continue
-		if account.is_group:
-			debit = credit = closing_debit = closing_credit = 0
-			for child in accounts:
-				if child.lft >= account.lft and child.rgt <= account.rgt:
-					child_debit, child_credit = account_values.get(child.name, (0, 0))
-					debit += child_debit
-					credit += child_credit
-					child_debit, child_credit = closing_values.get(child.name, (0, 0))
-					closing_debit += child_debit
-					closing_credit += child_credit
-		else:
-			debit, credit = account_values.get(account.name, (0, 0))
-			closing_debit, closing_credit = closing_values.get(account.name, (0, 0))
-		row["opening_debit"] = max(flt(row.get("opening_debit")) - debit, 0)
-		row["opening_credit"] = max(flt(row.get("opening_credit")) - credit, 0)
-		row["closing_debit"] = max(flt(row.get("closing_debit")) - closing_debit, 0)
-		row["closing_credit"] = max(flt(row.get("closing_credit")) - closing_credit, 0)
+			corrected = calculate_total_row(list(by_account.values()), row.get("currency"), show_group_accounts=True)
+			for field in balance_fields:
+				row[field] = corrected[field]
+
+
+def _filter_native_zero_rows(rows, show_zero_values):
+	"""Apply native visibility after corrections, before removing chart roots."""
+	if show_zero_values or not rows:
+		return
+	from erpnext.accounts.report.financial_statements import filter_out_zero_value_rows
+	from erpnext.accounts.report.trial_balance.trial_balance import value_fields
+	from erpnext.accounts.utils import get_zero_cutoff
+
+	children = {}
+	for row in rows:
+		if row.get("account") and not row.get("warn_if_negative"):
+			children.setdefault(row.get("parent_account"), []).append({"name": row["account"]})
+			row["has_value"] = any(abs(flt(row.get(field))) >= get_zero_cutoff(row.get("currency")) for field in value_fields)
+	rows[:] = filter_out_zero_value_rows(rows, children, show_zero_values=False)
 
 
 def _rename_activity_balance_columns(columns):
@@ -415,7 +404,7 @@ def _legacy_execute_account_activity_balance(filters):
 		return get_account_activity_columns(bool(filters.expand_party)), [], _("期间内没有可显示的科目")
 
 	params = {"company": filters.company, "from_date": filters.from_date, "to_date": filters.to_date}
-	conditions = ["gle.company=%(company)s", "gle.is_cancelled=0"]
+	conditions = ["gle.company=%(company)s", "gle.is_cancelled=0", "gle.posting_date<=%(to_date)s"]
 	if filters.finance_book:
 		conditions.append("gle.finance_book=%(finance_book)s")
 		params["finance_book"] = filters.finance_book
@@ -432,10 +421,10 @@ def _legacy_execute_account_activity_balance(filters):
 	rows = frappe.db.sql(
 		f"""
 		SELECT gle.account, gle.party_type, gle.party,
-			SUM(CASE WHEN gle.posting_date < %(from_date)s THEN gle.debit ELSE 0 END) opening_debit,
-			SUM(CASE WHEN gle.posting_date < %(from_date)s THEN gle.credit ELSE 0 END) opening_credit,
-			SUM(CASE WHEN gle.posting_date BETWEEN %(from_date)s AND %(to_date)s THEN gle.debit ELSE 0 END) period_debit,
-			SUM(CASE WHEN gle.posting_date BETWEEN %(from_date)s AND %(to_date)s THEN gle.credit ELSE 0 END) period_credit
+			SUM(CASE WHEN gle.posting_date < %(from_date)s OR gle.is_opening='Yes' THEN gle.debit ELSE 0 END) opening_debit,
+			SUM(CASE WHEN gle.posting_date < %(from_date)s OR gle.is_opening='Yes' THEN gle.credit ELSE 0 END) opening_credit,
+			SUM(CASE WHEN gle.posting_date BETWEEN %(from_date)s AND %(to_date)s AND COALESCE(gle.is_opening,'No')!='Yes' THEN gle.debit ELSE 0 END) period_debit,
+			SUM(CASE WHEN gle.posting_date BETWEEN %(from_date)s AND %(to_date)s AND COALESCE(gle.is_opening,'No')!='Yes' THEN gle.credit ELSE 0 END) period_credit
 		FROM `tabGL Entry` gle
 		WHERE {' AND '.join(conditions)}
 		GROUP BY {group_fields}
@@ -516,13 +505,14 @@ def execute_account_activity_balance(filters):
 		"include_default_book_entries": 1,
 		"show_net_values": 1,
 		"show_group_accounts": 1,
-		"show_zero_values": filters.get("show_zero_values", 0),
+		"show_zero_values": 1,
 		"with_period_closing_entry_for_opening": 1,
 		"with_period_closing_entry_for_current_period": 1,
 	})
 	columns, native_rows = execute_trial_balance(native_filters)
-	_adjust_opening_entries_by_posting_date(native_rows, filters)
+	_adjust_opening_entries_by_posting_date(native_rows, native_filters)
 	expense_offsets = _apply_expense_turnover_presentation(native_rows, native_filters)
+	_filter_native_zero_rows(native_rows, filters.get("show_zero_values"))
 	_keep_numbered_group_accounts(native_rows)
 	if not filters.get("expand_party"):
 		_format_native_account_labels(columns, native_rows, filters.company)
@@ -587,6 +577,7 @@ def _get_activity_party_rows(native_filters, account_names):
 	opening = gle.posting_date < native_filters.from_date
 	current = gle.posting_date >= native_filters.from_date
 	if not frappe.get_single_value("Accounts Settings", "ignore_is_opening_check_for_reporting"):
+		opening |= gle.is_opening == "Yes"
 		current &= gle.is_opening == "No"
 	party_type = Coalesce(gle.party_type, "")
 	party = Coalesce(gle.party, "")

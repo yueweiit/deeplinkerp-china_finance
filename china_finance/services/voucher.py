@@ -1159,6 +1159,13 @@ def assign_voucher_number(voucher):
 		voucher.statutory_number = None
 		voucher.voucher_key = f"cancellation|{voucher.source_key}"
 		return
+	from china_finance.services.opening_identity import is_opening_source
+
+	if is_opening_source(voucher.source_doctype, voucher.source_name, voucher.company):
+		voucher.sequence_number = 0
+		voucher.statutory_number = None
+		voucher.voucher_key = f"opening|{voucher.source_key}"
+		return
 	if voucher.source_doctype not in FORMAL_VOUCHER_SOURCES:
 		# Business-document snapshots remain available for ledger tracing, but
 		# must not consume the formal accounting-voucher sequence.

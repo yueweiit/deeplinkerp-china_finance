@@ -121,7 +121,7 @@ def _drafts(doc):
 	drafts = preparation.draft_documents(doc.company, doc.from_date, doc.to_date)
 	count = frappe.db.count(
 		"Journal Entry",
-		{"company": doc.company, "docstatus": 0, "posting_date": ["between", [doc.from_date, doc.to_date]]},
+		{"company": doc.company, "docstatus": 0, "posting_date": ["between", [doc.from_date, doc.to_date]], "is_opening": ["!=", "Yes"]},
 	)
 	if count != len(drafts):
 		frappe.throw(_("没有读取本期全部凭证的权限，不能完成月末记账"), frappe.PermissionError)
@@ -150,7 +150,7 @@ def _preflight(doc):
 	if bad:
 		frappe.throw("；".join(r["description"] + "：" + r["details"] for r in bad))
 	if frappe.db.count(
-		"Journal Entry", {"company": doc.company, "docstatus": 0, "posting_date": ["<", doc.from_date]}
+		"Journal Entry", {"company": doc.company, "docstatus": 0, "posting_date": ["<", doc.from_date], "is_opening": ["!=", "Yes"]}
 	):
 		frappe.throw(_("存在更早期间的未记账凭证，请先核对并处理"))
 	drafts = _drafts(doc)

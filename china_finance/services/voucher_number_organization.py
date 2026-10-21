@@ -29,6 +29,13 @@ def _read_plan(scope, start, end, revision, lock):
 			continue
 		source = frappe.get_doc(row.source_doctype, row.source_name, for_update=lock)
 		source.check_permission("read")
+		from china_finance.services.opening_identity import is_opening_source
+
+		if is_opening_source(row.source_doctype, row.source_name, scope.company):
+			if row.statutory_number:
+				blockers.append(_("本期含保留历史字号的期初记录，不能自动重排；请在期初余额查看初始化依据"))
+			history.append(row)
+			continue
 		row.source_creation = source.creation
 		row.source_modified = source.modified
 		row.source_docstatus = source.docstatus
@@ -114,7 +121,7 @@ def organize_monthly_voucher_numbers(company, accounting_period, voucher_word="�
 		revision = cint(sequence.numbering_revision) if sequence else 0
 		rows, active, history, blockers = _read_plan(scope, start, end, revision, apply)
 		blockers.extend(_protected_periods(company_doc, start, end, rows, lock=apply))
-		if rows and not sequence:
+		if active and not sequence:
 			blockers.append(_("月份编号序列不存在，需先检查数据完整性"))
 		if frappe.db.get_value("China Closing Run", {
 			"company": company, "docstatus": 0, "from_date": ["<=", end], "to_date": [">=", start],
