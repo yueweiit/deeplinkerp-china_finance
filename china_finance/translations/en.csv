@@ -2562,3 +2562,4 @@ records 必须是发票对象数组,records must be an array of invoice objects
 借贷方向,Debit or credit
 添加到凭证,Add to voucher
 待新增,Pending addition
+回单不足以确定会计科目，请结合业务单据选择,The receipt does not identify an accounting account. Select one using the supporting business documents.

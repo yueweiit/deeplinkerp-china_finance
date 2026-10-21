@@ -13,8 +13,9 @@ import re
 from datetime import date
 from decimal import Decimal, InvalidOperation
 
-PARSER_VERSION = "cmb-text-v1"
+PARSER_VERSION = "cmb-text-v2"
 TITLE = re.compile(r"[出入]\s*账\s*回\s*单")
+MONEY_TEXT = r"(?:\d+|\d{1,3}(?:,\d{3})+)\.\d{2}"
 
 # Keep bank-specific formats behind a small registry.  A parser is selected
 # from the Bank Account's bank name; adding another bank must not change the
@@ -96,14 +97,35 @@ def money(value):
 	return amount
 
 
+def _parse_fee_line(line):
+	"""Read every item/count/amount cell, including side-by-side fee columns.
+
+	Require the complete line to be consumed so an incomplete second column
+	cannot silently disappear. Reject amounts embedded in an item name rather
+	than swallowing a malformed first column into the next item's name.
+	"""
+	details, position = [], 0
+	for match in re.finditer(r"(.+?)\s+(\d+)\s+((?:\d+|\d{1,3}(?:,\d{3})+)\.\d{2})(?=\s|$)", line):
+		item = match[1].strip()
+		if line[position:match.start()].strip() or re.search(
+			r"(?:^|\s)[+-]?[\d,.]+\s+(?:[A-Z]{3}|[￥¥])?\s*[+-]?[\d,.]+(?=\s|$)", item
+		):
+			return []
+		details.append({"item": item, "count": int(match[2]), "amount": str(money(match[3]))})
+		position = match.end()
+	return [] if line[position:].strip() else details
+
+
 def parse_receipt_text(text):
 	"""Parse one receipt; reject missing/ambiguous financial identity fields."""
 	text = text.replace("：", ":").replace("（", "(").replace("）", ")")
 
 	def field(label, required=False):
-		matches = re.findall(r"(?:^|\s)" + re.escape(label) + r":\s*([^\n]*?)(?=\s+[^\s:]+:|\n|$)", text)
+		matches = re.findall(
+			r"(?:^|\s)" + re.escape(label) + r":([^\n]*?)(?=[^\S\n]+[^\s:]+:|\n|$)", text
+		)
 		value = matches[0].strip() if len(matches) == 1 else ""
-		if required and not value:
+		if len(matches) > 1 or (required and not value):
 			raise ReceiptParseError(_("缺少或重复的字段：{0}").format(label))
 		return value
 
@@ -118,8 +140,20 @@ def parse_receipt_text(text):
 		posting_date = date(*map(int, d.groups())).isoformat()
 	except ValueError as exc:
 		raise ReceiptParseError(_("交易日期无效")) from exc
-	amount_text = field("交易金额(小写)", True)
-	m = re.fullmatch(r"(CNY|￥|¥)\s*((?:\d+|\d{1,3}(?:,\d{3})+)\.\d{2})", amount_text)
+	business_type = field("业务类型", True)
+	# These two CMB outbound layouts omit both '(小写)' and the summary.
+	# Stars are leading amount padding, never permission to infer masked digits.
+	cross_border = direction == "支出" and business_type in ("汇款接单(企业银行)", "嵌套购付汇")
+	plain_amount = field("交易金额")
+	amount_text = field("交易金额(小写)", not (cross_border and plain_amount))
+	if plain_amount and amount_text:
+		raise ReceiptParseError(_("缺少或重复的字段：{0}").format("交易金额"))
+	new_layout = cross_border and bool(plain_amount)
+	m = re.fullmatch(
+		(r"(CNY)\s*\**(" + MONEY_TEXT + ")") if new_layout
+		else (r"(CNY|￥|¥)\s*(" + MONEY_TEXT + ")"),
+		plain_amount if new_layout else amount_text,
+	)
 	if not m:
 		raise ReceiptParseError(_("第一期仅支持明确标注的人民币金额"))
 	amount = money(m[2])
@@ -129,7 +163,6 @@ def parse_receipt_text(text):
 	if not re.fullmatch(r"[A-Za-z0-9-]{5,140}", flow):
 		raise ReceiptParseError(_("交易流水号无效"))
 	receipt_number = field("回单编号", True).split()[0]
-	business_type = field("业务类型", True)
 	payer_account, payee_account = field("付款账号"), field("收款账号")
 	payer, payee = field("付款人"), field("收款人")
 	own_account = payer_account if direction == "支出" else payee_account
@@ -142,9 +175,8 @@ def parse_receipt_text(text):
 			taxes.append(
 				{"item": tax[1], "period_from": tax[2], "period_to": tax[3], "amount": str(money(tax[4]))}
 			)
-		fee = re.fullmatch(r"(.+?)\s+(\d+)\s+([\d,]+\.\d{2})", line.strip())
-		if fee and "收费项目" in text:
-			fees.append({"item": fee[1], "count": int(fee[2]), "amount": str(money(fee[3]))})
+		if "收费项目" in text:
+			fees.extend(_parse_fee_line(line.strip()))
 	if "税(费)种名称" in text and not taxes:
 		raise ReceiptParseError(_("税费明细无法完整识别"))
 	if "收费项目" in text and not fees:
@@ -152,6 +184,29 @@ def parse_receipt_text(text):
 	for details in (fees, taxes):
 		if details and sum(money(item["amount"]) for item in details) != amount:
 			raise ReceiptParseError(_("回单明细合计与交易金额不一致"))
+	metadata = {}
+	if new_layout and business_type == "汇款接单(企业银行)":
+		if not fees:
+			raise ReceiptParseError(_("收费明细无法完整识别"))
+		underlying = re.fullmatch(r"([A-Z]{3})\s*(" + MONEY_TEXT + ")", field("业务金额", True))
+		if not underlying:
+			raise ReceiptParseError(_("缺少或重复的字段：{0}").format("业务金额"))
+		metadata["business_amount"] = {"currency": underlying[1], "amount": str(money(underlying[2]))}
+	elif new_layout and business_type == "嵌套购付汇":
+		sold = re.fullmatch(r"CNY\s*(" + MONEY_TEXT + ")", field("卖出币种/金额", True))
+		bought = re.fullmatch(
+			r"([A-Z]{3})\s*(" + MONEY_TEXT + r")\s*\(即付款金额\)", field("买入币种/金额", True)
+		)
+		if not sold or not bought or bought[1] == "CNY" or money(bought[2]) <= 0:
+			raise ReceiptParseError(_("缺少或重复的字段：{0}").format("买卖币种/金额"))
+		if money(sold[1]) != amount:
+			raise ReceiptParseError(_("回单明细合计与交易金额不一致"))
+		metadata["foreign_exchange"] = {
+			"sold_currency": "CNY", "sold_amount": str(money(sold[1])),
+			"bought_currency": bought[1], "bought_amount": str(money(bought[2])),
+			# CMB quotes may be per 100 foreign units. Preserve, never recalculate.
+			"quoted_rate": field("成交汇率", True),
+		}
 	return {
 		"posting_date": posting_date,
 		"direction": direction,
@@ -161,7 +216,7 @@ def parse_receipt_text(text):
 		"receipt_number": receipt_number,
 		"business_type": business_type,
 		"business_number": field("业务编号"),
-		"summary": field("交易摘要", True),
+		"summary": field("交易摘要", not new_layout) or business_type,
 		"business_reference": field("业务参考号") or field("参考号"),
 		"postscript": field("附言"),
 		"taxpayer_id": field("纳税人识别号"),
@@ -181,6 +236,7 @@ def parse_receipt_text(text):
 		"fee_details": fees,
 		"tax_details": taxes,
 		"raw_text": text,
+		**metadata,
 	}
 
 

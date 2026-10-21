@@ -3290,3 +3290,4 @@ Unable to load statement mapping. Check the reported error and try again.,No se 
 借贷方向,Debe o haber
 添加到凭证,Añadir al comprobante
 待新增,Pendiente de añadir
+回单不足以确定会计科目，请结合业务单据选择,El recibo no permite determinar la cuenta contable. Seleccione una con los documentos justificativos de la operación.

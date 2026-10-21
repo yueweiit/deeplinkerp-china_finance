@@ -104,6 +104,43 @@ def receipt_text(
 """
 
 
+def cross_border_text(fx=False, september=False):
+	"""Reported CMB layouts with synthetic identities, including absent summaries."""
+	amount = ("13,457.20" if september else "10,144.35") if fx else "200.00"
+	foreign_amount = "2000.00" if september else "1500.00"
+	rate = "672.8600" if september else "676.2900"
+	if fx:
+		details = (
+			"客户号：12345678901234 合同号：TEST-CONTRACT\n"
+			"起息日：20260813 备注：\n"
+			f"卖出币种/金额：CNY{amount.replace(',', '')} "
+			f"买入币种/金额：USD{foreign_amount}（即付款金额）\n"
+			f"成交汇率：现汇{rate} 汇款附言：\nTESTCODE"
+		)
+	else:
+		details = (
+			f"业务金额：USD{foreign_amount} 客户号：12345678901234\n"
+			"客户申请号： 起息日：20260813\n"
+			"收费项目 笔数 金额 收费项目 笔数 金额\n"
+			"汇出汇款(对公) 1 100.00 业务处理通讯费(境外途径汇款)-对公 1 100.00\nTESTCODE"
+		)
+	text = receipt_text(
+		amount="CNY***********" + amount,
+		flow=f"TEST-{'FX' if fx else 'FEE'}-{'SEP' if september else 'AUG'}",
+		business="嵌套购付汇" if fx else "汇款接单（企业银行）",
+		details=details,
+	)
+	text = text.replace("交易金额(小写)： ", "交易金额：").replace("交易摘要：收费\n", "")
+	text = text.replace("交易金额(大写)： 人民币金额\n", "")
+	text = text.replace("2026年08月03日", "2026年09月08日" if september else "2026年08月13日")
+	if fx:
+		return text.replace("收款开户行：招商银行", "收 款 行：TEST BANK\nOFFICES AND HEAD OFFICE\nHONG KONG")
+	return text.replace(
+		"收款账号：98765432101234 收款人：测试收款人\n收款开户行：招商银行",
+		"收款账号： 收款人：\n收 款 行：",
+	)
+
+
 class TestReceiptParser(unittest.TestCase):
 	def test_bank_parser_registry_selects_cmb_and_rejects_unknown_bank(self):
 		for bank_name, parser_key in (
@@ -294,6 +331,144 @@ class TestReceiptParser(unittest.TestCase):
 		self.assertEqual(r["counterparty_account"], "98765432101234")
 		self.assertEqual(r["fee_details"][0]["amount"], "3.52")
 		self.assertEqual(r["receipt_number"], "RECEIPT-001")
+
+	def test_side_by_side_wage_fees_include_both_columns(self):
+		data = parse_receipt_text(receipt_text(
+			amount="CNY4.50", business="代发付费", summary="工资",
+			details="收费项目 笔数 金额 收费项目 笔数 金额\n"
+				"代发业务（网上）-跨行手续费-同城 3 3.00 代发业务手续费 3 1.50",
+		))
+		self.assertEqual(data["fee_details"], [
+			{"item": "代发业务(网上)-跨行手续费-同城", "count": 3, "amount": "3.00"},
+			{"item": "代发业务手续费", "count": 3, "amount": "1.50"},
+		])
+		self.assertEqual(service.receipt_summary(data), "支付银行手续费")
+
+	def test_side_by_side_remittance_fee_cells(self):
+		data = parse_receipt_text(receipt_text(
+			amount="CNY200.00",
+			details="收费项目 笔数 金额 收费项目 笔数 金额\n"
+				"汇出汇款(对公) 1 100.00 业务处理通讯费(境外途径汇款)-对公 1 100.00",
+		))
+		self.assertEqual([r["amount"] for r in data["fee_details"]], ["100.00", "100.00"])
+		self.assertEqual(len(data["fee_details"]), 2)
+
+	def test_reverse_order_parallel_wage_fees(self):
+		data = parse_receipt_text(receipt_text(
+			amount="CNY5.50", business="代发付费", summary="工资",
+			details="收费项目 笔数 金额 收费项目 笔数 金额\n"
+				"代发业务手续费 5 2.50 代发业务（网上）-跨行手续费-同城 3 3.00\nTESTCODE",
+		))
+		self.assertEqual([r["amount"] for r in data["fee_details"]], ["2.50", "3.00"])
+		self.assertEqual([r["count"] for r in data["fee_details"]], [5, 3])
+		self.assertEqual(service.receipt_summary(data), "支付银行手续费")
+
+	def test_cross_border_remittance_fees_use_cny_not_underlying_usd(self):
+		for september in (False, True):
+			with self.subTest(september=september):
+				data = parse_receipt_text(cross_border_text(september=september))
+				self.assertEqual(data["amount"], "200.00")
+				self.assertEqual(data["currency"], "CNY")
+				self.assertEqual(data["business_amount"], {
+					"currency": "USD", "amount": "2000.00" if september else "1500.00",
+				})
+				self.assertEqual([r["amount"] for r in data["fee_details"]], ["100.00", "100.00"])
+				self.assertEqual(data["counterparty"], "")
+				self.assertEqual(data["counterparty_account"], "")
+				self.assertEqual(service.receipt_summary(data), "支付银行手续费")
+				with (
+					patch.object(frappe, "get_all", return_value=[]),
+					patch.object(frappe.db, "get_value", return_value="fee") as get,
+				):
+					self.assertEqual(service.suggest_account("Test", data)["account"], "fee")
+					self.assertEqual(get.call_args.args[1]["account_number"], "660303")
+
+	def test_nested_fx_preserves_cny_outflow_and_foreign_metadata(self):
+		for september in (False, True):
+			with self.subTest(september=september):
+				data = parse_receipt_text(cross_border_text(fx=True, september=september))
+				self.assertEqual(data["currency"], "CNY")
+				self.assertEqual(data["amount"], "13457.20" if september else "10144.35")
+				self.assertEqual(data["direction"], "支出")
+				self.assertEqual(data["posting_date"], "2026-09-08" if september else "2026-08-13")
+				self.assertEqual(data["foreign_exchange"], {
+					"sold_currency": "CNY", "sold_amount": data["amount"],
+					"bought_currency": "USD", "bought_amount": "2000.00" if september else "1500.00",
+					"quoted_rate": "现汇672.8600" if september else "现汇676.2900",
+				})
+				self.assertEqual(data["fee_details"], [])
+				self.assertEqual(service.receipt_summary(data), "嵌套购付汇")
+				with (
+					patch.object(frappe, "get_all", return_value=[]),
+					patch("china_finance.services.bank_reconciliation._resolve_account") as resolve,
+				):
+					self.assertIsNone(service.suggest_account("Test", data)["account"])
+					resolve.assert_not_called()
+				# Explicit company rules remain authoritative.
+				rule = frappe._dict(name="reviewed-fx", priority=10, business_type="嵌套购付汇", account="reviewed")
+				with patch.object(frappe, "get_all", return_value=[rule]):
+					self.assertEqual(service.suggest_account("Test", data)["account"], "reviewed")
+
+	def test_cross_border_fee_and_payment_keep_separate_flow_identities(self):
+		fee = parse_receipt_text(cross_border_text())
+		payment = parse_receipt_text(cross_border_text(fx=True))
+		self.assertEqual(fee["business_number"], payment["business_number"])
+		self.assertNotEqual(service.identity("bank", fee["transaction_id"]),
+			service.identity("bank", payment["transaction_id"]))
+
+	def test_cross_border_formats_still_reject_ambiguous_or_incomplete_financial_fields(self):
+		fee = cross_border_text()
+		fx = cross_border_text(fx=True)
+		for text in (
+			fee.replace("CNY***********200.00", "USD***********200.00"),
+			fee.replace("200.00", "2**.00"),
+			fee.replace("200.00", "200.00*"),
+			fee.replace("200.00", "2,00.00"),
+			fee.replace("交易金额：", "交易金额：CNY200.00\n交易金额："),
+			fee + "\n交易金额(小写)：CNY200.00",
+			fee.replace("汇款接单（企业银行）", "未知业务"),
+			fee.replace("出 账 回 单", "入 账 回 单"),
+			fee.replace("付款账号：12345678901234", "付款账号：1234****1234"),
+			fee.replace("业务金额：USD1500.00", "业务金额："),
+			fee.replace("收费项目 笔数 金额 收费项目 笔数 金额\n", ""),
+			fee.replace("交易流水：TEST-FEE-AUG", "交易流水："),
+			fx.replace("卖出币种/金额：CNY10144.35", "卖出币种/金额：CNY10144.36"),
+			fx.replace("卖出币种/金额：CNY10144.35", "卖出币种/金额：USD10144.35"),
+			fx.replace("买入币种/金额：USD1500.00", "买入币种/金额：CNY1500.00"),
+			fx.replace("买入币种/金额：USD1500.00", "买入币种/金额：USD0.00"),
+			fx.replace("成交汇率：现汇676.2900", "成交汇率："),
+			fx.replace("买入币种/金额：USD1500.00（即付款金额）", ""),
+			fx + "\n交易摘要：摘要一\n交易摘要：摘要二",
+			receipt_text().replace("交易摘要：收费\n", ""),
+			receipt_text().replace("CNY3.52", "CNY***3.52"),
+		):
+			with self.subTest(text=text), self.assertRaises(ReceiptParseError):
+				parse_receipt_text(text)
+
+	def test_mixed_single_and_parallel_fee_lines(self):
+		data = parse_receipt_text(receipt_text(
+			amount="CNY6.50",
+			details="收费项目 笔数 金额 收费项目 笔数 金额\n"
+				"账户服务费 1 2.00\n跨行手续费 3 3.00 代发业务手续费 3 1.50",
+		))
+		self.assertEqual([r["amount"] for r in data["fee_details"]], ["2.00", "3.00", "1.50"])
+
+	def test_incomplete_or_malformed_parallel_fees_cannot_pass(self):
+		for amount, line in (
+			("CNY4.50", "跨行手续费 3 3.00 代发业务手续费 3"),
+			("CNY3.00", "跨行手续费 3 3.00 代发业务手续费"),
+			("CNY1.50", "跨行手续费 3 3.333 代发业务手续费 3 1.50"),
+			("CNY1.50", "跨行手续费 3 -3.00 代发业务手续费 3 1.50"),
+			("CNY1.50", "跨行手续费 3 3 代发业务手续费 3 1.50"),
+			("CNY1.50", "跨行手续费 3.5 3.00 代发业务手续费 3 1.50"),
+			("CNY1.50", "跨行手续费 3 1,00.00 代发业务手续费 3 1.50"),
+			("CNY4.51", "跨行手续费 3 3.00 代发业务手续费 3 1.50"),
+		):
+			with self.subTest(line=line), self.assertRaises(ReceiptParseError):
+				parse_receipt_text(receipt_text(
+					amount=amount,
+					details="收费项目 笔数 金额 收费项目 笔数 金额\n" + line,
+				))
 
 	def test_incoming_uses_payee_as_own_account(self):
 		r = parse_receipt_text(

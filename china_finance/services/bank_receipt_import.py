@@ -434,6 +434,10 @@ def suggest_account(company, data):
 			"rule": best[0].name,
 		}
 	code, reason = None, "回单不足以确定会计科目，请结合业务单据选择"
+	if data.get("foreign_exchange"):
+		# CNY funding for an FX payment is not itself a bank fee. Only the
+		# company's explicit rules above or manual review can classify it.
+		return {"account": None, "reason": _(reason)}
 	if data["direction"] == "支出":
 		if data["business_type"] in ("企业银行收费", "代发付费") or data["fee_details"]:
 			code, reason = "660303", "回单明确为银行收费；优先于摘要中的工资关键词"
