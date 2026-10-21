@@ -112,6 +112,11 @@ frappe.query_reports["China Financial Statements"] = {
 		}
 	},
 	formatter(value, row, column, data, default_formatter) {
+		if (column.fieldtype === "Currency" && data) {
+			const side = column.fieldname.startsWith("asset_") ? "asset" :
+				column.fieldname.startsWith("liability_equity_") ? "liability_equity" : null;
+			if (side && data[`${side}_row_type`] === "Heading") return "";
+		}
 		value = default_formatter(value, row, column, data);
 		if (data?.source_accounts?.length && column.fieldname === "label") {
 			value = source_account_link(value, data.source_accounts);
@@ -355,6 +360,7 @@ function render_balance_sheet_tree(panel, rows, currency) {
 
 	const bold_row = (data) => data && (data.bold || data.row_type === "Heading");
 	const format_amount = (value, row, column, data) => {
+		if (data?.row_type === "Heading") return "";
 		let formatted = format_currency(value || 0, currency);
 		if (bold_row(data)) formatted = `<strong>${formatted}</strong>`;
 		return formatted;

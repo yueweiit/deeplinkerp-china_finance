@@ -9,6 +9,7 @@ from china_finance.services.financial_statement import get_statement_source_acco
 from china_finance.services.statement_mapping_repair import corrected_cash_flow_classification, repair_cash_flow_mappings
 from china_finance.setup.templates import classify_account_number
 from china_finance.china_finance.report.china_financial_statements.china_financial_statements import (
+	build_balance_sheet_rows,
 	execute_native_trial_balance,
 	execute_account_activity_balance,
 )
@@ -28,6 +29,23 @@ def row(code, indent=0, formula=None):
 
 
 class TestStatementReconciliation(unittest.TestCase):
+	def test_balance_sheet_headings_are_blank_but_zero_net_assets_are_preserved(self):
+		rows = [
+			{"row_code": "FIXED_ASSETS_HEADING", "label": "Fixed assets", "row_type": "Heading", "amount": 0, "opening_amount": 0},
+			{"row_code": "FIXED_ASSETS_NET", "label": "Net fixed assets", "row_type": "Formula", "amount": 0, "opening_amount": 3510.91},
+			{"row_code": "TOTAL_ASSETS", "label": "Total assets", "row_type": "Formula", "amount": 0, "opening_amount": 3510.91},
+			{"row_code": "LIABILITIES", "label": "Liabilities", "row_type": "Heading", "amount": 0, "opening_amount": 0},
+			{"row_code": "TOTAL_LIABILITIES_EQUITY", "label": "Total", "row_type": "Formula", "amount": 0, "opening_amount": 3510.91},
+		]
+		paired = build_balance_sheet_rows(rows)
+		for side in ("asset", "liability_equity"):
+			for field in ("opening_amount", "amount", "comparison_amount"):
+				self.assertIsNone(paired[0][f"{side}_{field}"])
+		self.assertEqual(paired[1]["asset_opening_amount"], 3510.91)
+		self.assertEqual(paired[1]["asset_amount"], 0)
+		self.assertEqual(paired[1]["liability_equity_opening_amount"], 3510.91)
+		self.assertEqual(paired[1]["liability_equity_amount"], 0)
+
 	def test_closing_filter_is_removed_from_both_definitions(self):
 		from china_finance.setup.install import CHINA_FINANCIAL_STATEMENT_REPORT_FILTERS
 		definition = Path(__file__).resolve().parents[1] / "china_finance/report/china_financial_statements/china_financial_statements.json"

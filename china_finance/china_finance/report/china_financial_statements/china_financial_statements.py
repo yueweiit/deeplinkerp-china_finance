@@ -751,6 +751,12 @@ def build_balance_sheet_rows(rows):
 			"liability_equity_indent": liability_equity.get("indent", 0),
 			"liability_equity_bold": liability_equity.get("bold", 0),
 		})
+		# Display-only headings have no balance; preserve actual zero-valued
+		# mapped/formula rows, including fully depreciated fixed assets.
+		for side in ("asset", "liability_equity"):
+			if paired_rows[-1].get(f"{side}_row_type") == "Heading":
+				for field in ("opening_amount", "amount", "comparison_amount"):
+					paired_rows[-1][f"{side}_{field}"] = None
 	return paired_rows
 
 

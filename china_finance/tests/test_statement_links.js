@@ -40,3 +40,33 @@ console.log("PASS: all-account links, escaping, route filters, closing explanati
 vm.runInContext(fs.readFileSync(path.join(__dirname, "../china_finance/report/china_purchase_reconciliation/china_purchase_reconciliation.js"), "utf8"), context);
 assert.equal(context.frappe.query_reports["China Purchase Reconciliation"].filters, undefined,
 	"Report JSON filters must not be replaced by an empty JavaScript array");
+
+// A heading has no balance; a fully depreciated asset still has a real zero net balance.
+let tree_options;
+context.window = {DataTable: class {
+	constructor(_body, options) {
+		tree_options = options;
+		this.rowmanager = {setTreeDepth() {}};
+	}
+}};
+context.frappe.boot = {lang: "zh"};
+context.frappe.utils.datatable = {get_translations: () => ({})};
+context.frappe.utils.is_rtl = () => false;
+context.format_currency = (amount, currency) => `${currency} ${amount.toFixed(2)}`;
+const panel = {body: {}, $expand: {on() {}}, $collapse: {on() {}}};
+const heading = {label: "Fixed assets", row_type: "Heading", opening_amount: null, amount: null};
+const net_asset = {label: "Net fixed assets", row_type: "Formula", opening_amount: 3510.91, amount: 0};
+context.render_balance_sheet_tree(panel, [heading, net_asset], "CNY");
+for (const column of tree_options.columns.filter((column) => column.id !== "label")) {
+	assert.equal(column.format(heading[column.id], 0, column, heading), "");
+	assert.equal(column.format(net_asset[column.id], 1, column, net_asset),
+		context.format_currency(net_asset[column.id], "CNY"));
+}
+const financial_settings = context.frappe.query_reports["China Financial Statements"];
+assert.equal(financial_settings.formatter(null, 0,
+	{fieldtype: "Currency", fieldname: "asset_amount"}, {asset_row_type: "Heading"},
+	() => { throw new Error("Heading amount must remain blank"); }), "");
+assert.equal(financial_settings.formatter(0, 1,
+	{fieldtype: "Currency", fieldname: "asset_amount"}, {asset_row_type: "Formula"},
+	() => "CNY 0.00"), "CNY 0.00");
+console.log("PASS: balance-sheet heading amounts are blank and zero net assets remain visible");
