@@ -14,8 +14,9 @@ from china_finance.services.closing import (
 	run_closing_checks,
 	submit_closing_run,
 )
-from china_finance.services.financial_statement import snapshot_statement
+from china_finance.services.financial_statement import build_statement, snapshot_statement
 from china_finance.services.statutory_reporting import generate_statutory_report_package
+from china_finance.setup.templates import SMALL_ENTERPRISE_ROWS, build_seed_rows
 
 
 class TestClosingReportSnapshots(IntegrationTestCase):
@@ -100,6 +101,155 @@ class TestClosingReportSnapshots(IntegrationTestCase):
 		name = snapshot_statement(self.run, kind)
 		doc = frappe.get_doc("China Report Snapshot", name)
 		return doc, json.loads(doc.data_json)
+
+	def add_balance(self, label, date, amount, **dimensions):
+		for side, account in (("debit", self.cash), ("credit", self.capital)):
+			self.insert(
+				"GL Entry", label + side, company=self.company, account=account, posting_date=date,
+				debit=amount if side == "debit" else 0, credit=amount if side == "credit" else 0,
+				is_opening=dimensions.get("is_opening", "No"), is_cancelled=dimensions.get("is_cancelled", 0),
+				**{key: value for key, value in dimensions.items() if key not in {"is_opening", "is_cancelled"}},
+			)
+
+	def test_year_start_opening_entries_are_in_opening_and_closing_once(self):
+		self.add_balance("prior opening", "2025-12-31", 20, is_opening="Yes")
+		self.add_balance("opening", "2026-01-01", 100, is_opening="Yes")
+		self.add_balance("first day business", "2026-01-01", 7)
+		self.add_balance("later opening", "2026-02-01", 50, is_opening="Yes")
+		self.add_balance("cancelled opening", "2026-01-01", 1000, is_opening="Yes", is_cancelled=1)
+		for start, end, closing in (
+			("2026-01-01", "2026-01-31", 127),
+			("2026-07-01", "2026-09-30", 177),
+			("2026-01-01", "2026-12-31", 177),
+		):
+			with self.subTest(start=start, end=end):
+				result = build_statement(self.company, "Balance Sheet", start, end)
+				self.assertTrue(all(row["opening_amount"] == 120 for row in result["rows"]))
+				self.assertTrue(all(row["amount"] == closing for row in result["rows"]))
+
+	def test_supplemented_full_opening_without_history_is_not_added_twice(self):
+		# A late initialization represents the full opening balance, not current-year income.
+		self.add_balance("supplemented full opening", "2026-01-01", 100, is_opening="Yes")
+		self.add_balance("current year business", "2026-01-01", 7)
+		for start, end in (("2026-01-01", "2026-01-31"), ("2026-07-01", "2026-09-30")):
+			with self.subTest(start=start, end=end):
+				result = build_statement(self.company, "Balance Sheet", start, end)
+				self.assertEqual(len(result["rows"]), 2)
+				self.assertTrue(all(row["opening_amount"] == 100 for row in result["rows"]))
+				self.assertTrue(all(row["amount"] == 107 for row in result["rows"]))
+
+	def test_fixed_asset_opening_net_and_current_depreciation_use_distinct_periods(self):
+		frappe.db.set_value("China Financial Statement Template", self.templates["Balance Sheet"], "is_active", 0)
+		template = self.insert(
+			"China Financial Statement Template", "fixed assets", template_key=self.prefix + "|fixed assets",
+			title="Balance Sheet", accounting_standard=self.prefix, statement_type="Balance Sheet", version="3.0",
+			effective_from="2026-01-01", is_active=1,
+		)
+		for idx, definition in enumerate(build_seed_rows(SMALL_ENTERPRISE_ROWS["Balance Sheet"]), 1):
+			self.insert(
+				"China Financial Statement Row", definition["row_code"], parent=template,
+				parenttype="China Financial Statement Template", parentfield="rows", idx=idx, **definition,
+			)
+		fixed = self.insert(
+			"Account", "fixed", company=self.company, account_name="Fixed assets", root_type="Asset",
+			report_type="Balance Sheet", account_type="Fixed Asset", account_currency="CNY",
+		)
+		accumulated = self.insert(
+			"Account", "accumulated", company=self.company, account_name="Accumulated depreciation",
+			root_type="Asset", report_type="Balance Sheet", account_type="Accumulated Depreciation", account_currency="CNY",
+		)
+		expense = self.insert(
+			"Account", "expense", company=self.company, account_name="Depreciation expense", root_type="Expense",
+			report_type="Profit and Loss", account_currency="CNY",
+		)
+		for label, account, code in (
+			("fixed mapping", fixed, "FIXED_ASSETS"),
+			("accumulated mapping", accumulated, "ACCUMULATED_DEPRECIATION"),
+			("capital mapping", self.capital, "PAID_IN_CAPITAL"),
+		):
+			self.insert(
+				"China Financial Statement Mapping", label, company=self.company, template=template, account=account,
+				row_code=code, effective_from="2026-01-01", sign_multiplier="1", reviewed=1,
+			)
+		for label, account, debit, credit in (
+			("original", fixed, 70212.61, 0), ("accumulated opening", accumulated, 0, 66701.70),
+			("opening equity", self.capital, 0, 3510.91),
+		):
+			self.insert(
+				"GL Entry", label, company=self.company, account=account, posting_date="2026-01-01",
+				debit=debit, credit=credit, is_opening="Yes", is_cancelled=0,
+			)
+		for date, amount in (
+			("2026-01-31", 967.92), ("2026-02-28", 967.92),
+			("2026-03-31", 967.92), ("2026-04-30", 607.15),
+		):
+			for side, account in (("debit", expense), ("credit", accumulated)):
+				self.insert(
+					"GL Entry", date + side, company=self.company, account=account, posting_date=date,
+					debit=amount if side == "debit" else 0, credit=amount if side == "credit" else 0,
+					is_opening="No", is_cancelled=0,
+				)
+		for start, end, depreciation, net in (
+			("2026-01-01", "2026-01-31", 67669.62, 2542.99),
+			("2026-04-01", "2026-04-30", 70212.61, 0),
+			("2026-01-01", "2026-12-31", 70212.61, 0),
+		):
+			with self.subTest(end=end):
+				result = build_statement(self.company, "Balance Sheet", start, end)
+				rows = {row["row_code"]: row for row in result["rows"]}
+				self.assertEqual(rows["FIXED_ASSETS"]["opening_amount"], 70212.61)
+				self.assertEqual(rows["ACCUMULATED_DEPRECIATION"]["opening_amount"], 66701.70)
+				self.assertEqual(rows["FIXED_ASSETS_NET"]["opening_amount"], 3510.91)
+				self.assertEqual(rows["NONCURRENT_ASSETS"]["opening_amount"], 3510.91)
+				self.assertEqual(rows["FIXED_ASSETS"]["amount"], 70212.61)
+				self.assertEqual(rows["ACCUMULATED_DEPRECIATION"]["amount"], depreciation)
+				self.assertEqual(rows["FIXED_ASSETS_NET"]["amount"], net)
+				self.assertEqual(rows["NONCURRENT_ASSETS"]["amount"], net)
+				self.assertEqual(rows["TOTAL_ASSETS"]["amount"], net)
+				self.assertEqual(rows["TOTAL_LIABILITIES_EQUITY"]["amount"], net)
+
+	def test_opening_entries_keep_dimension_filters(self):
+		for label, amount, book, center, project in (
+			("selected", 100, "Book A", "Center A", "Project A"),
+			("other book", 200, "Book B", "Center A", "Project A"),
+			("other center", 300, "Book A", "Center B", "Project A"),
+			("other project", 400, "Book A", "Center A", "Project B"),
+		):
+			self.add_balance(
+				label, "2026-01-01", amount, is_opening="Yes",
+				finance_book=book, cost_center=center, project=project,
+			)
+		result = build_statement(
+			self.company, "Balance Sheet", "2026-01-01", "2026-01-31",
+			finance_book="Book A", cost_center="Center A", project="Project A",
+		)
+		self.assertTrue(all(row["opening_amount"] == 100 for row in result["rows"]))
+		self.assertTrue(all(row["amount"] == 100 for row in result["rows"]))
+
+	def test_non_calendar_year_uses_fiscal_start_not_january(self):
+		self.add_balance("prior business", "2026-06-30", 20)
+		self.add_balance("july opening", "2026-07-01", 100, is_opening="Yes")
+		self.add_balance("july business", "2026-07-01", 7)
+		with patch(
+			"china_finance.services.financial_statement.get_fiscal_year_start", return_value=getdate("2026-07-01")
+		):
+			result = build_statement(self.company, "Balance Sheet", "2026-10-01", "2026-12-31")
+		self.assertTrue(all(row["opening_amount"] == 120 for row in result["rows"]))
+		self.assertTrue(all(row["amount"] == 127 for row in result["rows"]))
+
+	def test_snapshot_keeps_prior_year_comparison_separate_from_opening(self):
+		frappe.db.set_value("China Financial Statement Template", self.templates["Balance Sheet"], "effective_from", "2025-01-01")
+		for label in ("cash", "capital"):
+			frappe.db.set_value(
+				"China Financial Statement Mapping", self.prefix + " " + label, "effective_from", "2025-01-01"
+			)
+		self.add_balance("prior balance", "2025-12-31", 20)
+		self.add_balance("new year opening", "2026-01-01", 100, is_opening="Yes")
+		self.add_balance("new year business", "2026-01-01", 7)
+		_doc, payload = self.make_snapshot()
+		self.assertTrue(all(row["opening_amount"] == 120 for row in payload["rows"]))
+		self.assertTrue(all(row["comparison_amount"] == 20 for row in payload["rows"]))
+		self.assertTrue(all(row["amount"] == 127 for row in payload["rows"]))
 
 	def test_monthly_missing_comparison_keeps_current_amounts_and_blank_comparatives(self):
 		for label, account, debit, credit in (("cash", self.cash, 123, 0), ("capital", self.capital, 0, 123)):

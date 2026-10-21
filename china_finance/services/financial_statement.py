@@ -232,6 +232,7 @@ def build_statement(
 			get_statement_values(
 				company, mappings, statement_type, None, opening_date, finance_book, cost_center, project,
 				as_at_date=True, template=template, reclassifications=reclassifications,
+				opening_entry_date=year_start if statement_type == "Balance Sheet" else None,
 			)
 			if statement_type in {"Balance Sheet", "Changes in Equity"} else None
 		)
@@ -753,7 +754,7 @@ def get_statement_source_accounts(template, mappings):
 
 def get_statement_values(
 	company, mappings, statement_type, from_date, to_date, finance_book=None, cost_center=None, project=None,
-	as_at_date=False, template=None, reclassifications=None,
+	as_at_date=False, template=None, reclassifications=None, opening_entry_date=None,
 ):
 	if not as_at_date and statement_type in {"Profit and Loss", "Changes in Equity"}:
 		values = get_period_mapped_values(
@@ -783,6 +784,13 @@ def get_statement_values(
 		company, accounts, None if as_at_date or statement_type == "Balance Sheet" else from_date, to_date,
 		finance_book, cost_center, project,
 	)
+	if statement_type == "Balance Sheet" and as_at_date and opening_entry_date:
+		# Year-start opening vouchers belong to opening balances, while ordinary
+		# activity on that same date and later opening vouchers do not.
+		for account, value in get_account_opening_entries(
+			company, accounts, opening_entry_date, opening_entry_date, finance_book, cost_center, project
+		).items():
+			balances[account] = flt(balances.get(account)) + flt(value)
 	values = defaultdict(float)
 	vat_accounts = get_active_vat_accounts(company, to_date) if statement_type == "Balance Sheet" else set()
 	temporary_inventory_accrual_debit = max(
