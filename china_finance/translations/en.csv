@@ -2623,3 +2623,4 @@ China Statement Opening Balance Line,Statement Opening Baseline Line
 已有项目属于其他模板，请先核对并移除后再预填,Existing rows belong to another template. Review and remove them before prefilling.
 已确认报表年初基准与总账有 {0} 个项目差异，请单独核对；来源金额未被覆盖。,The confirmed opening baseline differs from the ledger on {0} rows. Reconcile them separately; source amounts have not been overwritten.
 请先保存基准草稿，再通过标准提交确认,"Save the baseline draft first, then confirm it through standard submission."
+已核验空月份结转 {0}（{1} 至 {2}）：已取消且总账处理完成，期间无总账记录，来源无记账及审计残留；无需生成冲销快照。,"Verified empty-month closing {0} ({1} to {2}): cancelled with ledger processing completed, no ledger records in the period and no posting or audit residue for the source. No cancellation snapshot is required."

@@ -553,6 +553,60 @@ def _cancellation_audit_complete(doc, voucher_name):
 	)
 
 
+def _empty_period_closing_cancellation_reason(doc):
+	"""Recognize only a completed cancellation of a wholly empty calendar month.
+
+	No ledger rows is not proof for an arbitrary source: historic GL may have
+	been removed. Require the entire month to have no GL, including cancelled
+	rows, and refuse any source audit or processing residue. Never net amounts
+	or synthesize a Posting snapshot to satisfy the cancellation guard.
+	"""
+	if (
+		doc.doctype != "Period Closing Voucher" or doc.docstatus != 2
+		or doc.get("gle_processing_status") != "Completed" or doc.get("error_message")
+		or not doc.get("period_start_date") or not doc.get("period_end_date")
+	):
+		return None
+	from frappe.utils import get_first_day, get_last_day
+
+	start, end = getdate(doc.period_start_date), getdate(doc.period_end_date)
+	if start != get_first_day(start) or end != get_last_day(start):
+		return None
+	company = get_company(doc)
+	if not company:
+		return None
+	source = {"source_doctype": doc.doctype, "source_name": doc.name}
+	for doctype, filters in (
+		("GL Entry", {"voucher_type": doc.doctype, "voucher_no": doc.name}),
+		("GL Entry", {"company": company, "posting_date": ["between", [start, end]]}),
+		("China Accounting Voucher", source),
+		("China Accounting Voucher", {"source_key": ["in", [f"Posting|{doc.doctype}|{doc.name}", _cancellation_issue_key(doc)]]}),
+		("China Cash Flow Assignment", source),
+		("Account Closing Balance", {"period_closing_voucher": doc.name}),
+	):
+		if frappe.db.get_value(doctype, filters, "name", for_update=True):
+			return None
+	processes = frappe.db.get_values(
+		"Process Period Closing Voucher", {"parent_pcv": doc.name},
+		["name", "docstatus", "status", "p_l_closing_balance"], as_dict=True, for_update=True,
+	)
+	for process in processes:
+		if (
+			process.docstatus != 2 or process.status != "Cancelled"
+			or frappe.parse_json(process.p_l_closing_balance) not in (None, {}, [])
+		):
+			return None
+		for detail in frappe.db.get_values(
+			"Process Period Closing Voucher Detail", {"parent": process.name},
+			["status", "report_type", "closing_balance"], as_dict=True, for_update=True,
+		):
+			if detail.status not in ("Completed", "Cancelled") or detail.report_type not in ("Profit and Loss", "Balance Sheet"):
+				return None
+			if detail.report_type == "Profit and Loss" and frappe.parse_json(detail.closing_balance) not in (None, {}, []):
+				return None
+	return _("已核验空月份结转 {0}（{1} 至 {2}）：已取消且总账处理完成，期间无总账记录，来源无记账及审计残留；无需生成冲销快照。").format(doc.name, start, end)
+
+
 @_mute_audit_messages()
 def process_cancellation_snapshot(source_doctype, source_name, issue_name=None):
 	"""Idempotently create the cancellation snapshot after the source cancellation commits."""
@@ -562,8 +616,11 @@ def process_cancellation_snapshot(source_doctype, source_name, issue_name=None):
 	issue = frappe.get_doc("China Voucher Sync Issue", issue_name, for_update=True) if issue_name else _ensure_cancellation_sync_issue(doc)
 	if (issue.source_doctype, issue.source_name, issue.company) != (doc.doctype, doc.name, get_company(doc)):
 		frappe.throw(_("冲销同步记录与来源单据不匹配"))
+	empty_reason = _empty_period_closing_cancellation_reason(doc) if not issue.cancellation_voucher else None
 	# A locking source read alone does not refresh an older REPEATABLE READ
 	# snapshot. Every audit read below must see the preceding worker's commit.
+	if issue.status == "Resolved" and empty_reason:
+		return {"status": "resolved", "issue": issue.name, "voucher": None, "reason": "empty_period_closing"}
 	if issue.status == "Resolved" and _cancellation_audit_complete(doc, issue.cancellation_voucher):
 		return {"status": "resolved", "issue": issue.name, "voucher": issue.cancellation_voucher}
 	frappe.db.set_value(
@@ -580,6 +637,14 @@ def process_cancellation_snapshot(source_doctype, source_name, issue_name=None):
 	try:
 		if doc.docstatus != 2:
 			raise frappe.ValidationError(_("来源单据尚未取消，不能生成冲销审计快照"))
+		if empty_reason:
+			issue.add_comment("Comment", empty_reason)
+			frappe.db.set_value(
+				"China Voucher Sync Issue", issue.name,
+				{"status": "Resolved", "cancellation_voucher": None, "resolved_on": now_datetime(), "last_error": None},
+				update_modified=False,
+			)
+			return {"status": "resolved", "issue": issue.name, "voucher": None, "reason": "empty_period_closing"}
 		from china_finance.services.cash_flow_assignment import cancel_assignments_for_source
 
 		cancel_assignments_for_source(doc)

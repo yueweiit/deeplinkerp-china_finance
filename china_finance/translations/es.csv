@@ -3351,3 +3351,4 @@ China Statement Opening Balance Line,Línea de saldos iniciales del estado finan
 已有项目属于其他模板，请先核对并移除后再预填,Las partidas existentes pertenecen a otra plantilla. Revíselas y elimínelas antes de precargar.
 已确认报表年初基准与总账有 {0} 个项目差异，请单独核对；来源金额未被覆盖。,La base inicial confirmada difiere del libro mayor en {0} partidas. Concílielas por separado; los importes de origen no se han sobrescrito.
 请先保存基准草稿，再通过标准提交确认,Guarde primero el borrador y confírmelo mediante el envío estándar.
+已核验空月份结转 {0}（{1} 至 {2}）：已取消且总账处理完成，期间无总账记录，来源无记账及审计残留；无需生成冲销快照。,"Cierre de mes sin movimientos {0} verificado ({1} a {2}): cancelado con el procesamiento contable completado, sin registros contables en el período ni restos de contabilización o auditoría del origen. No se requiere una instantánea de cancelación."
