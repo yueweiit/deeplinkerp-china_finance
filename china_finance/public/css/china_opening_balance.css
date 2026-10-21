@@ -34,6 +34,8 @@
 .china-opening-balance .ob-grid tr:hover,.china-opening-balance .ob-grid tr.is-selected { --ob-row-bg:#edf5ff; }
 .china-opening-balance .ob-grid :is(.ob-sticky-check,.ob-sticky-index,.ob-sticky-code,.ob-sticky-account) { position:sticky; z-index:2; background:var(--ob-row-bg,#fff); }
 .china-opening-balance .ob-grid th:is(.ob-sticky-check,.ob-sticky-index,.ob-sticky-code,.ob-sticky-account) { z-index:5; background:#f4f7fb; }
+/* Keep native Link candidates above later sticky cells and the table header. */
+.china-opening-balance .ob-grid td.ob-link-open { z-index:6; }
 .china-opening-balance .ob-sticky-check { left:0; }
 .china-opening-balance .ob-sticky-index { left:30px; color:var(--ob-muted); font-size:11px; }
 .china-opening-balance .ob-sticky-code { left:70px; overflow-wrap:anywhere; font-size:12px; }

@@ -131,6 +131,25 @@ test('native Link initialization and detached controls cannot overwrite a newer 
  s.paste('100299 - 长名称银行\t\t\tCNY\t10\t0\t粘贴','r1','account');current=false;options.df.change();assert.equal(s.batch.rows[0].account,'100299 - 长名称银行');const html=api.view(s);assert.match(html,/ob-sticky-code">100299<\/td>/);assert.match(html,/ob-fullname">长名称银行<\/span>/);
  current=true;control.set_input('1001 - 库存现金');options.df.change();assert.equal(s.batch.rows[0].account,'1001 - 库存现金','current native user changes still reach the grid');
 });
+test('native Link changes use the committed document name even while the display is a search fragment', async () => {
+ const s=session();let config,display='库存现金';
+ const control=api.create_link_control({make_control:options=>{config=options;return {value:'',set_input(value){this.value=value;},get_value:()=>display};},parent:{},fieldname:'account',doctype:'Account',value:s.batch.rows[0].account,is_current:()=>true,onchange:value=>s.edit('r1','account',value)});
+ control.set_input('1122 - 应收账款');display='应收';await config.df.change();
+ assert.equal(s.batch.rows[0].account,'1122 - 应收账款');assert.equal(api.payload(s.batch).rows[0].account,'1122 - 应收账款');assert.match(api.view(s),/ob-sticky-code">1122<\/td>/);
+ control.set_input('');display='';await config.df.change();assert.equal(s.batch.rows[0].account,'');assert.ok(!api.view(s).includes('ob-sticky-code">1122</td>'));
+});
+test('toolbar can await native validation and duplicate blur does not replace the pending selection', async () => {
+ const s=session();let config,release;
+ const control=api.create_link_control({make_control:options=>{config=options;return {set_input(value){this.value=value;},get_value(){return this.value;},validate_and_set_in_model(value){if(this.inside_change_event)return Promise.resolve();this.inside_change_event=true;return new Promise(resolve=>release=resolve).then(async()=>{this.inside_change_event=false;this.set_input(value);await config.df.change();});}};},parent:{},fieldname:'account',doctype:'Account',value:s.batch.rows[0].account,is_current:()=>true,onchange:value=>s.edit('r1','account',value)});
+ const selection=control.validate_and_set_in_model('1122 - 应收账款'),pending=control.opening_balance_pending;
+ await control.validate_and_set_in_model('应收');assert.equal(control.opening_balance_pending,pending);assert.equal(s.batch.rows[0].account,'1001 - 库存现金');
+ release();await pending;await selection;assert.equal(api.payload(s.batch).rows[0].account,'1122 - 应收账款');
+});
+test('native Company change waits for the asynchronous company-switch callback', async () => {
+ let config,release,changed=false;
+ const control=api.create_link_control({make_control:options=>{config=options;return {set_input(value){this.value=value;},get_value(){return this.value;}};},parent:{},fieldname:'company',doctype:'Company',value:'公司甲',is_current:()=>true,onchange:()=>new Promise(resolve=>release=()=>{changed=true;resolve();})});
+ control.set_input('公司乙');const pending=config.df.change();assert.equal(changed,false);assert.equal(typeof pending.then,'function');release();await pending;assert.equal(changed,true);
+});
 test('three-decimal envelope precision governs zero, balance, filters and saved base amounts', async () => {
  let sent;const s=new api.Session({call:async(_method,args)=>{sent=JSON.parse(args.payload);return envelope({precision:3,batch:batch({rows:sent.rows})});}});s.adopt(envelope({precision:3,batch:batch({rows:[{row_id:'a',account:'1001 - 库存现金',account_currency:'CNY',debit:'0.001',credit:'0'},{row_id:'b',account:'1001 - 库存现金',account_currency:'CNY',debit:'0.002',credit:'0.003'},{row_id:'z',account:'1001 - 库存现金',account_currency:'CNY',debit:'0.000',credit:'0.000'}]})}));
  assert.equal(s.precision,3);assert.equal(api.to_minor('0.001',3),1);assert.deepEqual(api.totals(s.batch.rows,'CNY',3),{debit:'0.003',credit:'0.003',difference:'0.000',invalid:0});s.filters.nonzero=true;assert.equal(s.visible_rows().length,2);assert.match(api.view(s),/借 0.003 · 贷 0.003 · 差额 0.000/);s.edit('a','remarks','三位');await s.save();assert.equal(sent.rows[0].base_debit,'0.001');assert.equal(sent.rows[0].base_credit,'0.000');assert.equal(s.precision,3);

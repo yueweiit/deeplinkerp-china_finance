@@ -158,10 +158,32 @@
  }
  function create_link_control({make_control,parent,fieldname,doctype,label,get_query,value,is_current,onchange}) {
   let initializing=true;
-  const control=make_control({parent,df:{fieldname,fieldtype:'Link',options:doctype,label,only_select:true,get_query,change:()=>{if(!initializing && is_current())onchange(control.get_value());}},render_input:true});
+  const control=make_control({parent,df:{fieldname,fieldtype:'Link',options:doctype,label,only_select:true,get_query,change:()=>{if(!initializing && is_current())return onchange(control.value ?? control.get_value() ?? '');}},render_input:true});
+  // Native selection/blur validation is asynchronous; save must wait for it.
+  if(control.validate_and_set_in_model){const validate=control.validate_and_set_in_model;control.validate_and_set_in_model=function(...args){if(this.inside_change_event)return validate.apply(this,args);const result=validate.apply(this,args);this.opening_balance_pending=Promise.resolve(result);return result;};}
   // set_value validates asynchronously and fires change; this is a read-only
   // display initialization of an already loaded value, not a new user edit.
   control.set_input(value);initializing=false;return control;
+ }
+ function bind_link_dropdown(control,parent) {
+  const input=control.$input?.get?.(0),dropdown=control.awesomplete?.ul;
+  if(!input || !dropdown)return ()=>{};
+  const doc=parent.ownerDocument,win=doc.defaultView,cell=parent.closest('td');
+  let active=false;
+  function position() {
+   if(!active || !parent.isConnected)return;
+   const rect=input.getBoundingClientRect(),width=doc.documentElement.clientWidth,height=doc.documentElement.clientHeight;
+   const below=Math.max(0,height-rect.bottom-10),above=Math.max(0,rect.top-10);
+   const up=below<Math.min(dropdown.scrollHeight || 300,160) && above>below;
+   const size=Math.min(rect.width,Math.max(0,width-16));
+   Object.assign(dropdown.style,{position:'fixed',left:`${Math.max(8,Math.min(rect.left,width-size-8))}px`,right:'auto',width:`${size}px`,maxHeight:`${Math.min(300,up?above:below)}px`,top:up?'auto':`${rect.bottom+2}px`,bottom:up?`${height-rect.top+2}px`:'auto',zIndex:'1060',margin:'0'});
+  }
+  function scroll(event){if(!dropdown.contains(event.target))control.awesomplete.close();}
+  function close(){active=false;cell?.classList.remove('ob-link-open');doc.removeEventListener('scroll',scroll,true);win.removeEventListener('resize',position);dropdown.removeAttribute('style');}
+  function open(){close();active=true;cell?.classList.add('ob-link-open');position();doc.addEventListener('scroll',scroll,true);win.addEventListener('resize',position);}
+  input.addEventListener('awesomplete-open',open);input.addEventListener('awesomplete-close',close);
+  const observer=win.MutationObserver?new win.MutationObserver(position):null;observer?.observe(dropdown,{childList:true,subtree:true});
+  return ()=>{close();observer?.disconnect();input.removeEventListener('awesomplete-open',open);input.removeEventListener('awesomplete-close',close);};
  }
  class FocusMemory {
   constructor(){this.value=null;}
@@ -171,15 +193,17 @@
   if(element.opening_balance)return element.opening_balance;
   const doc=element.ownerDocument,frappe=options.frappe || root.frappe;
   const s=new Session({call:options.call || ((method,args)=>frappe.xcall(method,args)),onchange:event=>{if(event==='edit')update_feedback();else render();}});
-  let fx=false,restoring=false,navigating=false;const focus_memory=new FocusMemory();
+  let fx=false,restoring=false,navigating=false,settling=false;const focus_memory=new FocusMemory(),links=new Map();
+  function clear_links(){for(const cleanup of links.values())cleanup();links.clear();}
+  async function settle_links(except){await Promise.all([...links.keys()].filter(control=>control!==except).map(control=>control.opening_balance_pending));}
   element.classList.add('china-opening-balance');
-  const editor={session:s,render,load:company=>s.load(company),destroy:()=>{root.removeEventListener?.('resize',layout);observer?.disconnect();},confirm_discard};element.opening_balance=editor;
+  const editor={session:s,render,load:company=>s.load(company),destroy:()=>{clear_links();root.removeEventListener?.('resize',layout);observer?.disconnect();},confirm_discard};element.opening_balance=editor;
   function snapshot() {const scroll=element.querySelector('.ob-grid-scroll');return {left:scroll?.scrollLeft || 0,top:scroll?.scrollTop || 0,...focus_memory.capture(doc.activeElement)};}
   function render() {
-   const state=snapshot();element.innerHTML=view(s,{fx});layout();
+   const state=snapshot();clear_links();element.innerHTML=view(s,{fx});layout();
    const scroll=element.querySelector('.ob-grid-scroll');if(scroll){scroll.scrollLeft=state.left;scroll.scrollTop=state.top;scroll.addEventListener('scroll',sync_scroll,{passive:true});}
    const focus=[...element.querySelectorAll('[data-row][data-field]')].find(input=>input.dataset.row===state.row && input.dataset.field===state.field);
-   if(focus && !focus.disabled){restoring=true;focus.focus({preventScroll:true});try{focus.setSelectionRange(state.start,state.end);}catch(_e){ /* Invalid source JSON is reported by server validation. */ }restoring=false;}
+   if(focus && !focus.disabled){restoring=true;focus.focus({preventScroll:true});restoring=false;const target=native_link(focus) || focus;try{target.setSelectionRange(state.start,state.end);}catch(_e){ /* Not every grid control supports text selection. */ }}
    sync_scroll();
   }
   function update_feedback() {
@@ -203,25 +227,27 @@
   function notify(message) {s.error=message;render();}
   function native_link(input) {
    if(restoring || !frappe?.ui?.form?.make_control || input.dataset.linkReady || input.disabled)return;
-   const field=input.dataset.field,company=!!input.dataset.company;
+   const field=input.dataset.field,company=input.hasAttribute('data-company');
    const row=s.batch?.rows.find(row=>row.row_id===input.dataset.row);
    let doctype=company?'Company':field==='account'?'Account':field==='party'?row?.party_type:field?.startsWith('dimension:')?dimension_definition(s.dimensions.find(d=>(typeof d==='string'?d:d.fieldname)===field.slice(10)) || field.slice(10)).options:null;
    if(!doctype)return;
    const host=company?input.parentElement:input.closest('.ob-cell-host'),original=input.value,attrs={...input.dataset};
    const parent=doc.createElement('div');parent.className='ob-native-link';host.insertBefore(parent,input);input.hidden=true;
-   const control=create_link_control({make_control:config=>frappe.ui.form.make_control(config),parent,fieldname:company?'company':field,doctype,label:input.getAttribute('aria-label'),value:original,is_current:()=>parent.isConnected && element.contains(parent),get_query:()=>({filters:doctype==='Account'?{company:s.company,is_group:0,disabled:0,report_type:'Balance Sheet'}:doctype==='Company'?{is_group:0}:doctype==='Customer'||doctype==='Supplier'?{disabled:0}:{}}),onchange:value=>{if(company){change_company(value);}else{s.edit(attrs.row,field,value);if(field==='account'){const account=s.accounts.find(a=>a.name===value);const name=host.querySelector('.ob-fullname');if(name)name.textContent=account?.account_name || value;}}}});
+   const control=create_link_control({make_control:config=>frappe.ui.form.make_control(config),parent,fieldname:company?'company':field,doctype,label:input.getAttribute('aria-label'),value:original,is_current:()=>parent.isConnected && element.contains(parent),get_query:()=>({filters:doctype==='Account'?{company:s.company,is_group:0,disabled:0,report_type:'Balance Sheet'}:doctype==='Company'?{is_group:0}:doctype==='Customer'||doctype==='Supplier'?{disabled:0}:{}}),onchange:async value=>{if(company){await settle_links(control);if(parent.isConnected)await change_company(value);}else{s.edit(attrs.row,field,value);if(s.filters.nonzero || s.filters.errors)render();}}});
+   links.set(control,bind_link_dropdown(control,parent));
    const native=control.$input?.get?.(0);if(native){Object.entries(attrs).forEach(([key,value])=>native.dataset[key]=value);native.dataset.linkReady='1';native.setAttribute('aria-label',input.getAttribute('aria-label'));native.focus({preventScroll:true});}
-   input.remove();
+   input.remove();return native;
   }
-  async function change_company(company) {const before=s.company;if(!company || company===before)return;const ok=await s.change_company(company,confirm_discard);if(!ok && s.company===before){render();return;}options.on_company?.(s.company);}
+  async function change_company(company) {const before=s.company;if(!company){render();return;}if(company===before)return;const ok=await s.change_company(company,confirm_discard);if(!ok && s.company===before){render();return;}options.on_company?.(s.company);}
   element.addEventListener('focusin',event=>{const input=event.target;focus_memory.capture(input);if(input.matches('[data-native-link],[data-company]'))native_link(input);});
   element.addEventListener('input',event=>{
-   const input=event.target;focus_memory.capture(input);if(input.matches('[data-row][data-field]') && input.tagName!=='SELECT')s.edit(input.dataset.row,input.dataset.field,input.value);
+   const input=event.target;focus_memory.capture(input);if(input.dataset.linkReady)return;if(input.matches('[data-row][data-field]') && input.tagName!=='SELECT')s.edit(input.dataset.row,input.dataset.field,input.value);
    else if(input.matches('[data-horizontal-scroll]')){const scroll=element.querySelector('.ob-grid-scroll');if(scroll)scroll.scrollLeft=Number(input.value);}
    else if(input.dataset.filter==='search'){const state=snapshot();s.filters.search=input.value;render();const search=element.querySelector('[data-filter="search"]');search.focus();search.setSelectionRange(input.selectionStart,input.selectionEnd);const scroll=element.querySelector('.ob-grid-scroll');scroll.scrollTop=state.top;}
   });
   element.addEventListener('change',async event=>{
    const input=event.target;
+   if(input.dataset.linkReady)return;
    if(input.matches('[data-row][data-field]')){const changed=s.edit(input.dataset.row,input.dataset.field,input.value);if((changed && ['account','party_type'].includes(input.dataset.field)) || s.filters.nonzero || s.filters.errors)render();}
    else if(input.matches('[data-company]') && !input.dataset.linkReady)await change_company(input.value);
    else if(input.dataset.header)s.set_header(input.dataset.header,input.value);
@@ -242,7 +268,8 @@
    if(event.key==='Tab' && input.matches('[data-row][data-field]')){const controls=[...element.querySelectorAll('[data-row][data-field]:not(:disabled):not([readonly]):not([hidden])')],index=controls.indexOf(input),next=controls[index+(event.shiftKey?-1:1)];if(next){event.preventDefault();next.focus();}else if(!event.shiftKey && s.editable()){event.preventDefault();s.add_rows(1);render();const all=[...element.querySelectorAll('[data-row][data-field]:not(:disabled):not([readonly]):not([hidden])')];all[controls.length]?.focus();}}
   });
   element.addEventListener('click',async event=>{
-   const button=event.target.closest('[data-action],[data-error-row]');if(!button || button.disabled || s.busy)return;
+   const button=event.target.closest('[data-action],[data-error-row]');if(!button || button.disabled || s.busy || settling)return;
+   settling=true;try{await settle_links();}catch(error){notify(error.message);return;}finally{settling=false;}
    if(button.hasAttribute('data-error-row')){s.filters.errors=false;s.filters.nonzero=false;s.filters.search='';render();const row=[...element.querySelectorAll('[data-grid-row]')].find(row=>row.dataset.gridRow===button.dataset.errorRow);row?.scrollIntoView({block:'nearest'});row?.querySelector('[data-field]')?.focus();return;}
    const action=button.dataset.action;
    if(action==='add'){s.add_rows(1);render();element.querySelector('tbody tr:last-child [data-field]')?.focus();}
