@@ -380,7 +380,7 @@ def _history_candidates(company):
 def _envelope(doc=None, company=None, history=False):
 	company = company or doc.company
 	context = _company_context(company)
-	accounts = frappe.get_list("Account", filters={"company": company, "is_group": 0, "disabled": 0, "report_type": "Balance Sheet"}, fields=["name", "account_number", "account_name", "account_currency"], order_by="lft", limit_page_length=0)
+	accounts = frappe.get_list("Account", filters={"company": company, "is_group": 0, "disabled": 0, "report_type": "Balance Sheet"}, fields=["name", "account_number", "account_name", "account_currency", "account_type"], order_by="lft", limit_page_length=0)
 	for account in accounts:
 		account.account_currency = account.account_currency or context.default_currency
 	batch = doc.as_dict() if doc else None
@@ -393,7 +393,7 @@ def _envelope(doc=None, company=None, history=False):
 		"opening_date": str(doc.opening_date) if doc and doc.opening_date else None,
 		"accounts": accounts, "dimensions": list(_dimension_definitions(company)),
 		"history_candidates": _history_candidates(company) if history else [],
-		"permissions": {"write": bool(frappe.has_permission(BATCH, "write", doc=doc)) and bool(frappe.has_permission(BATCH, "create")), "activate": bool(set(frappe.get_roles()) & set(ACTIVATE_ROLES)) and bool(frappe.has_permission("Journal Entry", "create")) and bool(frappe.has_permission("Journal Entry", "submit"))},
+		"permissions": {"summary": bool(set(frappe.get_roles()) & set(ACTIVATE_ROLES)), "write": bool(frappe.has_permission(BATCH, "write", doc=doc)) and bool(frappe.has_permission(BATCH, "create")), "activate": bool(set(frappe.get_roles()) & set(ACTIVATE_ROLES)) and bool(frappe.has_permission("Journal Entry", "create")) and bool(frappe.has_permission("Journal Entry", "submit"))},
 	}
 
 
@@ -458,12 +458,17 @@ def save_opening(payload, expected_version=None):
 
 
 def _saved_payload(doc):
-	return {
+	payload = {
 		"name": doc.get("name"), "company": doc.get("company"), "opening_date": str(doc.get("opening_date")),
 		"currency": doc.get("currency"), "mode": doc.get("mode"), "version": doc.get("version"),
 		"revision": doc.get("revision"), "previous_batch": doc.get("previous_batch"), "root_batch": doc.get("root_batch"),
 		"rows": _rows(doc), "source_names": _source_names(doc),
 	}
+	# Empty fields added by this release must not invalidate existing receipts.
+	for field in ("summary_customer", "summary_supplier"):
+		if doc.get(field):
+			payload[field] = doc.get(field)
+	return payload
 
 
 def _opening_evidence(doc, lock=False):
@@ -577,11 +582,15 @@ def _master_evidence(doc, lock=False):
 
 
 def _historical_party_warnings(doc, lock=False):
+	parties = {"Customer": doc.get("summary_customer"), "Supplier": doc.get("summary_supplier")}
+	summary_warnings = [{"row_id": row.get("row_id"), "field": "party", "message": _("第 {0} 行：历史汇总余额尚未分配到真实客户或供应商；该汇总档案不代表真实往来明细。").format(index)}
+		for index, row in enumerate(_rows(doc), 1)
+		if row.get("party") and row.get("party") == parties.get(row.get("party_type"))]
 	if doc.get("mode") not in ("Takeover", "Adjustment"):
-		return []
+		return summary_warnings
 	rows = _rows(doc)
 	accounts = {name: frappe.db.get_value("Account", {"name": name, "company": doc.get("company")}, ["account_name", "account_type"], as_dict=True, for_update=lock) for name in sorted({row.get("account") for row in rows if row.get("account")})}
-	return exact.historical_party_warnings(rows, accounts)
+	return summary_warnings + exact.historical_party_warnings(rows, accounts)
 
 
 def _preview(doc, lock=False):
@@ -837,6 +846,8 @@ def start_adjustment(name, expected_version):
 	adjustment.root_batch = root.name
 	adjustment.adjustment_key = doc.name
 	adjustment.source_names_json = "[]"
+	adjustment.summary_customer = doc.get("summary_customer")
+	adjustment.summary_supplier = doc.get("summary_supplier")
 	adjustment.set("rows", _rows(doc))
 	_save(adjustment, insert=True)
 	return _envelope(adjustment)

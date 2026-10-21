@@ -3291,3 +3291,19 @@ Unable to load statement mapping. Check the reported error and try again.,No se 
 添加到凭证,Añadir al comprobante
 待新增,Pendiente de añadir
 回单不足以确定会计科目，请结合业务单据选择,El recibo no permite determinar la cuenta contable. Seleccione una con los documentos justificativos de la operación.
+历史汇总客户,Cliente de saldos históricos resumidos
+历史汇总供应商,Proveedor de saldos históricos resumidos
+历史汇总档案已停用，请先核对该档案,El registro de saldos históricos resumidos está deshabilitado. Revíselo antes de continuar.
+历史汇总待分配客户 - {0},Saldo histórico de clientes pendiente de asignación - {0}
+历史汇总待分配供应商 - {0},Saldo histórico de proveedores pendiente de asignación - {0}
+历史往来汇总仅支持新建或调整中的期初草稿，不能改写历史接管来源,Los resúmenes históricos de terceros solo se admiten en borradores de apertura nuevos o de ajuste. No se pueden modificar las fuentes de una adopción histórica.
+没有可汇总的缺失往来行，请先选择正确的末级应收应付科目,No hay filas sin tercero que se puedan resumir. Seleccione primero cuentas auxiliares válidas de cobros o pagos.
+建立历史汇总档案需要客户或供应商的创建权限,La creación de registros de saldos históricos resumidos requiere permiso para crear clientes o proveedores.
+第 {0} 行：历史汇总余额尚未分配到真实客户或供应商；该汇总档案不代表真实往来明细。,Fila {0}: El saldo histórico resumido aún no se ha asignado a clientes o proveedores reales. Este registro resumido no representa el detalle real de terceros.
+历史汇总待分配：{0} 行；往来报表仅能显示汇总，不能代表真实客户、供应商明细。请勿直接用于真实往来核销。,"Resumen histórico pendiente de asignación: {0} filas. Los informes de terceros muestran únicamente saldos resumidos, no el detalle de clientes o proveedores reales. No concilie directamente estos saldos con terceros reales."
+历史往来汇总,Resumen histórico de terceros
+仅用于确实没有客户或供应商名称的历史期初。确认后将保存当前草稿，建立本公司专用的历史汇总待分配档案，并关联缺失往来的应收应付行；不修改科目、金额及已有往来。此操作不会记账，之后仍需校验并启用。,"Úselo solo para saldos históricos de apertura sin nombres de clientes o proveedores. Al confirmar se guarda el borrador actual, se crean registros históricos resumidos pendientes de asignación específicos de esta empresa y se vinculan las filas de cobros o pagos sin tercero. Se conservan las cuentas, los importes y los terceros existentes. Esta operación no contabiliza asientos; aún se requiere validar y activar."
+客户组,Grupo de clientes
+地区,Territorio
+供应商组,Grupo de proveedores
+确认建立并关联,Confirmar creación y vinculación

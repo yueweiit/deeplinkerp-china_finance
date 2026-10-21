@@ -193,3 +193,18 @@ test('zero-delta adjustment explicitly creates no accounting and pure preview he
 test('takeover keeps original accounting and creates only links, while new opening retains its balance impact warning',()=>{
  let writes=0;const s=session(async()=>{writes++;});s.batch.mode='Takeover';s.preview={fingerprint:'fp',errors:[],totals:{debit:'263.50',credit:'263.50',difference:'0.00'},actions:{creates_journal_entry:false,historical_takeover:true},delta_rows:[]};const action=api.accounting_action(s),confirmation=api.activation_confirmation(s);assert.match(action,/保留原有账务.*仅建立关联.*不新增会计凭证或总账分录/);assert.ok(confirmation.includes(action));assert.ok(!confirmation.includes('将影响正式余额'));assert.ok(api.view(s).includes(action));assert.equal(writes,0);s.batch.mode='New';assert.match(api.activation_confirmation(s),/本操作将影响正式余额/);
 });
+
+test('explicit summary preparation saves first, preserves amounts, invalidates preview and never activates',async()=>{
+ const calls=[];const data=envelope();data.permissions.summary=true;data.accounts[1].account_type='Receivable';data.batch.rows[0].account=data.accounts[1].name;
+ const s=new api.Session({call:async(method,args)=>{calls.push({method,args});if(method.endsWith('save_opening'))return {...data,batch:{...data.batch,version:'v2',rows:JSON.parse(args.payload).rows}};if(method.endsWith('prepare_summary_parties'))return {...data,batch:{...data.batch,version:'v3',summary_customer:'Historical summary',rows:[{...s.batch.rows[0],party_type:'Customer',party:'Historical summary'}]}};throw new Error('unexpected activation');}});s.adopt(data);s.edit('r1','remarks','原始资料只有汇总');s.preview={fingerprint:'old',errors:[]};
+ assert.equal(s.summary_candidates().length,1);const before=api.totals(s.batch.rows);assert.equal(await s.prepare_summary({customer_group:'Group',territory:'Area'}),true);
+ assert.equal(calls.length,2);assert.match(calls[0].method,/save_opening$/);assert.match(calls[1].method,/prepare_summary_parties$/);assert.equal(calls[1].args.expected_version,'v2');assert.equal(calls[1].args.customer_group,'Group');assert.equal(s.preview,null);assert.equal(s.can_activate(),false);assert.deepEqual(api.totals(s.batch.rows),before);assert.equal(s.batch.rows[0].remarks,'原始资料只有汇总');assert.equal(s.summary_candidates().length,0);
+ assert.match(api.view(s),/历史汇总待分配/);assert.match(api.activation_confirmation(s),/不能代表真实客户、供应商明细/);
+});
+test('summary candidates never replace linked or wrongly typed parties and takeover is protected',async()=>{
+ let writes=0;const s=session(async()=>writes++);s.permissions.summary=true;s.accounts[1].account_type='Payable';s.batch.rows=[{row_id:'a',account:s.accounts[1].name,party_type:'Supplier',party:''},{row_id:'b',account:s.accounts[1].name,party_type:'Customer',party:''},{row_id:'c',account:s.accounts[1].name,party_type:'Supplier',party:'Real supplier'},{row_id:'d',account:'Invalid account',party:''}];assert.deepEqual(s.summary_candidates().map(r=>r.row_id),['a']);
+ s.batch.mode='Takeover';assert.equal(await s.prepare_summary(),false);s.batch.mode='New';s.permissions.summary=false;assert.equal(await s.prepare_summary(),false);assert.equal(writes,0);
+});
+test('failed summary preparation retains the saved unallocated draft and displays the failure',async()=>{
+ const s=session(async()=>{throw new Error('供应商创建失败');});s.permissions.summary=true;const before=JSON.stringify(s.batch);assert.equal(await s.prepare_summary(),false);assert.equal(JSON.stringify(s.batch),before);assert.match(s.error,/供应商创建失败/);assert.equal(s.busy,false);assert.equal(s.can_activate(),false);
+});

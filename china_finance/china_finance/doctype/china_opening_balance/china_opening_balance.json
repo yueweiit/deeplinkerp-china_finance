@@ -13,6 +13,8 @@
   "version",
   "revision",
   "rows",
+  "summary_customer",
+  "summary_supplier",
   "root_batch",
   "previous_batch",
   "current_active",
@@ -88,6 +90,20 @@
    "options": "China Opening Balance Line"
   },
   {
+   "fieldname": "summary_customer",
+   "fieldtype": "Link",
+   "label": "历史汇总客户",
+   "options": "Customer",
+   "read_only": 1
+  },
+  {
+   "fieldname": "summary_supplier",
+   "fieldtype": "Link",
+   "label": "历史汇总供应商",
+   "options": "Supplier",
+   "read_only": 1
+  },
+  {
    "fieldname": "root_batch",
    "fieldtype": "Link",
    "label": "初始化批次",
@@ -158,7 +174,7 @@
    "read_only": 1
   }
  ],
- "modified": "2026-10-20 00:00:00.000000",
+ "modified": "2026-10-21 00:00:00.000000",
  "modified_by": "Administrator",
  "module": "China Finance",
  "name": "China Opening Balance",

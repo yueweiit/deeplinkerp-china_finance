@@ -60,6 +60,7 @@
 .china-opening-balance .ob-footer { justify-content:space-between; border-bottom:0; border-top:1px solid var(--ob-border); font-size:12px; color:var(--ob-muted); flex-wrap:wrap; min-height:36px; }
 .china-opening-balance .ob-footer strong { font-weight:500; color:#25364a; }
 .china-opening-balance .ob-alert { color:#c03639; padding:6px 8px; background:#fff1f0; }
+.china-opening-balance .ob-summary-notice { color:#795300; padding:6px 8px; background:#fff8e5; }
 .china-opening-balance .ob-validation { display:flex; align-items:center; gap:8px; max-height:64px; overflow:auto; padding:5px 8px; font-size:12px; color:var(--ob-muted); }
 .china-opening-balance .ob-validation button { border:0; background:none; color:#c03639; text-align:left; }
 .china-opening-balance .ob-validation span { color:#a76a0b; }

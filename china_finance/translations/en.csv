@@ -2563,3 +2563,19 @@ records 必须是发票对象数组,records must be an array of invoice objects
 添加到凭证,Add to voucher
 待新增,Pending addition
 回单不足以确定会计科目，请结合业务单据选择,The receipt does not identify an accounting account. Select one using the supporting business documents.
+历史汇总客户,Historical summary customer
+历史汇总供应商,Historical summary supplier
+历史汇总档案已停用，请先核对该档案,The historical summary record is disabled. Review it before continuing.
+历史汇总待分配客户 - {0},Unallocated historical customer balance - {0}
+历史汇总待分配供应商 - {0},Unallocated historical supplier balance - {0}
+历史往来汇总仅支持新建或调整中的期初草稿，不能改写历史接管来源,Historical party summaries are supported only for new or adjustment opening drafts. Historical takeover sources cannot be changed.
+没有可汇总的缺失往来行，请先选择正确的末级应收应付科目,No missing-party rows can be summarized. Select valid receivable or payable ledger accounts first.
+建立历史汇总档案需要客户或供应商的创建权限,Creating historical summary records requires permission to create customers or suppliers.
+第 {0} 行：历史汇总余额尚未分配到真实客户或供应商；该汇总档案不代表真实往来明细。,Row {0}: The historical summary balance has not been allocated to actual customers or suppliers. This summary record does not represent actual party detail.
+历史汇总待分配：{0} 行；往来报表仅能显示汇总，不能代表真实客户、供应商明细。请勿直接用于真实往来核销。,"Unallocated historical summary: {0} rows. Party reports show summary balances only, not actual customer or supplier detail. Do not directly reconcile these balances against actual parties."
+历史往来汇总,Historical party summary
+仅用于确实没有客户或供应商名称的历史期初。确认后将保存当前草稿，建立本公司专用的历史汇总待分配档案，并关联缺失往来的应收应付行；不修改科目、金额及已有往来。此操作不会记账，之后仍需校验并启用。,"Use only for historical opening balances without customer or supplier names. Confirmation saves the current draft, creates company-specific unallocated historical summary records, and links receivable or payable rows with missing parties. Accounts, amounts, and existing parties stay unchanged. This does not post accounting entries; validation and activation are still required."
+客户组,Customer group
+地区,Territory
+供应商组,Supplier group
+确认建立并关联,Confirm creation and linking
