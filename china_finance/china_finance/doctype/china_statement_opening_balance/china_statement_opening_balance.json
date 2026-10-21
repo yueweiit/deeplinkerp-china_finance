@@ -1,0 +1,28 @@
+{
+ "doctype": "DocType", "name": "China Statement Opening Balance", "module": "China Finance",
+ "autoname": "hash", "engine": "InnoDB", "is_submittable": 1, "track_changes": 1, "allow_import": 1,
+ "field_order": ["company", "opening_date", "source_period_end", "template", "template_version", "currency", "source_file", "source_sha256", "rows", "confirmed_by", "confirmed_on", "fingerprint", "active_key", "amended_from"],
+ "fields": [
+  {"fieldname": "company", "fieldtype": "Link", "options": "Company", "label": "公司", "reqd": 1, "in_list_view": 1},
+  {"fieldname": "opening_date", "fieldtype": "Date", "label": "报表年初日期", "reqd": 1, "in_list_view": 1},
+  {"fieldname": "source_period_end", "fieldtype": "Date", "label": "来源报表截止日", "reqd": 1},
+  {"fieldname": "template", "fieldtype": "Link", "options": "China Financial Statement Template", "label": "报表模板", "reqd": 1},
+  {"fieldname": "template_version", "fieldtype": "Data", "label": "模板版本", "read_only": 1},
+  {"fieldname": "currency", "fieldtype": "Link", "options": "Currency", "label": "本位币", "read_only": 1, "fetch_from": "company.default_currency"},
+  {"fieldname": "source_file", "fieldtype": "Attach", "label": "来源报表PDF", "no_copy": 1, "search_index": 1, "description": "请上传私有PDF原件；来源金额使用公司本位币基本单位。"},
+  {"fieldname": "source_sha256", "fieldtype": "Data", "label": "来源文件SHA-256", "read_only": 1},
+  {"fieldname": "rows", "fieldtype": "Table", "options": "China Statement Opening Balance Line", "allow_bulk_edit": 1, "label": "来源报表年初金额", "description": "仅引用已勾选核对的来源金额，未提供细项留空；不生成凭证或修改总账。"},
+  {"fieldname": "confirmed_by", "fieldtype": "Link", "options": "User", "label": "确认人", "read_only": 1},
+  {"fieldname": "confirmed_on", "fieldtype": "Datetime", "label": "确认时间", "read_only": 1},
+  {"fieldname": "fingerprint", "fieldtype": "Data", "label": "确认内容SHA-256", "read_only": 1},
+  {"fieldname": "active_key", "fieldtype": "Data", "read_only": 1, "hidden": 1, "unique": 1},
+  {"fieldname": "amended_from", "fieldtype": "Link", "options": "China Statement Opening Balance", "label": "修订自", "read_only": 1, "no_copy": 1}
+ ],
+ "permissions": [
+  {"role": "System Manager", "read": 1, "write": 1, "create": 1, "delete": 1, "submit": 1, "cancel": 1, "amend": 1, "report": 1, "export": 1, "print": 1},
+  {"role": "China Finance Manager", "read": 1, "write": 1, "create": 1, "delete": 1, "submit": 1, "cancel": 1, "amend": 1, "report": 1, "export": 1, "print": 1},
+  {"role": "China Finance User", "read": 1, "report": 1, "export": 1, "print": 1},
+  {"role": "China Finance Auditor", "read": 1, "report": 1, "export": 1, "print": 1}
+ ],
+ "sort_field": "opening_date", "sort_order": "DESC"
+}

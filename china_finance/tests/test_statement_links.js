@@ -69,4 +69,10 @@ assert.equal(financial_settings.formatter(null, 0,
 assert.equal(financial_settings.formatter(0, 1,
 	{fieldtype: "Currency", fieldname: "asset_amount"}, {asset_row_type: "Formula"},
 	() => "CNY 0.00"), "CNY 0.00");
+const missing_detail = {label: "Unreported cost", row_type: "Mapped Accounts", opening_amount: null, amount: 100};
+const opening_column = tree_options.columns.find((column) => column.id === "opening_amount");
+assert.equal(opening_column.format(null, 0, opening_column, missing_detail), "");
+assert.equal(financial_settings.formatter(null, 0,
+	{fieldtype: "Currency", fieldname: "asset_opening_amount"}, {asset_row_type: "Mapped Accounts", asset_opening_amount: null},
+	() => { throw new Error("Missing source detail must remain blank"); }), "");
 console.log("PASS: balance-sheet heading amounts are blank and zero net assets remain visible");

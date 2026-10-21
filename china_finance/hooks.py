@@ -342,8 +342,8 @@ doc_events["Bank Transaction"] = {
 }
 
 doc_events["File"] = {
-	"before_validate": "china_finance.services.bank_receipt_import.protect_receipt_file",
-	"on_trash": "china_finance.services.bank_receipt_import.protect_receipt_file",
+	"before_validate": ["china_finance.services.bank_receipt_import.protect_receipt_file", "china_finance.services.statement_opening.protect_source_file"],
+	"on_trash": ["china_finance.services.bank_receipt_import.protect_receipt_file", "china_finance.services.statement_opening.protect_source_file"],
 }
 
 # Share a company/period gate across normal forms, imports, APIs and month-end steps.

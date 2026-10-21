@@ -3307,3 +3307,47 @@ Unable to load statement mapping. Check the reported error and try again.,No se 
 地区,Territorio
 供应商组,Grupo de proveedores
 确认建立并关联,Confirmar creación y vinculación
+China Statement Opening Balance,Base de saldos iniciales del estado financiero
+China Statement Opening Balance Line,Línea de saldos iniciales del estado financiero
+报表年初基准,Base de saldos iniciales del estado financiero
+报表年初日期,Fecha inicial del estado financiero
+来源报表截止日,Fecha de cierre del estado de origen
+来源报表PDF,PDF del estado de origen
+来源文件SHA-256,SHA-256 del archivo de origen
+来源报表年初金额,Saldos iniciales del estado de origen
+确认内容SHA-256,SHA-256 del contenido confirmado
+已核对来源金额,Importe de origen verificado
+报表项目代码,Código de línea del estado
+来源报表项目名称,Nombre de la partida en el estado de origen
+来源金额,Importe de origen
+预填报表项目,Precargar partidas del estado
+来源年初金额,Saldo inicial de origen
+总账年初金额,Saldo inicial del libro mayor
+报表年初基准与总账核对,Conciliar la base inicial con el libro mayor
+仅引用已勾选核对的来源金额，未提供细项留空；不生成凭证或修改总账。,Usar solo importes de origen verificados. Dejar en blanco los detalles no disponibles; no se crean ni modifican asientos.
+请上传私有PDF原件；来源金额使用公司本位币基本单位。,Cargue el PDF de origen como archivo privado. Introduzca los importes en unidades básicas de la moneda de la empresa.
+来源金额必须是最多两位小数的有限数值,Los importes de origen deben ser números finitos con un máximo de dos decimales.
+报表年初日期必须为本公司会计年度首日,La fecha inicial debe ser el primer día del ejercicio fiscal de la empresa.
+来源报表截止日必须是报表年初日期的前一天,El estado de origen debe cerrar el día anterior a la fecha inicial.
+请选择符合本公司会计准则的资产负债表模板,Seleccione una plantilla de balance correspondiente a la norma contable de la empresa.
+报表项目不存在、属于分组标题或重复：{0},"La partida no existe, es un encabezado o está duplicada: {0}"
+确认来源金额时必须填写来源报表项目名称,Introduzca el nombre de la partida de origen antes de confirmar su importe.
+必须确认资产总计及负债和所有者权益总计的来源金额,Verifique los totales de origen de activos y de pasivos más patrimonio.
+来源报表的资产总计与负债和所有者权益总计不平衡,El total de activos de origen no coincide con el total de pasivos más patrimonio.
+来源报表项目勾稽不一致：{0},Los importes del estado de origen no concilian: {0}
+报表年初基准的来源必须是PDF原件,La base de saldos iniciales requiere un PDF de origen.
+请将私有PDF原件上传到当前报表年初基准,Cargue el PDF de origen privado en esta base de saldos iniciales.
+本公司该会计年度已有确认的报表年初基准，请先取消原基准再修订,La empresa ya tiene una base inicial confirmada para este ejercicio. Cancélela antes de revisarla.
+当前使用账簿、成本中心或项目筛选，公司整体报表年初基准不适用，年初数按筛选后的总账显示。,"La base inicial de toda la empresa no se aplica a filtros de libro, centro de costos o proyecto. Los saldos iniciales proceden del libro mayor filtrado."
+报表年初基准状态已变化，请刷新后重试,El estado de la base inicial ha cambiado. Actualice e inténtelo de nuevo.
+已确认报表年初基准的模板与当前报表不一致，请先复核基准项目映射,La base inicial confirmada utiliza otra plantilla. Revise primero la correspondencia de sus partidas.
+已确认报表年初基准的币种或内容指纹不一致，请核查来源,La moneda o la huella del contenido de la base confirmada no coincide. Verifique el origen.
+报表年初基准的PDF原件指纹已变化，请核查来源,La huella del PDF de origen ha cambiado. Verifique el origen de la base inicial.
+年初数直接引用已确认报表年初基准 {0} 的来源金额；未提供的细项留空，不从总账推算。该基准不新增记账，也不改写已有结账档案。,Los saldos iniciales usan directamente la base confirmada {0}. Los detalles no disponibles quedan en blanco y no se deducen del libro mayor. No se modifican asientos ni archivos de cierres existentes.
+该PDF已用于确认报表年初基准，不能删除、公开、替换或移动,"Este PDF respalda una base inicial confirmada y no puede eliminarse, hacerse público, sustituirse ni moverse."
+已确认的报表年初基准必须保留审计历史，不能删除,Las bases iniciales confirmadas deben conservar su historial de auditoría y no pueden eliminarse.
+该基准直接保存来源报表金额，仅用于年初列；不生成凭证，不修改总账，已有快照和档案不会自动更新。,"Esta base guarda importes del estado de origen solo para las columnas iniciales. No crea asientos, no modifica el libro mayor ni actualiza instantáneas o archivos existentes."
+请先选择公司及报表年初日期,Seleccione primero la empresa y la fecha inicial del estado.
+已有项目属于其他模板，请先核对并移除后再预填,Las partidas existentes pertenecen a otra plantilla. Revíselas y elimínelas antes de precargar.
+已确认报表年初基准与总账有 {0} 个项目差异，请单独核对；来源金额未被覆盖。,La base inicial confirmada difiere del libro mayor en {0} partidas. Concílielas por separado; los importes de origen no se han sobrescrito.
+请先保存基准草稿，再通过标准提交确认,Guarde primero el borrador y confírmelo mediante el envío estándar.

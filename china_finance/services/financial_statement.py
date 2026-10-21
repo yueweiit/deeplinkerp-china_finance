@@ -270,6 +270,19 @@ def build_statement(
 		{row["row_code"]: row["amount"] for row in render_rows(template, opening_values, supplementary_row_codes)}
 		if opening_values is not None else {}
 	)
+	opening_source = None
+	opening_reconciliation = []
+	opening_source_warnings = []
+	if statement_type == "Balance Sheet":
+		from china_finance.services.statement_opening import resolve_opening
+
+		source_values, opening_source, opening_reconciliation, opening_source_warnings = resolve_opening(
+			company, year_start, template, opening_rows, finance_book, cost_center, project
+		)
+		if source_values is not None:
+			# Filing totals and net amounts are direct confirmed inputs. Do not
+			# run them back through formulas or fill absent details from the GL.
+			opening_rows = source_values
 	ytd_rows = {row["row_code"]: row["amount"] for row in render_rows(template, ytd_values, supplementary_row_codes)}
 	for result_row in period_rows:
 		result_row["opening_amount"] = opening_rows.get(result_row["row_code"]) if opening_values is not None else None
@@ -290,6 +303,12 @@ def build_statement(
 		except Exception:
 			ar_ap_check = {"passed": False, "count": 0, "difference": 0, "unavailable": True}
 	checks = build_statement_checks(statement_type, period_rows, mappings, unmapped_accounts, ar_ap_check)
+	if opening_source:
+		checks.append({
+			"code": "OPENING_BASELINE_RECONCILIATION", "passed": not opening_reconciliation,
+			"blocking": False, "difference": len(opening_reconciliation),
+			"message": _("已确认报表年初基准与总账有 {0} 个项目差异，请单独核对；来源金额未被覆盖。").format(len(opening_reconciliation)),
+		})
 	cash_flow_supplement = []
 	cash_equivalent_composition = []
 	equity_matrix = None
@@ -305,7 +324,7 @@ def build_statement(
 			company, template, mappings, from_date, to_date, finance_book, cost_center, project, restate_prior_period
 		)
 
-	warnings = []
+	warnings = list(opening_source_warnings)
 	if not mappings:
 		warnings.append(_("该公司尚未配置报表科目映射"))
 	unreviewed = sum(1 for mapping in mappings if not mapping.reviewed)
@@ -355,6 +374,7 @@ def build_statement(
 		"template": template.name, "template_version": template.version, "accounting_standard": template.accounting_standard,
 		"from_date": str(from_date), "to_date": str(to_date), "fiscal_year_start": str(year_start),
 		"rows": period_rows, "warnings": warnings, "cash_flow_meta": period_meta,
+		"opening_source": opening_source, "opening_reconciliation": opening_reconciliation,
 		"reclassifications": reclassifications, "checks": checks,
 		"cash_flow_supplement": cash_flow_supplement,
 		"cash_equivalent_composition": cash_equivalent_composition,

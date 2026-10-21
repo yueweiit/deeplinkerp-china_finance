@@ -118,6 +118,8 @@ def _execute(filters=None):
 		else:
 			message_parts.append(_("报表检查：全部通过。"))
 	message_parts.extend(warnings)
+	if result.get("opening_reconciliation"):
+		message_parts.append(_opening_reconciliation_html(result["opening_reconciliation"], filters.company))
 	message = "<br>".join(message_parts)
 	if filters.statement_type == "Balance Sheet":
 		return (
@@ -150,6 +152,23 @@ def _execute(filters=None):
 	if filters.statement_type == "Changes in Equity" and result.get("equity_matrix"):
 		return get_equity_columns(result["equity_matrix"], filters.company), result["equity_matrix"]["rows"], message
 	return get_columns(include_comparison=bool(comparison_to), company=filters.company), result["rows"], message
+
+
+def _opening_reconciliation_html(differences, company):
+	escape = frappe.utils.escape_html
+	labels = (_("报表项目"), _("来源年初金额"), _("总账年初金额"), _("差额"))
+	header = "".join(f"<th>{escape(label)}</th>" for label in labels)
+	rows = []
+	for item in differences:
+		amounts = "".join(
+			f"<td>{escape(frappe.utils.fmt_money(item[field], currency=company_currency(company)))}</td>"
+			for field in ("source_amount", "ledger_amount", "difference")
+		)
+		rows.append(f"<tr><td>{escape(_(item['label']))}</td>{amounts}</tr>")
+	return (
+		f"<details><summary>{escape(_('报表年初基准与总账核对'))}</summary>"
+		f"<table class='table table-bordered'><thead><tr>{header}</tr></thead><tbody>{''.join(rows)}</tbody></table></details>"
+	)
 
 
 def _native_project_filter(project):
@@ -795,7 +814,7 @@ def export_current_report_xlsx(filters=None):
 		frappe.throw(_("请选择公司"))
 	frappe.has_permission("Company", doc=filters.company, throw=True)
 
-	columns, rows, *_ = execute(filters)
+	columns, rows, message, *_ = execute(filters)
 	visible_columns = [column for column in columns if column.get("fieldname") and not column.get("hidden")]
 	if not visible_columns:
 		frappe.throw(_("当前报表没有可导出的列"))
@@ -820,6 +839,10 @@ def export_current_report_xlsx(filters=None):
 		f"{filters.company}　期间：{filters.from_date} 至 {filters.to_date}",
 		subtitle,
 	)
+	if message:
+		notice = workbook.add_format({"font_size": 9, "text_wrap": True, "valign": "top"})
+		worksheet.merge_range(2, 0, 2, last_column, frappe.utils.strip_html(message), notice)
+		worksheet.set_row(2, 48)
 	for index, column in enumerate(visible_columns):
 		worksheet.write(3, index, column.get("label") or column.get("fieldname"), header)
 
@@ -915,7 +938,7 @@ def _render_report_pdf(filters, columns, rows, message):
 
 
 def _amount(value):
-	return f"{flt(value):,.2f}"
+	return "" if value is None else f"{flt(value):,.2f}"
 
 
 def _render_balance_sheet_pdf_rows(rows):

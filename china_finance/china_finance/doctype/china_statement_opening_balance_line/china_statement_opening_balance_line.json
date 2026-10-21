@@ -1,0 +1,12 @@
+{
+ "doctype": "DocType", "name": "China Statement Opening Balance Line", "module": "China Finance", "engine": "InnoDB", "istable": 1,
+ "field_order": ["provided", "row_code", "report_label", "source_label", "currency", "amount"],
+ "fields": [
+  {"fieldname": "provided", "fieldtype": "Check", "label": "已核对来源金额", "default": "0", "in_list_view": 1, "columns": 1},
+  {"fieldname": "row_code", "fieldtype": "Data", "label": "报表项目代码", "reqd": 1, "in_list_view": 1, "columns": 2},
+  {"fieldname": "report_label", "fieldtype": "Data", "label": "报表项目", "read_only": 1, "in_list_view": 1, "columns": 2},
+  {"fieldname": "source_label", "fieldtype": "Data", "label": "来源报表项目名称", "in_list_view": 1, "columns": 3},
+  {"fieldname": "currency", "fieldtype": "Link", "options": "Currency", "label": "本位币", "hidden": 1, "read_only": 1},
+  {"fieldname": "amount", "fieldtype": "Currency", "options": "currency", "precision": "2", "label": "来源金额", "in_list_view": 1, "columns": 2}
+ ], "permissions": []
+}

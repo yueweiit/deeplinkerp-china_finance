@@ -79,6 +79,11 @@ frappe.query_reports["China Financial Statements"] = {
 			});
 		}
 		add_china_finance_export_actions(report);
+		if (frappe.user?.has_role(["System Manager", "China Finance Manager"])) {
+			report.page.add_inner_button(__("报表年初基准"), () => {
+				frappe.set_route("List", "China Statement Opening Balance", {company: report.get_filter_value("company")});
+			});
+		}
 		bind_source_account_links();
 		if (!report.get_filter_value("company")) {
 			report.set_filter_value("company", window.china_finance?.company_context?.default_company() || frappe.defaults.get_user_default("Company"));
@@ -115,7 +120,8 @@ frappe.query_reports["China Financial Statements"] = {
 		if (column.fieldtype === "Currency" && data) {
 			const side = column.fieldname.startsWith("asset_") ? "asset" :
 				column.fieldname.startsWith("liability_equity_") ? "liability_equity" : null;
-			if (side && data[`${side}_row_type`] === "Heading") return "";
+			if (side && (data[`${side}_row_type`] === "Heading" ||
+				(column.fieldname in data && data[column.fieldname] == null))) return "";
 		}
 		value = default_formatter(value, row, column, data);
 		if (data?.source_accounts?.length && column.fieldname === "label") {
@@ -360,7 +366,7 @@ function render_balance_sheet_tree(panel, rows, currency) {
 
 	const bold_row = (data) => data && (data.bold || data.row_type === "Heading");
 	const format_amount = (value, row, column, data) => {
-		if (data?.row_type === "Heading") return "";
+		if (data?.row_type === "Heading" || value == null) return "";
 		let formatted = format_currency(value || 0, currency);
 		if (bold_row(data)) formatted = `<strong>${formatted}</strong>`;
 		return formatted;

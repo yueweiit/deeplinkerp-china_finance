@@ -2579,3 +2579,47 @@ records 必须是发票对象数组,records must be an array of invoice objects
 地区,Territory
 供应商组,Supplier group
 确认建立并关联,Confirm creation and linking
+China Statement Opening Balance,Statement Opening Baseline
+China Statement Opening Balance Line,Statement Opening Baseline Line
+报表年初基准,Statement Opening Baseline
+报表年初日期,Statement Opening Date
+来源报表截止日,Source Statement End Date
+来源报表PDF,Source Statement PDF
+来源文件SHA-256,Source File SHA-256
+来源报表年初金额,Opening Amounts from Source Statement
+确认内容SHA-256,Confirmed Content SHA-256
+已核对来源金额,Source Amount Verified
+报表项目代码,Statement Row Code
+来源报表项目名称,Source Statement Row Label
+来源金额,Source Amount
+预填报表项目,Prefill Statement Rows
+来源年初金额,Source Opening Amount
+总账年初金额,Ledger Opening Amount
+报表年初基准与总账核对,Reconcile Opening Baseline with Ledger
+仅引用已勾选核对的来源金额，未提供细项留空；不生成凭证或修改总账。,Use only verified source amounts. Leave unavailable details blank; no vouchers or ledger entries are created or changed.
+请上传私有PDF原件；来源金额使用公司本位币基本单位。,Upload a private source PDF. Enter source amounts in base units of the company currency.
+来源金额必须是最多两位小数的有限数值,Source amounts must be finite numbers with at most two decimal places.
+报表年初日期必须为本公司会计年度首日,The opening date must be the first day of the company fiscal year.
+来源报表截止日必须是报表年初日期的前一天,The source statement must end on the day before the opening date.
+请选择符合本公司会计准则的资产负债表模板,Select a Balance Sheet template matching the company accounting standard.
+报表项目不存在、属于分组标题或重复：{0},"Statement row is missing, is a heading, or is duplicated: {0}"
+确认来源金额时必须填写来源报表项目名称,Enter the source statement row label before confirming its amount.
+必须确认资产总计及负债和所有者权益总计的来源金额,Verify the source totals for assets and liabilities plus equity.
+来源报表的资产总计与负债和所有者权益总计不平衡,Source total assets do not equal total liabilities plus equity.
+来源报表项目勾稽不一致：{0},Source statement amounts do not reconcile: {0}
+报表年初基准的来源必须是PDF原件,The opening baseline requires a source PDF.
+请将私有PDF原件上传到当前报表年初基准,Upload the private source PDF to this opening baseline.
+本公司该会计年度已有确认的报表年初基准，请先取消原基准再修订,This company already has a confirmed opening baseline for this fiscal year. Cancel it before revising.
+当前使用账簿、成本中心或项目筛选，公司整体报表年初基准不适用，年初数按筛选后的总账显示。,"Company-wide opening baselines do not apply to finance-book, cost-center or project filters. Opening amounts use the filtered ledger."
+报表年初基准状态已变化，请刷新后重试,The opening baseline status changed. Refresh and retry.
+已确认报表年初基准的模板与当前报表不一致，请先复核基准项目映射,The confirmed opening baseline uses a different template. Review its row mapping first.
+已确认报表年初基准的币种或内容指纹不一致，请核查来源,The confirmed baseline currency or content fingerprint does not match. Verify the source.
+报表年初基准的PDF原件指纹已变化，请核查来源,The source PDF fingerprint changed. Verify the opening baseline source.
+年初数直接引用已确认报表年初基准 {0} 的来源金额；未提供的细项留空，不从总账推算。该基准不新增记账，也不改写已有结账档案。,Opening amounts directly use confirmed baseline {0}. Unavailable details remain blank and are not inferred from the ledger. No postings or existing closing archives are changed.
+该PDF已用于确认报表年初基准，不能删除、公开、替换或移动,"This PDF is evidence for a confirmed opening baseline and cannot be deleted, published, replaced or moved."
+已确认的报表年初基准必须保留审计历史，不能删除,Confirmed opening baselines must retain their audit history and cannot be deleted.
+该基准直接保存来源报表金额，仅用于年初列；不生成凭证，不修改总账，已有快照和档案不会自动更新。,"This baseline stores source statement amounts for opening columns only. It creates no vouchers, changes no ledger entries, and does not update existing snapshots or archives."
+请先选择公司及报表年初日期,Select the company and statement opening date first.
+已有项目属于其他模板，请先核对并移除后再预填,Existing rows belong to another template. Review and remove them before prefilling.
+已确认报表年初基准与总账有 {0} 个项目差异，请单独核对；来源金额未被覆盖。,The confirmed opening baseline differs from the ledger on {0} rows. Reconcile them separately; source amounts have not been overwritten.
+请先保存基准草稿，再通过标准提交确认,"Save the baseline draft first, then confirm it through standard submission."
