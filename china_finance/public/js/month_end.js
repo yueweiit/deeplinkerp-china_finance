@@ -64,7 +64,7 @@ frappe.provide("china_finance.month_end");
 		} else {
 			frm.page.set_primary_action(__(frm.doc.preparation_state ? "继续月末结账" : "开始月末结账"), () => frappe.confirm(__("系统将按日期记账本期已核对凭证，并完成月末检查和损益结转。确认开始？"), () => run(frm)));
 		}
-		if (["Posting", "Checking", "Closing"].includes(frm.doc.preparation_state) || frm.__month_running) {
+		if (["Posting", "Checking", "Closing", "Ready"].includes(frm.doc.preparation_state) || frm.__month_running) {
 			frm.add_custom_button(__("暂停"), async () => {
 				frm.__month_stop = true;
 				await call("pause", frm.doc.name);

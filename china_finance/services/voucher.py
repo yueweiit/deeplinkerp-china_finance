@@ -396,6 +396,10 @@ def on_gl_source_cancel(doc, method=None):
 	finally:
 		if not retryable_failure:
 			frappe.db.release_savepoint(save_point)
+	# The closing batch completes native GL reversal before synchronizing audit.
+	# A short-queue snapshot job here would race the long-queue GL job.
+	if doc.doctype == "Period Closing Voucher" and getattr(frappe.flags, "china_closing_reversal", None):
+		return
 	try:
 		frappe.enqueue(
 			"china_finance.services.voucher.process_cancellation_snapshot_job",

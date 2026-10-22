@@ -77,7 +77,6 @@ def run_closing_checks(company, from_date, to_date, period_closing_voucher=None,
 
 	def add(code, description, passed, details="", severity="Blocking"):
 		checks.append({"check_code": code, "description": description, "passed": int(bool(passed)), "details": details, "severity": severity})
-
 	from china_finance.services.bank_receipt_import import pending_receipts
 	unfinished_receipts = pending_receipts(company, from_date, to_date)
 	add("BANK_RECEIPTS_PROCESSED", "本期银行回单已处理并记账", not unfinished_receipts,
@@ -323,7 +322,12 @@ def run_closing_checks(company, from_date, to_date, period_closing_voucher=None,
 			input_tax_checks["accounting"]["details"],
 		)
 
-	pcv_ok = bool(period_closing_voucher and frappe.db.get_value("Period Closing Voucher", period_closing_voucher, "docstatus") == 1)
+	pcv = frappe.db.get_value("Period Closing Voucher", period_closing_voucher,
+		["company", "period_start_date", "period_end_date", "docstatus", "gle_processing_status"], as_dict=True,
+	) if period_closing_voucher else None
+	pcv_ok = bool(pcv and pcv.company == company and pcv.docstatus == 1
+		and getdate(pcv.period_start_date) == getdate(from_date)
+		and getdate(pcv.period_end_date) == getdate(to_date) and pcv.gle_processing_status == "Completed")
 	add("PERIOD_CLOSING", _("损益结转已完成"), pcv_ok)
 	return checks
 
@@ -594,6 +598,12 @@ def create_period_closing_voucher(company, from_date, to_date, closing_type="Mon
 	if closing_type not in ("Monthly", "Year End"):
 		frappe.throw(_("不支持的结账类型：{0}").format(closing_type))
 
+	from china_finance.services.month_end import lock_company
+	from china_finance.services.closing_lifecycle import ensure_no_reversal
+	from china_finance.services.voucher_preparation import check_company
+	check_company(company)
+	lock_company(company)
+	ensure_no_reversal(company)
 	settings = frappe.get_cached_doc("China Finance Settings", company)
 	if not settings.profit_loss_account:
 		frappe.throw(_("请先在中国财务设置中配置本年利润科目"))
@@ -605,11 +615,44 @@ def create_period_closing_voucher(company, from_date, to_date, closing_type="Mon
 	if to_date > fiscal_year_end:
 		frappe.throw(_("结转截止日期不能晚于会计年度结束日 {0}").format(fiscal_year_end))
 
+	if closing_type == "Monthly":
+		if from_date != get_first_day(from_date) or to_date != get_last_day(from_date):
+			frappe.throw(_("月度结转期间必须是完整自然月"), title=_("月度结转期间不正确"))
+	elif to_date != fiscal_year_end:
+		frappe.throw(_("年度结转截止日期必须是会计年度结束日 {0}").format(fiscal_year_end))
+
+	existing = frappe.db.get_value(
+		"Period Closing Voucher",
+		{
+			"company": company,
+			"period_start_date": from_date,
+			"period_end_date": to_date,
+			"docstatus": ["!=", 2],
+		},
+		["name", "docstatus", "closing_account_head"],
+		as_dict=True,
+		for_update=True,
+	)
+	if existing:
+		if existing.closing_account_head != settings.profit_loss_account:
+			frappe.throw(
+				_("该期间已有损益结转凭证 {0}，但结转科目不是当前设置的 {1}").format(
+					existing.name, settings.profit_loss_account
+				),
+				title=_("结转科目不一致"),
+			)
+		return {
+			"name": existing.name,
+			"created": False,
+			"docstatus": existing.docstatus,
+			"message": _("该期间已经存在损益结转凭证 {0}").format(existing.name),
+		}
+
 	previous_end_date = frappe.db.get_value(
 		"Period Closing Voucher",
 		{"company": company, "fiscal_year": fiscal_year, "docstatus": 1},
 		"period_end_date",
-		order_by="period_end_date desc",
+		order_by="period_end_date desc", for_update=True,
 	)
 	required_start_date = add_days(getdate(previous_end_date), 1) if previous_end_date else fiscal_year_start
 	first_period_override = bool(
@@ -623,12 +666,6 @@ def create_period_closing_voucher(company, from_date, to_date, closing_type="Mon
 			_("本期必须从 {0} 开始，不能跳过或重复结转期间").format(required_start_date),
 			title=_("结转期间不连续"),
 		)
-
-	if closing_type == "Monthly":
-		if from_date != get_first_day(from_date) or to_date != get_last_day(from_date):
-			frappe.throw(_("月度结转期间必须是完整自然月"), title=_("月度结转期间不正确"))
-	elif to_date != fiscal_year_end:
-		frappe.throw(_("年度结转截止日期必须是会计年度结束日 {0}").format(fiscal_year_end))
 
 	from china_finance.services.bank_receipt_import import pending_receipts
 	unfinished_receipts = pending_receipts(company, from_date, to_date)
@@ -652,32 +689,6 @@ def create_period_closing_voucher(company, from_date, to_date, closing_type="Mon
 			),
 			title=_("存在旧损益结转"),
 		)
-
-	existing = frappe.db.get_value(
-		"Period Closing Voucher",
-		{
-			"company": company,
-			"period_start_date": from_date,
-			"period_end_date": to_date,
-			"docstatus": ["!=", 2],
-		},
-		["name", "docstatus", "closing_account_head"],
-		as_dict=True,
-	)
-	if existing:
-		if existing.closing_account_head != settings.profit_loss_account:
-			frappe.throw(
-				_("该期间已有损益结转凭证 {0}，但结转科目不是当前设置的 {1}").format(
-					existing.name, settings.profit_loss_account
-				),
-				title=_("结转科目不一致"),
-			)
-		return {
-			"name": existing.name,
-			"created": False,
-			"docstatus": existing.docstatus,
-			"message": _("该期间已经存在损益结转凭证 {0}").format(existing.name),
-		}
 
 	voucher = frappe.get_doc(
 		{
@@ -721,8 +732,13 @@ def submit_closing_run(name):
 	if not frappe.db.exists("China Closing Run", name):
 		frappe.throw(_("月末结账单 {0} 不存在").format(name))
 
+	from china_finance.services.month_end import lock_company
+	company = frappe.db.get_value("China Closing Run", name, "company")
+	lock_company(company)
 	frappe.db.sql("SELECT name FROM `tabChina Closing Run` WHERE name=%s FOR UPDATE", (name,))
-	doc = frappe.get_doc("China Closing Run", name)
+	doc = frappe.get_doc("China Closing Run", name, for_update=True)
+	if doc.company != company:
+		frappe.throw(_("单据已被修改，请刷新后重试"), frappe.TimestampMismatchError)
 	doc.check_permission("submit")
 
 	if doc.docstatus == 1:
@@ -812,6 +828,8 @@ def save_and_complete_period_closing_voucher(name):
 				_("期末结账凭证未完成记账，当前状态为 {0}").format(current_state or _("未设置")),
 				title=_("无法完成结账"),
 			)
+	except (frappe.QueryDeadlockError, frappe.QueryTimeoutError):
+		raise
 	except Exception:
 		frappe.db.rollback(save_point=save_point)
 		raise
@@ -844,11 +862,21 @@ def _get_closing_run_for_reverse(name, *, for_update=False):
 		frappe.throw(_("请选择需要反结账的月末结账单"))
 	if for_update:
 		frappe.db.sql("SELECT name FROM `tabChina Closing Run` WHERE name=%s FOR UPDATE", name)
-	doc = frappe.get_doc("China Closing Run", name)
+	doc = frappe.get_doc("China Closing Run", name, for_update=for_update)
 	doc.check_permission("write")
 	if doc.docstatus != 1 or doc.status != "Closed":
 		frappe.throw(_("只有已结账的月末结账单可以反结账"))
 	return doc
+
+
+def _reopening_freeze_date(doc):
+	remaining = frappe.db.sql(
+		"""SELECT MAX(to_date) FROM `tabChina Closing Run`
+		WHERE company=%s AND docstatus=1 AND status='Closed' AND to_date<%s""",
+		(doc.company, doc.to_date),
+	)[0][0]
+	boundaries = [getdate(value) for value in (remaining, doc.previous_frozen_date) if value]
+	return max(boundaries) if boundaries else None
 
 
 def _reverse_closing_runs(doc, runs, reason):
@@ -858,14 +886,16 @@ def _reverse_closing_runs(doc, runs, reason):
 			"China Closing Run",
 			run.name,
 			{
-				"status": "Reopened",
+				"status": "Reopening",
+				"reversal_group": doc.name,
 				"reopen_reason": reason,
 				"reopened_by": frappe.session.user,
 				"reopened_on": reopened_on,
 			},
 			update_modified=True,
 		)
-	frappe.db.set_value("Company", doc.company, "accounts_frozen_till_date", doc.previous_frozen_date)
+	# Preserve any unaffected closed period, including legacy out-of-order records.
+	frappe.db.set_value("Company", doc.company, "accounts_frozen_till_date", _reopening_freeze_date(doc))
 
 
 def _period_closing_vouchers_to_cancel(doc, runs):
@@ -908,7 +938,7 @@ def preview_reverse_closing(name):
 		"company": doc.company,
 		"runs": runs,
 		"period_closing_vouchers": vouchers,
-		"previous_frozen_date": doc.previous_frozen_date,
+		"previous_frozen_date": _reopening_freeze_date(doc),
 	}
 
 
@@ -928,51 +958,46 @@ def reverse_closing(name, reason):
 	runs = _closing_runs_to_reverse(doc, for_update=True)
 	vouchers = _period_closing_vouchers_to_cancel(doc, runs)
 
-	# The native cancellation is allowed only after restoring the prior freeze
-	# boundary. It still creates the normal reversal GL and audit snapshot.
+	from china_finance.services.closing_lifecycle import ensure_no_reversal
+	ensure_no_reversal(doc.company)
+	# Mark the durable transition before native cancellation; period-write guards
+	# keep these periods locked until every reversal GL has completed.
 	_reverse_closing_runs(doc, runs, reason)
 	cancelled = []
 	already_cancelled = []
-	pending = []
-	for row in vouchers:
-		if row.docstatus == 2:
-			already_cancelled.append(row.name)
-			continue
-		voucher = frappe.get_doc("Period Closing Voucher", row.name, for_update=True)
-		voucher.flags.ignore_permissions = True
-		voucher.cancel()
-		cancelled.append(voucher.name)
-		if frappe.db.get_value("Period Closing Voucher", voucher.name, "gle_processing_status") != "Completed":
-			pending.append(voucher.name)
-
+	previous = getattr(frappe.flags, "china_closing_reversal", None)
+	frappe.flags.china_closing_reversal = doc.name
+	try:
+		for row in vouchers:
+			if row.docstatus == 2:
+				already_cancelled.append(row.name)
+				continue
+			voucher = frappe.get_doc("Period Closing Voucher", row.name, for_update=True)
+			voucher.flags.ignore_permissions = True
+			voucher.cancel()
+			cancelled.append(voucher.name)
+	finally:
+		frappe.flags.china_closing_reversal = previous
+	frappe.enqueue(
+		"china_finance.services.closing_reversal.process_reversal",
+		queue="long", enqueue_after_commit=True, name=doc.name,
+	)
 	return {
 		"name": doc.name,
-		"status": "Reopened",
+		"status": "Reopening",
 		"reopened_runs": runs,
 		"cancelled_period_closing_vouchers": cancelled,
 		"already_cancelled_period_closing_vouchers": already_cancelled,
-		"pending_period_closing_vouchers": pending,
-		"previous_frozen_date": doc.previous_frozen_date,
+		"pending_period_closing_vouchers": [row.name for row in vouchers],
+		"previous_frozen_date": _reopening_freeze_date(doc),
 	}
 
 
 @frappe.whitelist(methods=["POST"])
 def reopen_closing(name, reason):
-	"""Compatibility endpoint for integrations that explicitly cancel PCVs themselves."""
-	frappe.only_for(("System Manager", "China Finance Manager"))
-	reason = str(reason or "").strip()
-	if not reason:
-		frappe.throw(_("反结账必须填写原因"))
-	doc = _get_closing_run_for_reverse(name)
-	frappe.db.sql("SELECT name FROM `tabCompany` WHERE name=%s FOR UPDATE", doc.company)
-	doc = _get_closing_run_for_reverse(name, for_update=True)
-	runs = _closing_runs_to_reverse(doc, for_update=True)
-	_period_closing_vouchers_to_cancel(doc, runs)
-	_reverse_closing_runs(doc, runs, reason)
-	return {
-		"name": doc.name,
-		"status": "Reopened",
-		"reopened_runs": runs,
-		"period_closing_vouchers": [run.period_closing_voucher for run in runs if run.period_closing_voucher],
-		"previous_frozen_date": doc.previous_frozen_date,
-	}
+	"""Compatibility alias: reopening always includes native P&L reversal."""
+	result = reverse_closing(name, reason)
+	result["period_closing_vouchers"] = [
+		run.period_closing_voucher for run in result["reopened_runs"] if run.period_closing_voucher
+	]
+	return result

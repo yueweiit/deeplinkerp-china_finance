@@ -14,6 +14,7 @@ from china_finance.services.closing import (
 	run_closing_checks,
 	submit_closing_run,
 )
+from china_finance.services.closing_reversal import reversal_progress
 from china_finance.services.financial_statement import build_statement, snapshot_statement
 from china_finance.services.statutory_reporting import generate_statutory_report_package
 from china_finance.setup.templates import SMALL_ENTERPRISE_ROWS, build_seed_rows
@@ -78,7 +79,7 @@ class TestClosingReportSnapshots(IntegrationTestCase):
 			)
 		self.pcv = self.insert(
 			"Period Closing Voucher", company=self.company, period_start_date="2026-01-01",
-			period_end_date="2026-01-31", docstatus=1,
+			period_end_date="2026-01-31", docstatus=1, gle_processing_status="Completed",
 		)
 		name = self.insert(
 			"China Closing Run", company=self.company, closing_type="Monthly", from_date="2026-01-01",
@@ -349,7 +350,7 @@ class TestClosingReportSnapshots(IntegrationTestCase):
 			company=self.company,
 			period_start_date="2026-02-01",
 			period_end_date="2026-02-28",
-			docstatus=1,
+			docstatus=1, gle_processing_status="Completed",
 		)
 		later_run = self.insert(
 			"China Closing Run",
@@ -371,15 +372,17 @@ class TestClosingReportSnapshots(IntegrationTestCase):
 
 		def cancel(voucher):
 			cancelled.append(voucher.name)
-			frappe.db.set_value("Period Closing Voucher", voucher.name, "docstatus", 2)
+			frappe.db.set_value("Period Closing Voucher", voucher.name, {"docstatus": 2, "gle_processing_status": "In Progress"})
 
 		with patch(
 			"china_finance.overrides.period_closing_voucher.ChinaFinancePeriodClosingVoucher.cancel",
 			autospec=True,
 			side_effect=cancel,
-		):
+		), patch("frappe.enqueue") as enqueue:
 			result = reverse_closing(self.run.name, "补录一月凭证")
 
+		self.assertEqual(result["status"], "Reopening")
+		enqueue.assert_called_once()
 		self.assertEqual(cancelled, [later_pcv, self.pcv])
 		self.assertEqual([row.name for row in result["reopened_runs"]], [later_run, self.run.name])
 		self.assertEqual(
@@ -388,12 +391,55 @@ class TestClosingReportSnapshots(IntegrationTestCase):
 				filters={"name": ["in", [self.run.name, later_run]]},
 				pluck="status",
 			),
-			["Reopened", "Reopened"],
+			["Reopening", "Reopening"],
 		)
 		self.assertEqual(
 			getdate(frappe.db.get_value("Company", self.company, "accounts_frozen_till_date")),
 			getdate("2025-12-31"),
 		)
+
+		# Source cancellation alone cannot complete the business transition.
+		self.assertEqual(reversal_progress(self.run.name)["status"], "Reopening")
+		for pcv in (self.pcv, later_pcv):
+			frappe.db.set_value("Period Closing Voucher", pcv, "gle_processing_status", "Completed")
+		self.assertEqual(reversal_progress(self.run.name)["status"], "Reopened")
+		self.assertEqual(frappe.db.get_value("China Closing Run", later_run, "status"), "Reopened")
+
+	def test_duplicate_period_insert_is_rejected_without_creating_second_draft(self):
+		draft = frappe.get_doc({
+			"doctype": "China Closing Run", "company": self.company, "closing_type": "Monthly",
+			"closing_month": "2026-01", "naming_series": "CNC-.YYYY.-.#####",
+		})
+		with self.assertRaises(frappe.ValidationError):
+			draft.insert()
+		self.assertEqual(frappe.db.count("China Closing Run", {
+			"company": self.company, "from_date": "2026-01-01", "docstatus": 0,
+		}), 1)
+
+	def test_native_gl_insert_is_blocked_during_reversal_for_unlisted_source(self):
+		frappe.db.set_value("China Closing Run", self.run.name, {
+			"docstatus": 1, "status": "Reopening", "reversal_group": self.run.name,
+		})
+		source = self.insert("Invoice Discounting", "Unlisted GL source", company=self.company, posting_date="2026-01-15", docstatus=1)
+		entry = frappe.get_doc({
+			"doctype": "GL Entry", "company": self.company, "posting_date": "2026-01-15",
+			"account": self.cash, "voucher_type": "Invoice Discounting", "voucher_no": source,
+			"debit": 1, "debit_in_account_currency": 1,
+		})
+		# Native make_entry also sets ignore_permissions; the period guard still runs.
+		entry.flags.ignore_permissions = True
+		with self.assertRaisesRegex(frappe.ValidationError, "总账撤销尚未完成"):
+			entry.submit()
+		self.assertFalse(frappe.db.exists("GL Entry", {
+			"company": self.company, "voucher_type": "Invoice Discounting", "voucher_no": source,
+		}))
+
+	def test_legacy_confirmation_waits_for_native_gl_completion(self):
+		frappe.db.set_value("Period Closing Voucher", self.pcv, "gle_processing_status", "In Progress")
+		with self.assertRaises(frappe.ValidationError):
+			submit_closing_run(self.run.name)
+		self.assertEqual(frappe.db.get_value("China Closing Run", self.run.name, "docstatus"), 0)
+		self.assertFalse(frappe.db.get_value("Company", self.company, "accounts_frozen_till_date"))
 
 	def test_year_end_still_rejects_missing_comparison(self):
 		self.run.closing_type = "Year End"

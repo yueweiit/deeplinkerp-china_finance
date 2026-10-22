@@ -25,6 +25,10 @@ def guard_period_write(doc, method=None):
 		*GL_SOURCE_DOCTYPES,
 		"China Bank Receipt Import",
 		"Bank Transaction",
+		"Stock Reconciliation",
+		"Invoice Discounting",
+		"Landed Cost Voucher",
+		"GL Entry",
 	) or not doc.get("company"):
 		return
 	companies = {doc.company}
@@ -36,13 +40,22 @@ def guard_period_write(doc, method=None):
 		if not frappe.db.has_column(RUN, "preparation_state"):
 			continue
 		active = frappe.db.sql(
-			"""SELECT name, from_date, to_date FROM `tabChina Closing Run`
-			WHERE company=%s AND docstatus=0 AND preparation_state IN ('Posting','Checking','Closing')
+			"""SELECT name, from_date, to_date, status, reversal_group, period_closing_voucher FROM `tabChina Closing Run`
+			WHERE company=%s AND ((docstatus=0 AND preparation_state IN ('Posting','Checking','Closing'))
+			OR (docstatus=1 AND status IN ('Reopening','Reopen Failed')))
 			FOR UPDATE""",
 			company,
 			as_dict=True,
 		)
+		source_type = doc.get("voucher_type") if doc.doctype == "GL Entry" else doc.doctype
+		source_name = doc.get("voucher_no") if doc.doctype == "GL Entry" else doc.name
+		group = getattr(frappe.flags, "china_closing_reversal", None)
+		own_reversal = source_type == "Period Closing Voucher" and group and any(
+			run.reversal_group == group and run.period_closing_voucher == source_name for run in active
+		)
 		for run in active:
+			if own_reversal and run.reversal_group == group and run.status in ("Reopening", "Reopen Failed"):
+				continue
 			if getattr(frappe.flags, "china_month_end_run", None) == run.name:
 				continue
 			dates = [] if doc.doctype == "China Bank Receipt Import" else [get_posting_date(doc)]
@@ -52,11 +65,21 @@ def guard_period_write(doc, method=None):
 				dates.append(
 					getdate(old.date) if doc.doctype == "Bank Transaction" else get_posting_date(old)
 				)
-			if (
+			in_period = (
 				doc.doctype == "China Bank Receipt Import"
 				or not dates
 				or any(getdate(run.from_date) <= date <= getdate(run.to_date) for date in dates)
-			):
+			)
+			if not in_period and doc.doctype == "GL Entry" and source_type and source_name:
+				# Immutable-ledger cancellation posts its reversal on today's date.
+				# Also guard the source's original period, including cancelled GL.
+				in_period = frappe.db.exists("GL Entry", {
+					"company": company, "voucher_type": source_type, "voucher_no": source_name,
+					"posting_date": ["between", [run.from_date, run.to_date]],
+				})
+			if in_period:
+				if run.status in ("Reopening", "Reopen Failed"):
+					frappe.throw(_("本期总账撤销尚未完成，请先处理月末结账单 {0}").format(run.name))
 				frappe.throw(
 					_("本期正在进行月末记账（{0}），请先在月末结账中暂停，再修改或导入。").format(run.name)
 				)
@@ -71,15 +94,24 @@ def protect_run_fields(doc):
 			frappe.throw(_("月末结账已开始，不能修改公司或期间，请新建正确期间的结账单"))
 
 
-def _run(name):
+def _run(name, *, for_pause=False):
 	frappe.only_for(ROLES)
 	doc = frappe.get_doc(RUN, name)
 	doc.check_permission("write")
 	preparation.check_company(doc.company)
 	lock_company(doc.company)
+	company = doc.company
 	doc = frappe.get_doc(RUN, name, for_update=True)
+	if doc.company != company:
+		frappe.throw(_("单据已被修改，请刷新后重试"), frappe.TimestampMismatchError)
 	if doc.docstatus != 0:
 		frappe.throw(_("该期间已经结账或作废"))
+	# Pausing is a recovery action, including for non-canonical legacy duplicates.
+	# It still requires role, company/document permission, locks and draft status.
+	if for_pause:
+		return doc
+	from china_finance.services.closing_lifecycle import validate_period
+	validate_period(doc)
 	if not preparation.mode_enabled(doc.company, doc.from_date):
 		frappe.throw(_("请先启用凭证准备模式，且本期须在生效日期之后"))
 	if (
@@ -197,7 +229,7 @@ def start(name):
 
 @frappe.whitelist(methods=["POST"])
 def pause(name):
-	doc = _run(name)
+	doc = _run(name, for_pause=True)
 	data = json.loads(doc.preparation_data or "{}")
 	return _store(doc, "Paused", data, _("已暂停。已记账凭证保留，继续前将重新检查剩余草稿。"))
 
@@ -316,6 +348,8 @@ def advance(name):
 		if doc.preparation_state == "Checking":
 			return _after_posting(doc, data)
 		return _close_profit(doc, data)
+	except (frappe.QueryDeadlockError, frappe.QueryTimeoutError):
+		raise
 	except Exception as exc:
 		frappe.db.rollback(save_point=point)
 		doc.reload()

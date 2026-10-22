@@ -2627,3 +2627,34 @@ China Statement Opening Balance Line,Statement Opening Baseline Line
 显示固定资产明细,Show fixed asset details
 固定资产汇总行的币种不一致，请核对报表数据,The fixed asset summary contains inconsistent currencies. Review the report data.
 ；固定资产按账面价值汇总，原价、累计折旧及减值准备明细已隐藏，本期发生额保留借贷合计,"; fixed assets are summarized at carrying amount, with cost, accumulated depreciation and impairment details hidden; period debit and credit totals are retained"
+Reopening,Reopening in progress
+Reopen Failed,Reopening failed
+上次结账记录,Previous closing record
+反结账批次,Reopening batch
+结账状态及审计信息只能通过结账或反结账操作更新,Closing status and audit information can only be updated through closing or reopening actions
+公司正在反结账或撤销失败，请先处理月末结账单 {0},Company reopening is pending or has failed. Resolve closing record {0} first
+本公司同期间已有结账单 {0}，请打开已有单据继续处理,Closing record {0} already exists for this company and period. Open it to continue
+已有后续期间结账单 {0}，请先从后续期间反结账,A later period is closed in {0}. Reopen the later periods first
+单据已被修改，请刷新后重试,The document has changed. Refresh and try again
+只有已反结账的单据可以重新结账,Only reopened records can be closed again
+损益结转凭证不存在，请刷新后重试,The period closing voucher does not exist. Refresh and try again
+月末结账记录请使用反结账操作，不能直接取消,Use the reopening action for closing records; direct cancellation is not allowed
+本期总账撤销尚未完成，请先处理月末结账单 {0},Ledger reversal is unfinished. Resolve closing record {0} first
+该结账单没有进行中的反结账任务,This closing record has no active reopening task
+已开始反结账：{0},Reopening started: {0}
+总账撤销完成后才可修改凭证或重新结账，请在本单检查处理进度。,Wait for ledger reversal to finish before editing vouchers or closing again. Check progress on this record.
+总账撤销失败,Ledger reversal failed
+反结账已完成,Reopening completed
+总账撤销正在处理中,Ledger reversal is in progress
+查看上次结账记录,View previous closing record
+反结账总账撤销尚未完成，本期暂不能修改凭证或重新结账。,Ledger reversal is unfinished. Vouchers cannot be edited and the period cannot be closed again yet.
+检查反结账进度,Check reopening progress
+继续撤销总账,Resume ledger reversal
+已反结账（历史）,Reopened (history)
+反结账处理中,Reopening in progress
+凭证记账中,Posting vouchers
+结账检查中,Checking period closing
+损益结转中,Closing profit and loss
+待结账,Awaiting closing
+损益结转凭证状态不正确，请检查原单,The period closing voucher status is invalid. Check the source document
+已结账,Closed

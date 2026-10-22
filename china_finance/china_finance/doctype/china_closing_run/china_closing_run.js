@@ -149,28 +149,11 @@ function open_period_vouchers(frm) {
 }
 
 async function create_reclosing_run(frm) {
-	const existing = await frappe.db.get_value(
-		"China Closing Run",
-		{
-			company: frm.doc.company,
-			closing_type: frm.doc.closing_type,
-			from_date: frm.doc.from_date,
-			to_date: frm.doc.to_date,
-			docstatus: 0,
-		},
-		"name"
-	);
-	if (existing.message?.name) {
-		frappe.set_route("Form", "China Closing Run", existing.message.name);
-		return;
-	}
-	frappe.new_doc("China Closing Run", {
-		company: frm.doc.company,
-		closing_type: frm.doc.closing_type,
-		closing_month: frm.doc.closing_month,
-		from_date: frm.doc.from_date,
-		to_date: frm.doc.to_date,
+	const response = await frappe.call({
+		method: "china_finance.services.closing_lifecycle.get_or_create_reclosing",
+		args: { name: frm.doc.name }, type: "POST", freeze: true,
 	});
+	frappe.set_route("Form", "China Closing Run", response.message.name);
 }
 
 async function reverse_closing(frm) {
@@ -213,9 +196,9 @@ async function reverse_closing(frm) {
 					const cancelled = (result.cancelled_period_closing_vouchers || []).join("、");
 					const pending = (result.pending_period_closing_vouchers || []).join("、");
 					const messages = [
-						__("已反结账：{0}", [runs]),
+						__("已开始反结账：{0}", [runs]),
 						__("已撤销损益结转：{0}", [cancelled || __("无")]),
-						__("现在可以修改本期凭证；修改完成后新建同期间的月末结账单。"),
+						__("总账撤销完成后才可修改凭证或重新结账，请在本单检查处理进度。"),
 					];
 					if (pending) messages.splice(2, 0, __("以下凭证的总账撤销仍在后台处理：{0}", [pending]));
 					frappe.msgprint({ message: messages.join("<br>"), indicator: pending ? "orange" : "green" });
@@ -344,6 +327,23 @@ async function submit_and_complete_closing(frm) {
 	}
 }
 
+async function check_reversal_progress(frm, resume = false) {
+	const response = await frappe.call({
+		method: `china_finance.services.closing_reversal.${resume ? "resume_reversal" : "reversal_progress"}`,
+		args: { name: frm.doc.name }, type: "POST", freeze: true,
+	});
+	const result = response.message || {};
+	if (result.failed?.length) {
+		frappe.msgprint({
+			title: __("总账撤销失败"), indicator: "red",
+			message: result.failed.map(row => `${frappe.utils.escape_html(row.name)}: ${frappe.utils.escape_html(row.error || "")}`).join("<br>"),
+		});
+	} else {
+		frappe.show_alert({message: result.status === "Reopened" ? __("反结账已完成") : __("总账撤销正在处理中"), indicator: result.status === "Reopened" ? "green" : "orange"});
+	}
+	await frm.reload_doc();
+}
+
 frappe.ui.form.on("China Closing Run", {
 	closing_month(frm) {
 		sync_period_from_month(frm);
@@ -354,11 +354,19 @@ frappe.ui.form.on("China Closing Run", {
 		infer_month_from_period(frm);
 		setup_month_picker(frm);
 		sync_period_from_month(frm);
+		const businessIndicators = {
+			Closed: [__("已结账"), "green"], Reopened: [__("已反结账（历史）"), "grey"],
+			Reopening: [__("反结账处理中"), "orange"], "Reopen Failed": [__("反结账失败"), "red"],
+		};
+		if (frm.doc.docstatus === 1 && businessIndicators[frm.doc.status]) {
+			frm.page.set_indicator(...businessIndicators[frm.doc.status]);
+		}
 		if (frm.doc.company && frm.doc.from_date && frm.doc.to_date && frm.doc.docstatus === 0) {
 			const response = await frappe.call({method: "china_finance.services.voucher_preparation.get_mode", args: {company: frm.doc.company, posting_date: frm.doc.from_date}});
 			if (response.message?.enabled && frm.doc.closing_type === "Monthly") {
 				await frappe.require("/assets/china_finance/js/month_end.js");
 				china_finance.month_end.render(frm);
+				if (frm.doc.reclosing_of) frm.add_custom_button(__("查看上次结账记录"), () => frappe.set_route("Form", "China Closing Run", frm.doc.reclosing_of));
 				return;
 			}
 		}
@@ -385,6 +393,14 @@ frappe.ui.form.on("China Closing Run", {
 				},
 			}), __("月末检查"));
 			frm.add_custom_button(__("结账检查"), () => run_closing_checks(frm), __("月末检查"));
+		}
+		if (frm.doc.reclosing_of) {
+			frm.add_custom_button(__("查看上次结账记录"), () => frappe.set_route("Form", "China Closing Run", frm.doc.reclosing_of));
+		}
+		if (frm.doc.docstatus === 1 && ["Reopening", "Reopen Failed"].includes(frm.doc.status)) {
+			frm.set_intro(__("反结账总账撤销尚未完成，本期暂不能修改凭证或重新结账。"), "orange");
+			frm.page.set_primary_action(__("检查反结账进度"), () => check_reversal_progress(frm));
+			frm.add_custom_button(__("继续撤销总账"), () => check_reversal_progress(frm, true));
 		}
 		if (frm.doc.docstatus === 1 && frm.doc.status === "Closed") {
 			frm.set_intro(frm.doc.archive_package ? __("已结账，结账档案已生成") : __("已结账，结账档案尚未就绪，可刷新或重新生成"), "green");

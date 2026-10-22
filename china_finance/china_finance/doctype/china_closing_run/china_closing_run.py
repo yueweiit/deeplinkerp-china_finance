@@ -5,10 +5,11 @@ from frappe import _
 from frappe.model.document import Document
 from frappe.utils import get_first_day, get_last_day, getdate, now_datetime
 
+from china_finance.overrides.source_voucher_lock import CompanyFirstSourceVoucherLock
 from china_finance.services.closing import create_report_snapshots, run_closing_checks
 
 
-class ChinaClosingRun(Document):
+class ChinaClosingRun(CompanyFirstSourceVoucherLock, Document):
 	def before_insert(self):
 		if not self.amended_from:
 			return
@@ -31,14 +32,20 @@ class ChinaClosingRun(Document):
 		from china_finance.services.month_end import protect_run_fields
 		self._sync_closing_month()
 		protect_run_fields(self)
+		from china_finance.services.closing_lifecycle import protect_fields, validate_period
+		protect_fields(self)
+		validate_period(self)
 		self._remove_empty_check_rows()
 		if self.from_date and self.to_date and self.from_date > self.to_date:
 			frappe.throw(_("起始日期不能晚于截止日期"))
 		if self.period_closing_voucher:
-			company, period_start_date, period_end_date, docstatus = frappe.db.get_value(
+			pcv = frappe.db.get_value(
 				"Period Closing Voucher", self.period_closing_voucher,
 				["company", "period_start_date", "period_end_date", "docstatus"],
 			)
+			if not pcv:
+				frappe.throw(_("损益结转凭证不存在，请刷新后重试"))
+			company, period_start_date, period_end_date, docstatus = pcv
 			if (
 				company != self.company
 				or getdate(period_start_date) != getdate(self.from_date)
@@ -95,16 +102,10 @@ class ChinaClosingRun(Document):
 		from china_finance.services.month_end import lock_company
 		lock_company(self.company)
 		if frappe.db.count("Journal Entry", {"company": self.company, "docstatus": 0,
-			"posting_date": ["between", [self.from_date, self.to_date]]}):
+			"posting_date": ["between", [self.from_date, self.to_date]], "is_opening": ["!=", "Yes"]}):
 			frappe.throw(_("本期还有未记账凭证，请先完成月末记账"))
-		if self.get("preparation_state") and frappe.db.get_value(
-			"Period Closing Voucher", self.period_closing_voucher, "gle_processing_status"
-		) != "Completed":
-			frappe.throw(_("损益结转总账处理尚未完成"))
-		if self.period_closing_voucher and frappe.db.get_value(
-			"Period Closing Voucher", self.period_closing_voucher, "docstatus"
-		) != 1:
-			frappe.throw(_("请先完成损益结转，再确认月末结账"))
+		from china_finance.services.closing_lifecycle import validate_completion
+		validate_completion(self)
 		checks = run_closing_checks(
 			self.company, self.from_date, self.to_date, self.period_closing_voucher, self.closing_type
 		)
@@ -117,6 +118,13 @@ class ChinaClosingRun(Document):
 		self.closed_by = frappe.session.user
 		self.closed_on = now_datetime()
 
+	def before_update_after_submit(self):
+		from china_finance.services.closing_lifecycle import protect_fields
+		protect_fields(self)
+
+	def before_cancel(self):
+		frappe.throw(_("月末结账记录请使用反结账操作，不能直接取消"))
+
 	def on_submit(self):
 		create_report_snapshots(self)
 		frappe.enqueue(
@@ -127,4 +135,6 @@ class ChinaClosingRun(Document):
 		)
 		settings = frappe.get_cached_doc("China Finance Settings", self.company)
 		if settings.freeze_on_close:
-			frappe.db.set_value("Company", self.company, "accounts_frozen_till_date", self.to_date)
+			frappe.db.set_value("Company", self.company, "accounts_frozen_till_date",
+				max(getdate(self.to_date), getdate(self.previous_frozen_date)) if self.previous_frozen_date else self.to_date,
+			)

@@ -3355,3 +3355,34 @@ China Statement Opening Balance Line,Línea de saldos iniciales del estado finan
 显示固定资产明细,Mostrar detalle del inmovilizado material
 固定资产汇总行的币种不一致，请核对报表数据,El resumen del inmovilizado material contiene monedas distintas. Revise los datos del informe.
 ；固定资产按账面价值汇总，原价、累计折旧及减值准备明细已隐藏，本期发生额保留借贷合计,"; el inmovilizado material se resume por su valor contable, sin el detalle del coste, la amortización acumulada ni el deterioro; se mantienen los totales del debe y el haber del período"
+Reopening,Reapertura en curso
+Reopen Failed,Error de reapertura
+上次结账记录,Registro de cierre anterior
+反结账批次,Lote de reapertura
+结账状态及审计信息只能通过结账或反结账操作更新,El estado y la auditoría del cierre solo se pueden actualizar mediante las acciones de cierre o reapertura
+公司正在反结账或撤销失败，请先处理月末结账单 {0},La reapertura está pendiente o ha fallado. Resuelva primero el cierre {0}
+本公司同期间已有结账单 {0}，请打开已有单据继续处理,Ya existe el cierre {0} para esta empresa y período. Ábralo para continuar
+已有后续期间结账单 {0}，请先从后续期间反结账,Existe un período posterior cerrado en {0}. Reabra primero los períodos posteriores
+单据已被修改，请刷新后重试,El documento ha cambiado. Actualice e inténtelo de nuevo
+只有已反结账的单据可以重新结账,Solo los registros reabiertos se pueden cerrar de nuevo
+损益结转凭证不存在，请刷新后重试,El comprobante de cierre no existe. Actualice e inténtelo de nuevo
+月末结账记录请使用反结账操作，不能直接取消,Utilice la acción de reapertura para los cierres; no se permite la cancelación directa
+本期总账撤销尚未完成，请先处理月末结账单 {0},La reversión del libro mayor no ha finalizado. Resuelva primero el cierre {0}
+该结账单没有进行中的反结账任务,Este cierre no tiene una tarea de reapertura activa
+已开始反结账：{0},Reapertura iniciada: {0}
+总账撤销完成后才可修改凭证或重新结账，请在本单检查处理进度。,Espere a que termine la reversión antes de editar comprobantes o cerrar de nuevo. Consulte el progreso en este registro.
+总账撤销失败,Error de reversión del libro mayor
+反结账已完成,Reapertura completada
+总账撤销正在处理中,Reversión del libro mayor en curso
+查看上次结账记录,Ver cierre anterior
+反结账总账撤销尚未完成，本期暂不能修改凭证或重新结账。,La reversión no ha finalizado. Todavía no se pueden editar comprobantes ni cerrar el período de nuevo.
+检查反结账进度,Consultar progreso de reapertura
+继续撤销总账,Reanudar reversión del libro mayor
+已反结账（历史）,Reabierto (histórico)
+反结账处理中,Reapertura en curso
+凭证记账中,Contabilizando comprobantes
+结账检查中,Verificando cierre
+损益结转中,Cerrando pérdidas y ganancias
+待结账,Pendiente de cierre
+损益结转凭证状态不正确，请检查原单,El estado del comprobante de cierre no es válido. Revise el documento original
+已结账,Cerrado

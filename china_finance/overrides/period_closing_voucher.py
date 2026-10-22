@@ -66,3 +66,11 @@ class ChinaFinancePeriodClosingVoucher(PeriodClosingVoucher):
 		self.ignore_linked_doctypes = tuple(
 			dict.fromkeys((*self.ignore_linked_doctypes, "China Closing Run"))
 		)
+
+	def cancel_gl_entries(self):
+		# A closing reversal uses one durable batch job. Native process_cancellation
+		# catches errors and rolls back, so it must not run inside the request that
+		# changes the closing lifecycle or cancels the source documents.
+		if getattr(frappe.flags, "china_closing_reversal", None):
+			return
+		return super().cancel_gl_entries()
