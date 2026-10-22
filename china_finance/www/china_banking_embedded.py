@@ -10,6 +10,7 @@ def prepare_banking_html(html):
 	page = BeautifulSoup(html, "html.parser")
 	if page.body is None:
 		raise ValueError("ERPNext Banking template must contain a body")
+	page.body.append(page.new_tag("script", src="/assets/china_finance/js/banking_company_context.js"))
 	# Module scripts are deferred; the session dictionary is ready before React mounts.
 	script = page.new_tag("script")
 	script.string = "frappe._messages = frappe.boot.__messages || {};"

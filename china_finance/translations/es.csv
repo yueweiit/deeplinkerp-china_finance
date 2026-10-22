@@ -3386,3 +3386,24 @@ Reopen Failed,Error de reapertura
 待结账,Pendiente de cierre
 损益结转凭证状态不正确，请检查原单,El estado del comprobante de cierre no es válido. Revise el documento original
 已结账,Cerrado
+当前单据属于：{0},Este documento pertenece a: {0}
+请先保存或放弃当前修改，并暂停正在执行的月末结账，再切换公司,Guarde o descarte los cambios y pause el cierre mensual en curso antes de cambiar de empresa
+请先保存或取消凭证分录修改，再切换公司,Guarde o descarte los cambios de asientos antes de cambiar de empresa
+没有可用的非集团公司，请联系管理员检查公司权限或公司设置,No hay empresas disponibles que no sean grupos. Solicite al administrador que revise los permisos y la configuración de empresas
+已启用中国财务,China Finance habilitado
+尚未启用中国财务,China Finance sin habilitar
+最近使用,Usadas recientemente
+可用公司（也可输入名称或简称搜索）,Empresas disponibles (busque por nombre o abreviatura)
+无法读取公司列表，请稍后重试,No se pudieron cargar las empresas. Inténtelo de nuevo más tarde
+切换公司会重新加载银行对账，请先保存当前操作。是否继续？,Cambiar de empresa recarga la conciliación bancaria. Guarde primero su trabajo actual. ¿Desea continuar?
+公共配置，不按公司切换,Configuración compartida; sin filtro por empresa
+正在切换到：{0},Cambiando a: {0}
+当前页面尚未准备好，请稍后再切换公司,Esta página aún no está lista. Intente cambiar de empresa en unos momentos
+正在切换公司，请稍候…,Cambiando de empresa. Espere…
+公司切换失败，已保留原公司,No se pudo cambiar de empresa. Se ha conservado la empresa anterior
+原公司页面恢复失败，请刷新页面后重试,No se pudo restaurar la página de la empresa anterior. Recargue la página e inténtelo de nuevo
+公司数据加载失败,No se pudieron cargar los datos de la empresa
+公司页面加载失败，请刷新页面后重试,No se pudo cargar la página de la empresa. Recargue la página e inténtelo de nuevo
+刷新页面,Recargar página
+月末结账操作正在执行，请等待处理完成后再切换公司,Hay una operación de cierre mensual en curso. Espere a que termine antes de cambiar de empresa
+请先保存或放弃当前单据的修改，再切换公司,Guarde o descarte los cambios del documento actual antes de cambiar de empresa

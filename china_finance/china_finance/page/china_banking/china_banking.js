@@ -21,6 +21,12 @@ class ChinaBankingPage {
 		this.page.page_head.hide();
 		frappe.breadcrumbs.add("China Finance");
 		this.mount_banking_app();
+		window.china_finance?.company_context?.register_page("china-banking", {
+			before_switch: () => new Promise(resolve => frappe.confirm(__("切换公司会重新加载银行对账，请先保存当前操作。是否继续？"), () => resolve(true), () => resolve(false))),
+			capture: previous => previous,
+			restore: company => this.sync_company(company, {wait: true}),
+			switch_company: company => this.sync_company(company, {wait: true}),
+		});
 	}
 
 	mount_banking_app() {
@@ -47,14 +53,36 @@ class ChinaBankingPage {
 		}).appendTo($main);
 	}
 
-	sync_company() {
-		const company = frappe.route_options?.company || window.china_finance?.company_context?.get_company();
+	sync_company(company = frappe.route_options?.company || window.china_finance?.company_context?.get_company(), {wait = false} = {}) {
 		if (!company) return;
-		const stored_company = localStorage.getItem("bank-rec-selected-company");
-		if (company === this.company && stored_company === JSON.stringify(company)) return;
+		const key = `china_finance:company:${frappe.session.user}:bank`;
+		const stored_company = sessionStorage.getItem(key);
+		if (company === this.company && stored_company === JSON.stringify(company)) return true;
 		this.company = company;
-		// The embedded ERPNext Banking app uses this native company selector store.
-		localStorage.setItem("bank-rec-selected-company", JSON.stringify(company));
+		// The embedded adapter maps only the native Banking company key to this tab.
+		sessionStorage.setItem(key, JSON.stringify(company));
+		const ready = wait ? this.wait_for_frame() : true;
 		if (this.$iframe) this.$iframe.attr("src", this.$iframe.attr("src"));
+		return ready;
+	}
+
+	wait_for_frame() {
+		const frame = this.$iframe?.get?.(0);
+		if (!frame) return Promise.resolve(true);
+		return new Promise((resolve, reject) => {
+			let poll;
+			const cleanup = () => { clearTimeout(timeout); clearTimeout(poll); frame.removeEventListener("load", loaded); frame.removeEventListener("error", failed); };
+			const failed = () => { cleanup(); reject(new Error(__("公司数据加载失败"))); };
+			const loaded = () => {
+				try {
+					const root = frame.contentDocument?.querySelector("#root");
+					if (!root) return failed();
+					if (root.childElementCount) { cleanup(); resolve(true); }
+					else poll = setTimeout(loaded, 50);
+				} catch { failed(); }
+			};
+			const timeout = setTimeout(failed, 30000);
+			frame.addEventListener("load", loaded); frame.addEventListener("error", failed);
+		});
 	}
 }

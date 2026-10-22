@@ -19,7 +19,8 @@ function harness() {
 (async () => {
 	const failed = harness(); failed.data = { stale: true };
 	context.frappe.xcall = () => Promise.reject();
-	await assert.doesNotReject(() => failed.refresh());
+	assert.equal(await failed.refresh(), false);
+	assert.equal(failed.loading, false);
 	assert.equal(failed.data, null);
 	assert.match(failed.$rows.content, /translated:Unable to load statement mapping/);
 	assert.equal(failed.$summary.content, "");
@@ -29,7 +30,8 @@ function harness() {
 
 	const success = harness(), data = { rows: ["unchanged"] };
 	context.frappe.xcall = async () => data;
-	await success.refresh();
+	assert.equal(await success.refresh(), true);
+	assert.equal(success.loading, false);
 	assert.equal(success.data, data);
 	assert.equal(success.rendered, true);
 
@@ -41,5 +43,22 @@ function harness() {
 	rejectOld(); await oldRequest;
 	assert.equal(stale.data, data);
 	assert.equal(stale.$rows.content, "new company result");
-	console.log("PASS: localized failure state, successful response and stale request isolation");
+	let adapter, notice;
+	context.window = {china_finance: {company_context: {default_company: () => "Company A", register_page: (_name, value) => {adapter = value;}}}};
+	context.frappe.defaults = {get_user_default: () => "Company A"};
+	context.frappe.user = {has_role: () => false}; context.frappe.breadcrumbs = {add() {}};
+	context.frappe.msgprint = value => {notice = value;};
+	context.frappe.ui = {make_app_page: () => ({set_primary_action() {}, add_field: df => ({df, value: df.default,
+		get_value() {return this.value;}, async set_value(value) {this.value = value; return this.df.change?.();}})})};
+	context.Mapping.prototype.setup_content = () => {};
+	const page = new context.Mapping({}); page.data = data; page.selected_accounts.add("old account");
+	const saved = adapter.capture("Company A");
+	page.refresh = async () => {page.selected_accounts.clear(); page.data = null; return false;};
+	assert.equal(await adapter.switch_company("Company B"), false, "failed loads must reach the company transaction");
+	page.render_all = () => {};
+	await adapter.restore(saved);
+	assert.equal(page.company.get_value(), "Company A"); assert.equal(page.data, data);
+	assert.ok(page.selected_accounts.has("old account"));
+	page.loading = true; assert.equal(adapter.before_switch(), false); assert.match(notice, /尚未准备好/);
+	console.log("PASS: load outcomes, mapping rollback, preserved selections, loading guard and stale request isolation");
 })().catch((error) => { console.error(error); process.exitCode = 1; });

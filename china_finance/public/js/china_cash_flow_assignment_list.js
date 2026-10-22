@@ -206,6 +206,19 @@
 		const editor = { session, refresh, render, discard, active };
 		let view_scroll = { left: 0, top: 0 };
 		listview.cash_flow_workbench = editor;
+		context?.register_page?.("List/China Cash Flow Assignment", {
+			before_switch: () => {
+				if (session.loading) {frappe.msgprint(__("当前页面尚未准备好，请稍后再切换公司")); return false;}
+				return discard();
+			},
+			capture: () => ({restore: context.capture_session(session), company: context_company}),
+			restore: snapshot => { snapshot.restore(); context_company = snapshot.company; },
+			switch_company: async company => {
+				const loaded = await session.change_filters({company}, async () => true);
+				context_company = session.filters.company;
+				return !!loaded && context_company === company;
+			},
+		});
 		listview.before_refresh = () => Promise.resolve();
 		listview.refresh = () => refresh(false);
 		listview.render_list = () => render();
@@ -250,15 +263,19 @@
 			if (value.startsWith("[")) { try { return option_company(JSON.parse(value)); } catch { return ""; } }
 			return value;
 		}
-		async function refresh(explicit) {
+			async function refresh(explicit, target_company) {
 			if (!active() || session.busy) return false;
 			const options = frappe.route_options || {};
-			const selected_context = context?.get_company() || "";
-			const company = option_company(options.company) || (selected_context !== context_company ? selected_context : session.filters.company);
+				const selected_context = (context?.is_switching?.() ? context.default_company() : context?.get_company()) || "";
+				const company = target_company || option_company(options.company) || (selected_context !== context_company ? selected_context : session.filters.company);
 			if (options.company) frappe.route_options = null;
 			if (company !== session.filters.company) {
 				const loaded = await session.change_filters({ company }, discard);
-				if (session.filters.company === company) context_company = selected_context;
+				if (session.filters.company === company) {
+					context_company = company;
+					try { await context?.change_company?.(company, {apply: false, guard: false}); }
+					catch { frappe.msgprint?.(__("无法确认公司，请检查权限或网络后重试")); }
+				}
 				return loaded;
 			} else if (session.dirty.size) {
 				if (!explicit) { notice = __("有未保存更改，自动刷新已暂停。"); render_toolbar(); return false; }
@@ -472,9 +489,7 @@
 			const target = event.currentTarget, action = target.dataset.action, name = target.dataset.name;
 			if (target.disabled || session.busy) return;
 			if (action === "company") {
-				if (!(await discard())) return;
-				const company = await context.select_company();
-				if (company) { await session.change_filters({ company }, async () => true); context_company = company; }
+				await context.select_company();
 			} else if (action === "tab") await session.change_filters({ status: target.dataset.status }, discard);
 			else if (action === "previous" || action === "next") await session.change_filters({ start: session.filters.start + (action === "next" ? 1 : -1) * session.filters.page_length }, discard);
 			else if (action === "toggle") { expanded.has(name) ? expanded.delete(name) : expanded.add(name); render(); }

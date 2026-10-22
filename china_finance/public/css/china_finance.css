@@ -319,3 +319,25 @@
 	color: var(--text-muted, #6b7280);
 	text-align: center;
 }
+
+.cf-company-bar {
+	position: sticky;
+	top: 0;
+	z-index: 6;
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	padding: 8px 16px;
+	border-bottom: 1px solid var(--border-color);
+	background: var(--card-bg);
+	flex-wrap: wrap;
+}
+.cf-company-bar button { max-width: 100%; white-space: normal; text-align: start; }
+.cf-company-bar span { color: var(--text-muted); font-size: var(--text-sm); }
+.cf-company-choice { display: block; margin-bottom: 6px; width: 100%; text-align: start; white-space: normal; }
+
+.cf-company-recovery-required > :not(.cf-company-bar):not(.cf-company-recovery) {
+	visibility: hidden !important;
+	pointer-events: none !important;
+}
+.cf-company-recovery { padding: 32px; text-align: center; }

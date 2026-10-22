@@ -341,7 +341,7 @@ function editor_harness(doc = document(), options = {}) {
 		addEventListener(event, handler) { window_events[event] = handler; }, document: { addEventListener() {} }, innerHeight: 900,
 		confirm: () => !!options.discard,
 		requestAnimationFrame: (callback) => callback(),
-		china_finance: { company_context: { get_company: () => "公司甲" } },
+		china_finance: { company_context: options.context || { get_company: () => "公司甲" } },
 		frappe: { get_route: () => ["List", "China Cash Flow Assignment", "List"], set_route() {},
 			router: { on() {} }, realtime: { on() {} }, utils: { get_form_link: () => "/desk/test" },
 			xcall: async (method, args) => { calls.push({ method, args }); return options.call ? options.call(method, args) : { assignments: [copy(doc)], total: 1 }; }, ui: { Dialog: class {
@@ -354,7 +354,7 @@ function editor_harness(doc = document(), options = {}) {
 		btn_primary: element("save"), set_primary_action() {}, set_secondary_action() {},
 	} };
 	const editor = (options.api || api).mount(list, root);
-	return { editor, list, writes, dialogs, calls, properties, nodes, node, window_events,
+	return { editor, list, writes, dialogs, calls, properties, nodes, node, window_events, frappe: root.frappe,
 		async dispatch(event, target, extra = {}) {
 			const matches = (selector) => selector === "[data-edit]" ? !!target.dataset.edit
 				: selector === "select[data-edit]" ? !!target.dataset.edit && target.tagName === "SELECT"
@@ -592,4 +592,21 @@ test("inline input and blur never replace edit controls or toolbar before the ne
 		"blur/input must retain both the next focus target and an upcoming action button");
 	await h.dispatch("click", { dataset: { action: "split", name: "CFA-1", index: "0" } });
 	assert.equal(h.editor.session.doc("CFA-1").items.length, 2, "the first following split click must apply once");
+});
+
+test("native and explicit cash-flow refreshes retain the pending company until the parent commits", async () => {
+ let committed = "公司甲", switching = true;
+ const h = editor_harness(undefined, {context: {
+  get_company: () => committed, is_switching: () => switching, default_company: () => switching ? "公司乙" : committed,
+  change_company: async () => null,
+ }});
+ h.frappe.route_options = {company: ["=", "公司乙"]};
+ assert.equal(await h.list.refresh(), true);
+ assert.equal(h.frappe.route_options, null);
+ assert.equal(await h.editor.refresh(false, "公司乙"), true);
+ assert.equal(await h.list.refresh(), true);
+ assert.equal(h.editor.session.filters.company, "公司乙");
+ assert.ok(h.calls.every(call => call.args.company === "公司乙"));
+ committed = "公司乙"; switching = false;
+ assert.equal(await h.list.refresh(), true); assert.equal(h.editor.session.filters.company, committed);
 });

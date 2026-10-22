@@ -3,13 +3,16 @@ frappe.pages["china-statement-mapping"].on_page_load = function (wrapper) {
 	wrapper.china_statement_mapping = new ChinaStatementMapping(wrapper);
 };
 
-frappe.pages["china-statement-mapping"].on_page_show = function (wrapper) {
+frappe.pages["china-statement-mapping"].on_page_show = async function (wrapper) {
 	frappe.utils.set_title(__("China Statement Mapping"));
 	const mapping = wrapper.china_statement_mapping;
 	const company = frappe.route_options?.company || window.china_finance?.company_context?.get_company();
 	if (company && mapping.company.get_value() !== company) {
-		mapping.company.set_value(company);
+		await mapping.company.set_value(company);
 	} else {
+		const context = window.china_finance?.company_context;
+		try { if (company) await context?.change_company(company, {apply: false}); }
+		catch { frappe.msgprint(__("无法确认公司，请检查权限或网络后重试")); }
 		mapping.refresh();
 	}
 };
@@ -33,6 +36,24 @@ class ChinaStatementMapping {
 		this.data = null;
 		this.setup_filters();
 		this.setup_content();
+		window.china_finance?.company_context?.register_page("china-statement-mapping", {
+			before_switch: () => {
+				if (!this.loading) return true;
+				frappe.msgprint(__("当前页面尚未准备好，请稍后再切换公司")); return false;
+			},
+			capture: previous => ({company: previous, data: this.data,
+				view: Object.fromEntries(["selected_accounts", "selected_rows", "collapsed_rows", "collapsed_accounts", "expanded_aggregates"].map(key => [key, new Set(this[key])]))}),
+			restore: async snapshot => {
+				this.refresh_request = {}; this.context_switch = true;
+				try { await this.company.set_value(snapshot.company); this.data = snapshot.data; Object.assign(this, snapshot.view); if (this.data) this.render_all(); }
+				finally { this.context_switch = false; }
+			},
+			switch_company: async company => {
+				this.context_switch = true;
+				try { await this.company.set_value(company); return await this.refresh(); }
+				finally { this.context_switch = false; }
+			},
+		});
 		this.page.set_primary_action(__("Refresh"), () => this.refresh(), "refresh-cw");
 	}
 
@@ -44,7 +65,24 @@ class ChinaStatementMapping {
 			options: "Company",
 			reqd: 1,
 			default: frappe.route_options?.company || window.china_finance?.company_context?.default_company() || frappe.defaults.get_user_default("Company"),
-			change: () => this.refresh(),
+			change: async () => {
+				if (this.context_switch || !this.company) return;
+				const context = window.china_finance?.company_context;
+				const previous = context?.get_company();
+				try {
+					if (!context || this.company.get_value() === context.get_company()) return this.refresh();
+					if (!(await context.change_company(this.company.get_value()))) {
+						this.context_switch = true;
+						try { await this.company.set_value(previous); } finally { this.context_switch = false; }
+						return;
+					}
+					return;
+				} catch {
+					this.context_switch = true;
+					try { await this.company.set_value(previous); } finally { this.context_switch = false; }
+					frappe.msgprint(__("无法确认公司，请检查权限或网络后重试"));
+				}
+			},
 		});
 		this.statement_type = this.page.add_field({
 			fieldname: "statement_type",
@@ -208,7 +246,7 @@ class ChinaStatementMapping {
 		const request = this.refresh_request = {};
 		const company = this.company.get_value();
 		const statement_type = this.statement_type.get_value();
-		if (!company || !statement_type) return;
+		if (!company || !statement_type) return false;
 		const accounting_standard = this.accounting_standard.get_value();
 		this.selected_accounts.clear();
 		this.selected_rows.clear();
@@ -217,7 +255,7 @@ class ChinaStatementMapping {
 		this.expanded_aggregates.clear();
 		this.$rows.html(`<div class="smc-empty">${__("Loading...")}</div>`);
 		this.$accounts.empty();
-		let data;
+		let data; this.loading = true;
 		try {
 			data = await frappe.xcall(
 				"china_finance.services.statement_mapping_console.get_mapping_console",
@@ -228,21 +266,22 @@ class ChinaStatementMapping {
 				},
 			);
 		} catch {
-			if (request !== this.refresh_request) return;
+			if (request !== this.refresh_request) return false;
 			this.data = null;
 			this.$summary.empty();
 			this.$reclassifications.empty();
 			this.$accounts.empty();
 			this.$rows.html(`<div class="smc-empty">${__("Unable to load statement mapping. Check the reported error and try again.")}</div>`);
-			return;
-		}
+			return false;
+		} finally { if (request === this.refresh_request) this.loading = false; }
 		// A previous company's slower response must not replace the current view.
-		if (request !== this.refresh_request) return;
+		if (request !== this.refresh_request) return false;
 		this.data = data;
 		this.render_all();
 		if (restore_scroll_top !== null) {
 			this.$rows.find(".smc-rows__list").scrollTop(restore_scroll_top);
 		}
+		return true;
 	}
 
 	render_all() {

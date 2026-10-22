@@ -2658,3 +2658,24 @@ Reopen Failed,Reopening failed
 待结账,Awaiting closing
 损益结转凭证状态不正确，请检查原单,The period closing voucher status is invalid. Check the source document
 已结账,Closed
+当前单据属于：{0},This document belongs to: {0}
+请先保存或放弃当前修改，并暂停正在执行的月末结账，再切换公司,Save or discard your changes and pause the active month-end closing before switching companies
+请先保存或取消凭证分录修改，再切换公司,Save or discard voucher entry changes before switching companies
+没有可用的非集团公司，请联系管理员检查公司权限或公司设置,No non-group companies are available. Ask your administrator to check company permissions and settings
+已启用中国财务,China Finance enabled
+尚未启用中国财务,China Finance not enabled
+最近使用,Recently used
+可用公司（也可输入名称或简称搜索）,Available companies (search by name or abbreviation)
+无法读取公司列表，请稍后重试,Unable to load companies. Please try again later
+切换公司会重新加载银行对账，请先保存当前操作。是否继续？,Switching companies reloads bank reconciliation. Save your current work first. Continue?
+公共配置，不按公司切换,Shared configuration; not filtered by company
+正在切换到：{0},Switching to: {0}
+当前页面尚未准备好，请稍后再切换公司,This page is not ready. Please try switching companies again shortly
+正在切换公司，请稍候…,Switching companies. Please wait…
+公司切换失败，已保留原公司,Company switch failed. The previous company was retained
+原公司页面恢复失败，请刷新页面后重试,Unable to restore the previous company page. Reload the page and try again
+公司数据加载失败,Unable to load company data
+公司页面加载失败，请刷新页面后重试,Unable to load the company page. Reload the page and try again
+刷新页面,Reload page
+月末结账操作正在执行，请等待处理完成后再切换公司,A month-end closing action is running. Wait for it to finish before switching companies
+请先保存或放弃当前单据的修改，再切换公司,Save or discard changes to the current document before switching companies

@@ -90,7 +90,10 @@ frappe.query_reports["China Financial Statements"] = {
 		if (!report.get_filter_value("company")) {
 			report.set_filter_value("company", window.china_finance?.company_context?.default_company() || frappe.defaults.get_user_default("Company"));
 		}
-		report.get_filter("company").on_change = () => sync_statutory_header(report);
+		report.get_filter("company").on_change = () => {
+			sync_statutory_header(report);
+			if (!report._no_refresh) return report.refresh(true);
+		};
 		sync_statutory_header(report);
 		report.get_filter("fiscal_year").get_query = () => ({
 			filters: { disabled: 0 },

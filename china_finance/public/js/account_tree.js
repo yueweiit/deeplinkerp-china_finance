@@ -2,6 +2,11 @@
 (function configure_account_tree_display() {
 	const settings = frappe.treeview_settings?.Account;
 	if (!settings) return;
+	const context = window.china_finance?.company_context;
+	const company_filter = settings.filters?.find(field => field.fieldname === "company");
+	// The native tree is constructed before its onload hook runs. Use the finance
+	// company from the start, instead of briefly querying the user's default company.
+	if (company_filter && context?.get_company()) company_filter.default = context.get_company();
 
 	settings.get_tree_nodes = "china_finance.services.account_display.get_children";
 	settings.get_label = (node) => {
@@ -285,6 +290,7 @@
 	const native_onload = settings.onload;
 	settings.onload = function (treeview) {
 		native_onload && native_onload(treeview);
+		context?.bind_tree(treeview);
 		const search_control = treeview.page.add_field(
 			{
 				fieldtype: "Data",

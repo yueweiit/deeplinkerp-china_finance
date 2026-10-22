@@ -19,6 +19,8 @@ class BankingTranslationTests(unittest.TestCase):
 			"/assets/erpnext/banking/assets/current.js")
 		scripts = page.body.find_all("script")
 		self.assertIn("frappe.boot =", scripts[0].string)
+		self.assertEqual(scripts[-3]["src"], "/assets/china_finance/js/banking_company_context.js")
+		self.assertNotIn("defer", scripts[-3].attrs)
 		self.assertEqual(scripts[-2].string, "frappe._messages = frappe.boot.__messages || {};")
 		self.assertEqual(scripts[-1]["src"], "/assets/china_finance/js/banking_i18n.js?v=1")
 		self.assertIsNotNone(page.select_one("#root"))
