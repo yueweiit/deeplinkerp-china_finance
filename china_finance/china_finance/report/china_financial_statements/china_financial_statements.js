@@ -58,6 +58,7 @@ frappe.query_reports["China Financial Statements"] = {
 	// The tree footer (Set Level / Expand All / Collapse All) only controls the
 	// hidden main datatable, so hide it as well; each panel has its own buttons.
 	after_refresh(report) {
+		sync_fixed_asset_detail_filter(report);
 		if (!report.data?.length) destroy_statement_chart(report);
 		if (report.get_filter_value("statement_type") === "Balance Sheet") {
 			report.$report.hide();
@@ -65,6 +66,7 @@ frappe.query_reports["China Financial Statements"] = {
 		}
 	},
 	onload(report) {
+		sync_fixed_asset_detail_filter(report);
 		// Returning from a native voucher/account form can leave the shared query
 		// report page with that module's sidebar. Restore China Finance whenever
 		// this report becomes the active route.
@@ -139,6 +141,12 @@ frappe.query_reports["China Financial Statements"] = {
 		return value;
 	},
 };
+
+function sync_fixed_asset_detail_filter(report) {
+	if (report.get_filter?.("show_fixed_asset_details")) {
+		report.toggle_filter_display("show_fixed_asset_details", report.get_filter_value("statement_type") === "Account Activity and Balance");
+	}
+}
 
 function destroy_statement_chart(report) {
 	const chart = report.__china_statement_chart || report.chart;

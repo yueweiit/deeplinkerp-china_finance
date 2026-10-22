@@ -151,6 +151,7 @@ CHINA_FINANCIAL_STATEMENT_REPORT_FILTERS = (
 	{"fieldname": "account", "label": "科目", "fieldtype": "Link", "options": "Account"},
 	{"fieldname": "show_zero_values", "label": "显示零余额", "fieldtype": "Check", "default": 0},
 	{"fieldname": "expand_party", "label": "展开往来明细", "fieldtype": "Check", "default": 1},
+	{"fieldname": "show_fixed_asset_details", "label": "显示固定资产明细", "fieldtype": "Check", "default": 0},
 )
 
 

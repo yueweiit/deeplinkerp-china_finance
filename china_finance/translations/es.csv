@@ -3352,3 +3352,6 @@ China Statement Opening Balance Line,Línea de saldos iniciales del estado finan
 已确认报表年初基准与总账有 {0} 个项目差异，请单独核对；来源金额未被覆盖。,La base inicial confirmada difiere del libro mayor en {0} partidas. Concílielas por separado; los importes de origen no se han sobrescrito.
 请先保存基准草稿，再通过标准提交确认,Guarde primero el borrador y confírmelo mediante el envío estándar.
 已核验空月份结转 {0}（{1} 至 {2}）：已取消且总账处理完成，期间无总账记录，来源无记账及审计残留；无需生成冲销快照。,"Cierre de mes sin movimientos {0} verificado ({1} a {2}): cancelado con el procesamiento contable completado, sin registros contables en el período ni restos de contabilización o auditoría del origen. No se requiere una instantánea de cancelación."
+显示固定资产明细,Mostrar detalle del inmovilizado material
+固定资产汇总行的币种不一致，请核对报表数据,El resumen del inmovilizado material contiene monedas distintas. Revise los datos del informe.
+；固定资产按账面价值汇总，原价、累计折旧及减值准备明细已隐藏，本期发生额保留借贷合计,"; el inmovilizado material se resume por su valor contable, sin el detalle del coste, la amortización acumulada ni el deterioro; se mantienen los totales del debe y el haber del período"

@@ -125,6 +125,14 @@
    "label": "\u5c55\u5f00\u5f80\u6765\u660e\u7ec6",
    "mandatory": 0,
    "wildcard_filter": 0
+  },
+  {
+   "default": "0",
+   "fieldname": "show_fixed_asset_details",
+   "fieldtype": "Check",
+   "label": "\u663e\u793a\u56fa\u5b9a\u8d44\u4ea7\u660e\u7ec6",
+   "mandatory": 0,
+   "wildcard_filter": 0
   }
  ],
  "idx": 0,

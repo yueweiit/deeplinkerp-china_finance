@@ -21,6 +21,7 @@ from china_finance.services.financial_statement import (
 	get_template,
 	get_unclosed_profit,
 )
+from china_finance.services.fixed_asset_presentation import summarize_fixed_asset_book_value
 
 
 def _apply_default_period(filters):
@@ -198,12 +199,13 @@ def execute_native_trial_balance(filters, activity_balance=False):
 	columns, data = execute_trial_balance(native_filters)
 	_adjust_opening_entries_by_posting_date(data, native_filters)
 	_apply_expense_turnover_presentation(data, native_filters)
+	summarize_fixed_asset_book_value(data, filters)
 	_filter_native_zero_rows(data, filters.get("show_zero_values"))
 	_keep_numbered_group_accounts(data)
 	_format_native_account_labels(columns, data, filters.company)
 	if activity_balance:
 		_rename_activity_balance_columns(columns)
-		return columns, data, _activity_balance_message(filters)
+		return columns, data, _activity_balance_message(filters, data)
 	return columns, data
 
 
@@ -531,15 +533,16 @@ def execute_account_activity_balance(filters):
 	columns, native_rows = execute_trial_balance(native_filters)
 	_adjust_opening_entries_by_posting_date(native_rows, native_filters)
 	expense_offsets = _apply_expense_turnover_presentation(native_rows, native_filters)
+	summarize_fixed_asset_book_value(native_rows, filters)
 	_filter_native_zero_rows(native_rows, filters.get("show_zero_values"))
 	_keep_numbered_group_accounts(native_rows)
 	if not filters.get("expand_party"):
 		_format_native_account_labels(columns, native_rows, filters.company)
-		return columns, native_rows, _activity_balance_message(filters)
+		return columns, native_rows, _activity_balance_message(filters, native_rows)
 
-	account_names = [row.get("account") for row in native_rows if row.get("account") and row.get("is_group_account") == 0]
+	account_names = [row.get("account") for row in native_rows if row.get("account") and row.get("is_group_account") == 0 and not row.get("fixed_asset_summary")]
 	if not account_names:
-		return columns, native_rows, _activity_balance_message(filters)
+		return columns, native_rows, _activity_balance_message(filters, native_rows)
 	party_rows = _get_activity_party_rows(native_filters, account_names)
 	adjust_party_expense_turnover(party_rows, expense_offsets)
 	by_account = {}
@@ -585,7 +588,7 @@ def execute_account_activity_balance(filters):
 				}
 				output.append(party_row)
 	_format_native_account_labels(party_columns, output, filters.company)
-	return party_columns, output, _activity_balance_message(filters)
+	return party_columns, output, _activity_balance_message(filters, output)
 
 
 def _get_activity_party_rows(native_filters, account_names):
@@ -652,10 +655,12 @@ def _keep_numbered_group_accounts(rows):
 			total_row[fieldname] = sum(flt(row.get(fieldname)) for row in detail_rows)
 
 
-def _activity_balance_message(filters):
+def _activity_balance_message(filters, rows=None):
 	message = _("数据来源：ERPNext 原生试算平衡表")
 	message += _("；费用冲减按负借方列示，反向损益结转按负贷方列示")
 	message += _("；本期发生额包含损益结转凭证，期末余额按结转后列示")
+	if any(row.get("fixed_asset_summary") for row in rows or []):
+		message += _("；固定资产按账面价值汇总，原价、累计折旧及减值准备明细已隐藏，本期发生额保留借贷合计")
 	open_profit = get_unclosed_profit(
 		filters.company,
 		filters.to_date,

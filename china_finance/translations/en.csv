@@ -2624,3 +2624,6 @@ China Statement Opening Balance Line,Statement Opening Baseline Line
 已确认报表年初基准与总账有 {0} 个项目差异，请单独核对；来源金额未被覆盖。,The confirmed opening baseline differs from the ledger on {0} rows. Reconcile them separately; source amounts have not been overwritten.
 请先保存基准草稿，再通过标准提交确认,"Save the baseline draft first, then confirm it through standard submission."
 已核验空月份结转 {0}（{1} 至 {2}）：已取消且总账处理完成，期间无总账记录，来源无记账及审计残留；无需生成冲销快照。,"Verified empty-month closing {0} ({1} to {2}): cancelled with ledger processing completed, no ledger records in the period and no posting or audit residue for the source. No cancellation snapshot is required."
+显示固定资产明细,Show fixed asset details
+固定资产汇总行的币种不一致，请核对报表数据,The fixed asset summary contains inconsistent currencies. Review the report data.
+；固定资产按账面价值汇总，原价、累计折旧及减值准备明细已隐藏，本期发生额保留借贷合计,"; fixed assets are summarized at carrying amount, with cost, accumulated depreciation and impairment details hidden; period debit and credit totals are retained"
