@@ -1,22 +1,107 @@
 {
- "add_total_row":0, "creation":"2026-07-17 00:00:00.000000", "disabled":0, "docstatus":0, "doctype":"Report",
- "filters":[
-  {"fieldname":"company","fieldtype":"Link","label":"公司","options":"Company","mandatory":1},
-  {"fieldname":"period_preset","fieldtype":"Select","label":"凭证日期","options":"\n本月凭证\n上月凭证\n近三个月\n本年凭证"},
-  {"fieldname":"from_date","fieldtype":"Date","label":"起始日期","mandatory":1},
-  {"fieldname":"to_date","fieldtype":"Date","label":"截止日期","mandatory":1},
-  {"fieldname":"accounting_period","fieldtype":"Data","label":"会计期间"},
-  {"fieldname":"voucher_word","fieldtype":"Data","label":"凭证字"},
-  {"fieldname":"voucher_status","fieldtype":"Select","label":"状态","options":"全部有效凭证\n未记账\n待记账\n已记账\n已冲销","default":"全部有效凭证"},
-  {"fieldname":"source_doctype","fieldtype":"Link","label":"来源类型","options":"DocType"},
-  {"fieldname":"source_name","fieldtype":"Data","label":"来源单据"},
-  {"fieldname":"source_event","fieldtype":"Data","label":"来源事件"},
-  {"fieldname":"account","fieldtype":"Link","label":"科目","options":"Account"},
-  {"fieldname":"party_type","fieldtype":"Link","label":"往来类型","options":"DocType"},
-  {"fieldname":"party","fieldtype":"Dynamic Link","label":"往来单位","options":"party_type"},
-  {"fieldname":"search_text","fieldtype":"Data","label":"关键字"},
-  {"fieldname":"receipt_import","fieldtype":"Link","options":"China Bank Receipt Import","label":"回单批次"}
+ "add_total_row": 1,
+ "add_translate_data": 0,
+ "columns": [],
+ "creation": "2026-07-17 00:00:00",
+ "disable_prepared_report_automation": 1,
+ "disabled": 0,
+ "docstatus": 0,
+ "doctype": "Report",
+ "filters": [
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "label": "\u516c\u53f8",
+   "mandatory": 1,
+   "options": "Company",
+   "wildcard_filter": 0
+  },
+  {
+   "fieldname": "from_date",
+   "fieldtype": "Date",
+   "label": "\u8d77\u59cb\u65e5\u671f",
+   "mandatory": 1,
+   "wildcard_filter": 0
+  },
+  {
+   "fieldname": "to_date",
+   "fieldtype": "Date",
+   "label": "\u622a\u6b62\u65e5\u671f",
+   "mandatory": 1,
+   "wildcard_filter": 0
+  },
+  {
+   "fieldname": "voucher_word",
+   "fieldtype": "Data",
+   "label": "\u51ed\u8bc1\u5b57",
+   "mandatory": 0,
+   "wildcard_filter": 0
+  },
+  {
+   "fieldname": "account",
+   "fieldtype": "Link",
+   "label": "\u79d1\u76ee",
+   "mandatory": 0,
+   "options": "Account",
+   "wildcard_filter": 0
+  },
+  {
+   "fieldname": "party_type",
+   "fieldtype": "Link",
+   "label": "\u5f80\u6765\u7c7b\u578b",
+   "mandatory": 0,
+   "options": "DocType",
+   "wildcard_filter": 0
+  },
+  {
+   "fieldname": "party",
+   "fieldtype": "Dynamic Link",
+   "label": "\u5f80\u6765\u5355\u4f4d",
+   "mandatory": 0,
+   "options": "party_type",
+   "wildcard_filter": 0
+  }
  ],
- "is_standard":"Yes", "modified":"2026-07-17 00:00:00.000000", "modified_by":"Administrator", "module":"China Finance", "name":"China Voucher Ledger", "owner":"Administrator", "prepared_report":0, "ref_doctype":"Journal Entry", "report_name":"China Voucher Ledger", "report_type":"Script Report",
- "roles":[{"role":"Accounts Manager"},{"role":"Accounts User"},{"role":"China Finance Auditor"},{"role":"System Manager"},{"role":"China Finance Manager"},{"role":"China Finance User"},{"role":"China Voucher Maker"},{"role":"China Voucher Reviewer"},{"role":"China Voucher Poster"}]
+ "idx": 0,
+ "is_standard": "Yes",
+ "letter_head": null,
+ "modified": "2026-10-20 10:32:55.489158",
+ "modified_by": "Administrator",
+ "module": "China Finance",
+ "name": "China Voucher Ledger",
+ "owner": "Administrator",
+ "prepared_report": 0,
+ "ref_doctype": "Journal Entry",
+ "report_name": "China Voucher Ledger",
+ "report_type": "Script Report",
+ "roles": [
+  {
+   "role": "Accounts Manager"
+  },
+  {
+   "role": "Accounts User"
+  },
+  {
+   "role": "China Finance Auditor"
+  },
+  {
+   "role": "System Manager"
+  },
+  {
+   "role": "China Finance Manager"
+  },
+  {
+   "role": "China Finance User"
+  },
+  {
+   "role": "China Voucher Maker"
+  },
+  {
+   "role": "China Voucher Reviewer"
+  },
+  {
+   "role": "China Voucher Poster"
+  }
+ ],
+ "timeout": 0
 }
