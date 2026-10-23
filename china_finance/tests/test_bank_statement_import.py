@@ -6,8 +6,10 @@ from frappe.tests import UnitTestCase
 from openpyxl import Workbook
 
 from china_finance.overrides.bank_statement_import import get_full_import_preview, _validate_import_batch
+from china_finance.overrides.journal_entry import ChinaFinanceJournalEntry
 from china_finance.services.bank_reconciliation import (
 	_apply_journal_entry_summary,
+	_get_safe_party_fields,
 	_resolve_account,
 	_resolve_company_party,
 )
@@ -207,6 +209,42 @@ class TestBankStatementImport(UnitTestCase):
 		self.assertEqual(party, {})
 		get_value.assert_not_called()
 
+	def test_shareholder_payable_party_is_kept_only_for_same_company(self):
+		transaction = frappe._dict(
+			party_type="Shareholder", party="ACC-SH-TEST", company="测试公司"
+		)
+		with (
+			patch("china_finance.services.bank_reconciliation.frappe.db.exists", return_value=True),
+			patch(
+				"china_finance.services.bank_reconciliation.frappe.db.get_value",
+				side_effect=[
+					frappe._dict(account_type="Payable", root_type="Liability"),
+					"测试公司",
+				],
+			),
+		):
+			fields = _get_safe_party_fields("224103 - 其他应付款-个人", transaction)
+
+		self.assertEqual(fields, {"party_type": "Shareholder", "party": "ACC-SH-TEST"})
+
+	def test_company_scoped_party_from_another_company_is_not_carried(self):
+		transaction = frappe._dict(
+			party_type="Employee", party="HR-EMP-TEST", company="测试公司"
+		)
+		with (
+			patch("china_finance.services.bank_reconciliation.frappe.db.exists", return_value=True),
+			patch(
+				"china_finance.services.bank_reconciliation.frappe.db.get_value",
+				side_effect=[
+					frappe._dict(account_type="Payable", root_type="Liability"),
+					"其他公司",
+				],
+			),
+		):
+			fields = _get_safe_party_fields("224103 - 其他应付款-个人", transaction)
+
+		self.assertEqual(fields, {})
+
 	def test_bank_voucher_summary_is_written_to_parent_and_each_line(self):
 		journal_entry = frappe.new_doc("Journal Entry")
 		journal_entry.append("accounts", {
@@ -224,3 +262,24 @@ class TestBankStatementImport(UnitTestCase):
 		self.assertEqual(journal_entry.remark, "报销-张三")
 		self.assertEqual(journal_entry.user_remark, "报销-张三")
 		self.assertEqual([row.user_remark for row in journal_entry.accounts], ["报销-张三", "报销-张三"])
+
+	def test_bank_voucher_gl_map_collapses_only_identical_summary_lines(self):
+		from erpnext.accounts.doctype.journal_entry.journal_entry import JournalEntry
+
+		journal_entry = frappe.new_doc("Journal Entry")
+		journal_entry.custom_china_bank_transaction = "ACC-BTN-TEST"
+		gl_map = [
+			frappe._dict(remarks="支付宝结算\n支付宝结算"),
+			frappe._dict(remarks="分录摘要\n凭证摘要"),
+		]
+		with (
+			patch.object(JournalEntry, "build_gl_map", return_value=gl_map),
+			patch(
+				"china_finance.services.bank_receipt_import.has_structured_receipt_lines",
+				return_value=False,
+			),
+		):
+			result = ChinaFinanceJournalEntry.build_gl_map(journal_entry)
+
+		self.assertEqual(result[0].remarks, "支付宝结算")
+		self.assertEqual(result[1].remarks, "分录摘要\n凭证摘要")

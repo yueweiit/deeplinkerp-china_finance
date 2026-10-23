@@ -10,6 +10,7 @@ import frappe
 from frappe.utils.file_manager import save_file
 
 from china_finance.services import bank_receipt_import as service
+from china_finance.services.accounting_party import account_allows_missing_party
 from china_finance.services.bank_receipt_parser import (
 	PARSER_VERSION,
 	ReceiptParseError,
@@ -142,6 +143,10 @@ def cross_border_text(fx=False, september=False):
 
 
 class TestVoucherPartyFields(unittest.TestCase):
+	def test_only_unclassified_other_receivable_can_omit_party(self):
+		self.assertTrue(account_allows_missing_party("122101"))
+		self.assertFalse(account_allows_missing_party("224103"))
+
 	def test_rejects_party_on_inventory_account_before_reading_party_master(self):
 		account = frappe._dict(
 			name="1405 - 库存商品 - TEST", account_type="", root_type="Asset"
@@ -167,6 +172,39 @@ class TestVoucherPartyFields(unittest.TestCase):
 		self.assertEqual(fields, {"party_type": "Supplier", "party": "测试供应商"})
 		get_doc.assert_called_once_with("Supplier", "测试供应商")
 		party.check_permission.assert_called_once_with("read")
+
+	def test_accepts_shareholder_for_payable_or_equity_account(self):
+		party = Mock(company="测试公司")
+		for account in (
+			frappe._dict(
+				name="224103 - 其他应付款-个人 - TEST",
+				account_type="Payable",
+				root_type="Liability",
+			),
+			frappe._dict(name="4001 - 实收资本 - TEST", account_type="", root_type="Equity"),
+		):
+			with self.subTest(account=account.name), patch.object(frappe, "get_doc", return_value=party):
+				fields = service._voucher_party_fields(
+					{account.name: account}, "Shareholder", "测试股东", company="测试公司"
+				)
+				self.assertEqual(fields, {"party_type": "Shareholder", "party": "测试股东"})
+
+	def test_rejects_employee_or_shareholder_from_another_company(self):
+		account = frappe._dict(
+			name="224103 - 其他应付款-个人 - TEST",
+			account_type="Payable",
+			root_type="Liability",
+		)
+		for party_type in ("Employee", "Shareholder"):
+			party = Mock(company="其他公司")
+			with (
+				self.subTest(party_type=party_type),
+				patch.object(frappe, "get_doc", return_value=party),
+				self.assertRaisesRegex(frappe.ValidationError, "测试往来单位.*测试公司"),
+			):
+				service._voucher_party_fields(
+					{account.name: account}, party_type, "测试往来单位", company="测试公司"
+				)
 
 
 class TestReceiptParser(unittest.TestCase):

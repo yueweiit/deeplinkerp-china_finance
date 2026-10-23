@@ -24,8 +24,15 @@ class ChinaFinanceJournalEntry(JournalEntry):
 
 	def build_gl_map(self):
 		from china_finance.services.bank_receipt_import import has_structured_receipt_lines
+		from china_finance.services.voucher import deduplicate_accounting_remarks
 
 		gl_map = super().build_gl_map()
+		if self.get("custom_china_bank_transaction"):
+			# Bank drafts keep the common summary on both the document and rows for
+			# review. ERPNext joins both values when building GL remarks, so collapse
+			# only adjacent identical lines and retain genuinely different context.
+			for entry in gl_map:
+				entry.remarks = deduplicate_accounting_remarks(entry.get("remarks"))
 		if has_structured_receipt_lines(self):
 			# Accrual and payment need separate audit lines even when the site's
 			# "merge similar account heads" option is enabled.

@@ -14,6 +14,11 @@ from pathlib import Path
 import frappe
 from frappe.utils import add_days, cint, getdate, now_datetime
 
+from china_finance.services.accounting_party import (
+	COMPANY_SCOPED_PARTY_TYPES,
+	account_allows_missing_party,
+	party_type_matches_account,
+)
 from china_finance.services.bank_receipt_parser import (
 	PARSER_VERSION,
 	ReceiptParseError,
@@ -963,11 +968,11 @@ def _create_voucher(
 			frappe.throw(_("银行内部转账请手工制证并核对两侧流水后关联回单"))
 		# Match the bank-statement flow for the unclassified validation/refund
 		# account. It intentionally carries no invented customer or supplier.
-		line_party_not_required = a.account_number == "122101"
+		line_party_not_required = account_allows_missing_party(a.account_number)
 		party_not_required = party_not_required or line_party_not_required
 		if a.account_type in ("Receivable", "Payable") and not (party_type and party) and not line_party_not_required:
 			frappe.throw(_("往来科目必须选择真实往来单位；复杂拆分请手工制证后关联"))
-	party_fields = _voucher_party_fields(accounts, party_type, party)
+	party_fields = _voucher_party_fields(accounts, party_type, party, company=doc.company)
 	je = frappe.get_doc(
 		{
 			"doctype": "Journal Entry",
@@ -1035,7 +1040,7 @@ def _create_voucher(
 	return je
 
 
-def _voucher_party_fields(accounts, party_type=None, party=None):
+def _voucher_party_fields(accounts, party_type=None, party=None, company=None):
 	"""Validate one explicit counterparty against every generated counter-account."""
 	if bool(party_type) != bool(party):
 		frappe.throw(_("往来单位类型或名称不完整"))
@@ -1044,19 +1049,11 @@ def _voucher_party_fields(accounts, party_type=None, party=None):
 	if party_type not in ("Customer", "Supplier", "Employee", "Shareholder"):
 		frappe.throw(_("往来单位类型或名称不完整"))
 
-	expected = {
-		"Customer": {"Receivable"},
-		"Supplier": {"Payable"},
-		"Employee": {"Receivable", "Payable"},
-	}
 	invalid = []
 	for account in accounts.values():
-		allowed = (
-			account.root_type == "Equity"
-			if party_type == "Shareholder"
-			else account.account_type in expected[party_type]
-		)
-		if not allowed:
+		if not party_type_matches_account(
+			party_type, account_type=account.account_type, root_type=account.root_type
+		):
 			invalid.append(account.name)
 	if invalid:
 		frappe.throw(
@@ -1066,6 +1063,8 @@ def _voucher_party_fields(accounts, party_type=None, party=None):
 		)
 	party_doc = frappe.get_doc(party_type, party)
 	party_doc.check_permission("read")
+	if party_type in COMPANY_SCOPED_PARTY_TYPES and company and party_doc.company != company:
+		frappe.throw(_("往来单位 {0} 不属于公司 {1}").format(party, company))
 	return {"party_type": party_type, "party": party}
 
 

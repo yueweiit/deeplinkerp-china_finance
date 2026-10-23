@@ -1074,6 +1074,7 @@ records 必须是发票对象数组,Los registros deben ser una serie de objetos
 往来单位,Tercero
 往来单位类型,tipo Tercero
 往来单位类型或名称不完整,El tipo o nombre Tercero está incompleto
+往来单位 {0} 不属于公司 {1},El tercero {0} no pertenece a la empresa {1}
 往来科目必须选择真实往来单位；复杂拆分请手工制证后关联,"La cuenta corriente debe seleccionar el Tercero real; para divisiones complejas, prepare manualmente el certificado y luego asócielo."
 往来类型,Tipo de transacción
 待人工分类,En espera de clasificación manual

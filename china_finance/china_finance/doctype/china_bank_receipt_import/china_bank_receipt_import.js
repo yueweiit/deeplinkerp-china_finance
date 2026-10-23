@@ -175,7 +175,7 @@ function receipt_dialog(frm, row) {
 			if (request !== party_policy_request) return;
 			const values = result.message || {};
 			if (values.account_type === "Receivable") party_types = ["Customer", "Employee"];
-			else if (values.account_type === "Payable") party_types = ["Supplier", "Employee"];
+			else if (values.account_type === "Payable") party_types = ["Supplier", "Employee", "Shareholder"];
 			else if (values.root_type === "Equity") party_types = ["Shareholder"];
 		}
 		const visible = party_types.length > 0;
@@ -193,8 +193,12 @@ function receipt_dialog(frm, row) {
 		{ fieldname: "allocation_not_accrued", label: __("已核对回单所属时期，该期{0}尚未计提，同意生成计提及支付分录；已计提时应手工冲应付科目后关联", [allocation_name]), fieldtype: "Check", depends_on: 'eval:doc.action=="按社保计提及支付生成草稿" || doc.action=="按公积金计提及支付生成草稿"' },
 		{ fieldname: "account", label: __("对方科目"), fieldtype: "Link", options: "Account", default: row.suggestion.account,
 			depends_on: 'eval:doc.action=="生成凭证草稿"', get_query: () => ({ filters: { company: frm.doc.company, is_group: 0, disabled: 0 } }), onchange: sync_party_fields },
-		{ fieldname: "party_type", label: __("往来单位类型"), fieldtype: "Select", options: "", hidden: 1 },
-		{ fieldname: "party", label: __("往来单位"), fieldtype: "Dynamic Link", options: "party_type", hidden: 1 },
+		{ fieldname: "party_type", label: __("往来单位类型"), fieldtype: "Select", options: "", hidden: 1,
+			onchange: () => dialog.set_value("party", "") },
+		{ fieldname: "party", label: __("往来单位"), fieldtype: "Dynamic Link", options: "party_type", hidden: 1,
+			get_query: () => ["Employee", "Shareholder"].includes(dialog.get_value("party_type"))
+				? ({ filters: { company: frm.doc.company } })
+				: ({}) },
 		{ fieldname: "voucher_type", label: __("凭证类型"), fieldtype: "Select", options: "Journal Entry\nPayment Entry", default: candidate?.doctype || "Journal Entry", depends_on: 'eval:doc.action=="关联已有凭证"' },
 		{ fieldname: "voucher_name", label: __("已有凭证"), fieldtype: "Dynamic Link", options: "voucher_type", default: candidate?.name, depends_on: 'eval:doc.action=="关联已有凭证"', get_query: () => ({ filters: { company: frm.doc.company, docstatus: ["!=", 2] } }) },
 		{ fieldname: "create_bank_transaction", label: __("同时补建银行交易（用于后续核销）"), fieldtype: "Check", default: 0, depends_on: 'eval:doc.action=="关联已有凭证"' },

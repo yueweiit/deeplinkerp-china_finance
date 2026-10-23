@@ -859,6 +859,7 @@ records 必须是发票对象数组,records must be an array of invoice objects
 往来单位,Party
 往来单位类型,Party type
 往来单位类型或名称不完整,Party type or name is incomplete
+往来单位 {0} 不属于公司 {1},Party {0} does not belong to company {1}
 往来科目必须选择真实往来单位；复杂拆分请手工制证后关联,"The current account must select the real Party; for complex splits, please manually prepare the certificate and then associate it."
 往来类型,Type of transaction
 待人工分类,Awaiting manual classification

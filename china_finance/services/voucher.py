@@ -937,6 +937,23 @@ def get_gl_entries(voucher_type, voucher_no, cancelled=False):
 	return [to_voucher_entry(row) for row in rows]
 
 
+def deduplicate_accounting_remarks(value):
+	"""Collapse adjacent identical summary lines without hiding distinct context."""
+	value = str(value or "")
+	lines = value.splitlines()
+	result = []
+	previous = None
+	removed = False
+	for line in lines:
+		current = line.strip()
+		if current and current == previous:
+			removed = True
+			continue
+		result.append(line)
+		previous = current or None
+	return "\n".join(result) if removed else value
+
+
 def restore_negative_journal_entry_debits(doc, entries, source_event="Posting"):
 	"""Preserve a negative debit used for an accounting offset in snapshots.
 

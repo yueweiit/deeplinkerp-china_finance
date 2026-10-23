@@ -12,6 +12,7 @@ from china_finance.services.account_display import (
 	get_account_display_title,
 	strip_account_company_suffix,
 )
+from china_finance.services.voucher import deduplicate_accounting_remarks
 
 
 def execute(filters=None):
@@ -91,6 +92,11 @@ def execute(filters=None):
 		conditions.append(
 			"(v.statutory_number LIKE %(search_pattern)s OR v.source_name LIKE %(search_pattern)s OR v.remarks LIKE %(search_pattern)s OR pcv.remarks LIKE %(search_pattern)s OR e.account LIKE %(search_pattern)s OR e.remarks LIKE %(search_pattern)s)"
 		)
+	bank_transaction_column = (
+		"je.custom_china_bank_transaction"
+		if frappe.db.has_column("Journal Entry", "custom_china_bank_transaction")
+		else "NULL"
+	)
 	entries = frappe.db.sql(
 		f"""
 		SELECT v.name AS voucher_snapshot,
@@ -102,6 +108,7 @@ def execute(filters=None):
 				ELSE v.statutory_number
 			END AS statutory_number,
 			v.voucher_word, v.sequence_number, v.source_doctype, v.source_name, v.source_event,
+			{bank_transaction_column} AS bank_transaction,
 			COALESCE(NULLIF(v.currency, ''), company.default_currency) AS currency,
 			CASE WHEN v.status='Reversed' THEN 2 ELSE 1 END AS voucher_status,
 			COALESCE(e.debit, 0) + COALESCE(e.credit, 0) AS base_total_amount,
@@ -240,7 +247,9 @@ def build_tree_data(entries):
 				"voucher_number": None,
 				"print_voucher": None,
 				"accounting_period": entry.accounting_period if first_line else None,
-				"remarks": clean_voucher_summary(entry.remarks),
+				"remarks": clean_voucher_summary(
+					entry.remarks, bank_generated=bool(entry.get("bank_transaction"))
+				),
 				"source_doctype": entry.source_doctype if first_line else None,
 				"source_name": entry.source_name if first_line else None,
 				"source_event": entry.source_event if first_line else None,
@@ -255,12 +264,13 @@ def build_tree_data(entries):
 	return [row for voucher_snapshot in voucher_order for row in voucher_rows[voucher_snapshot]]
 
 
-def clean_voucher_summary(value):
+def clean_voucher_summary(value, bank_generated=False):
 	"""Remove bank reference metadata copied into historical summaries."""
 	value = (value or "").strip()
 	if "｜" in value:
 		value = value.split("｜", 1)[0].strip()
-	return re.split(r"\s*参考\s*#?.*$", value, maxsplit=1, flags=re.IGNORECASE)[0].strip()
+	value = re.split(r"\s*参考\s*#?.*$", value, maxsplit=1, flags=re.IGNORECASE)[0].strip()
+	return deduplicate_accounting_remarks(value) if bank_generated else value
 
 
 def get_source_metadata(entry):

@@ -12,6 +12,12 @@ from erpnext.accounts.doctype.bank_reconciliation_tool.bank_reconciliation_tool 
 	reconcile_vouchers,
 )
 
+from china_finance.services.accounting_party import (
+	COMPANY_SCOPED_PARTY_TYPES,
+	account_allows_missing_party,
+	party_type_matches_account,
+)
+
 # Default account mapping: description keyword -> account number
 # Override via China Finance Settings if needed.
 DEFAULT_ACCOUNT_MAPPING = {
@@ -466,7 +472,9 @@ def auto_create_voucher_on_submit(doc, method=None):
 		return
 
 	party_fields = _get_safe_party_fields(expense_account, doc)
-	account_type = frappe.db.get_value("Account", expense_account, "account_type")
+	account_info = frappe.db.get_value(
+		"Account", expense_account, ["account_type", "account_number"], as_dict=True
+	)
 
 	try:
 		je = frappe.new_doc("Journal Entry")
@@ -477,10 +485,13 @@ def auto_create_voucher_on_submit(doc, method=None):
 		je.cheque_date = doc.date
 		if je.meta.has_field("custom_china_bank_transaction"):
 			je.custom_china_bank_transaction = doc.name
-		# The unclassified other-receivables leaf is intentionally used for
-		# verification/refund rows, which do not have a real customer or supplier.
-		# Keep those drafts/submissions valid without inventing a party.
-		if account_type in ("Receivable", "Payable") and not party_fields:
+		# Only the unclassified other-receivables leaf is allowed without a party.
+		# Other receivable/payable accounts must retain a valid counterparty.
+		if (
+			account_info
+			and account_allows_missing_party(account_info.account_number)
+			and not party_fields
+		):
 			je.party_not_required = 1
 
 		if is_withdrawal:
@@ -795,16 +806,17 @@ def _get_safe_party_fields(account, bank_transaction):
 	)
 	if not account_info:
 		return {}
-	allowed = (
-		party_type == "Shareholder" and account_info.root_type == "Equity"
-	) or (
-		party_type == "Supplier" and account_info.account_type == "Payable"
-	) or (
-		party_type == "Customer" and account_info.account_type == "Receivable"
-	) or (
-		party_type == "Employee" and account_info.account_type in {"Payable", "Receivable"}
-	)
-	return {"party_type": party_type, "party": party} if allowed else {}
+	if not party_type_matches_account(
+		party_type,
+		account_type=account_info.account_type,
+		root_type=account_info.root_type,
+	):
+		return {}
+	if party_type in COMPANY_SCOPED_PARTY_TYPES:
+		party_company = frappe.db.get_value(party_type, party, "company")
+		if not party_company or party_company != bank_transaction.get("company"):
+			return {}
+	return {"party_type": party_type, "party": party}
 
 
 def _get_valid_bank_account_gl(bank_account, company):
