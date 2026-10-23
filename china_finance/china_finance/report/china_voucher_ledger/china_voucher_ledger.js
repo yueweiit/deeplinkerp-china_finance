@@ -23,7 +23,7 @@ frappe.query_reports["China Voucher Ledger"] = {
 			default: "本月凭证",
 			on_change: (report) => {
 				const preset = report.get_filter_value("period_preset");
-				if (preset) set_quick_period(report, preset);
+				if (preset && !report._no_refresh) set_quick_period(report, preset);
 			},
 		},
 		{ fieldname: "from_date", label: __("起始日期"), fieldtype: "Date", reqd: 1 },
@@ -197,23 +197,37 @@ frappe.query_reports["China Voucher Ledger"] = {
 			const snapshot_name = decodeURIComponent(event.currentTarget.dataset.snapshotName);
 			frappe.set_route("Form", "China Accounting Voucher", snapshot_name);
 		});
-		if (!report.get_filter_value("company")) {
-			report.set_filter_value(
-				"company",
-				window.china_finance?.company_context?.default_company() ||
-					frappe.defaults.get_user_default("Company")
-			);
-		}
-		if (!report.get_filter_value("from_date") || !report.get_filter_value("to_date")) {
-			const today = frappe.datetime.get_today();
-			report.set_filter_value({
-				period_preset: "本月凭证",
-				from_date: frappe.datetime.month_start(today),
-				to_date: frappe.datetime.month_end(today),
-			});
-		}
+		return set_initial_voucher_filters(report);
 	},
 };
+
+async function set_initial_voucher_filters(report) {
+	const values = {};
+	if (!report.get_filter_value("from_date") || !report.get_filter_value("to_date")) {
+		const today = frappe.datetime.get_today();
+		Object.assign(values, {
+			period_preset: "本月凭证",
+			from_date: frappe.datetime.month_start(today),
+			to_date: frappe.datetime.month_end(today),
+		});
+	}
+	if (!report.get_filter_value("company")) {
+		values.company = window.china_finance?.company_context?.default_company() ||
+			frappe.defaults.get_user_default("Company");
+	}
+	// Link controls validate asynchronously. QueryReport.set_filter_value does
+	// not await that validation, so await each control before onload completes.
+	// Set dates first because a company-context change can refresh the report.
+	const no_refresh = report._no_refresh;
+	report._no_refresh = true;
+	try {
+		for (const [fieldname, value] of Object.entries(values)) {
+			await report.get_filter(fieldname).set_value(value);
+		}
+	} finally {
+		report._no_refresh = no_refresh;
+	}
+}
 
 function get_inline_edit_state(report) {
 	return report?._china_inline_edit_state || null;
@@ -1318,7 +1332,5 @@ function set_quick_period(report, period) {
 		from_date = moment(today).startOf("month").format("YYYY-MM-DD");
 		to_date = moment(today).endOf("month").format("YYYY-MM-DD");
 	}
-	report.set_filter_value("from_date", from_date);
-	report.set_filter_value("to_date", to_date);
-	report.refresh();
+	report.set_filter_value({ from_date, to_date });
 }

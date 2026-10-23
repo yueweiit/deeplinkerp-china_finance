@@ -592,3 +592,36 @@ test("independent additions keep the original amount and can be cancelled or rem
 	assert.equal(r.data.length, 2);
 	assert.equal(r._china_inline_edit_state, null);
 });
+
+test('initial voucher filters await company validation before the first refresh', async () => {
+ const h = harness();
+ h.context.frappe.defaults = { get_user_default: () => 'Company A' };
+ h.context.frappe.datetime = { get_today: () => '2026-10-22', month_start: () => '2026-10-01', month_end: () => '2026-10-31' };
+ const values = {};
+ const report = {
+  _no_refresh: false,
+  get_filter_value: key => values[key],
+  get_filter: key => ({async set_value(value) {
+   assert.equal(report._no_refresh, true);
+   await new Promise(resolve => setTimeout(resolve, 1));
+   if (key === 'company') assert.ok(values.from_date && values.to_date);
+   values[key] = value;
+  }}),
+ };
+ const pending = vm.runInContext('set_initial_voucher_filters', h.context)(report);
+ assert.equal(values.company, undefined);
+ await pending;
+ assert.equal(values.company, 'Company A');
+ assert.equal(values.from_date, '2026-10-01');
+ assert.equal(values.to_date, '2026-10-31');
+ assert.equal(report._no_refresh, false);
+});
+
+test('existing voucher date filters are retained on load', async () => {
+ const h = harness();
+ const values = {company: 'Company A', from_date: '2026-08-01', to_date: '2026-08-31'};
+ await vm.runInContext('set_initial_voucher_filters', h.context)({
+  get_filter_value: key => values[key],
+  get_filter() { assert.fail('complete route filters must not be overwritten'); },
+ });
+});
