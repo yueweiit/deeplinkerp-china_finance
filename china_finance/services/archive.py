@@ -6,6 +6,7 @@ import zipfile
 from pathlib import Path
 
 import frappe
+from frappe import _
 from frappe.exceptions import DuplicateEntryError
 from frappe.utils import add_years, getdate, now_datetime
 from frappe.utils.file_manager import save_file

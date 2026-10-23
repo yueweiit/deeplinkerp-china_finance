@@ -8,10 +8,19 @@ REFERENCE_DOCTYPES = {"Customer": "Customer", "Supplier": "Supplier", "Bank": "B
 
 
 class ChinaReconciliationScope(Document):
-	def before_validate(self):
+	def _set_scope_identity(self):
 		self.reference_doctype = REFERENCE_DOCTYPES.get(self.scope_type)
 		if self.company and self.scope_type and self.reference_name:
 			self.scope_key = f"{self.company}|{self.scope_type}|{self.reference_name}"
+
+	def _validate_links(self):
+		# Frappe validates Dynamic Links and names new documents before before_validate.
+		# Derive the read-only link type and naming key before those native checks.
+		self._set_scope_identity()
+		super()._validate_links()
+
+	def before_validate(self):
+		self._set_scope_identity()
 
 	def validate(self):
 		if not self.reference_doctype:
