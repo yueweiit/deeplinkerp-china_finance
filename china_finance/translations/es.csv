@@ -1504,6 +1504,8 @@ records 必须是发票对象数组,Los registros deben ser una serie de objetos
 来源与冲销,Fuente y Reversión
 来源与电子原件,Fuente y original electrónico.
 来源业务单据已删除，无需补齐冲销审计快照,El documento comercial de origen se eliminó y no es necesario completar la instantánea de auditoría Reversión.
+来源业务单据未处于已取消状态，无需补齐冲销审计快照,El documento comercial de origen no está cancelado y no requiere una instantánea de auditoría de cancelación.
+来源单据类型 {0} 不是支持的总账来源，无需补齐冲销审计快照,El tipo de documento de origen {0} no es un origen de libro mayor compatible y no requiere una instantánea de auditoría de cancelación.
 来源事件,Evento fuente
 来源凭证不存在,La fuente Comprobante Contable no existe
 来源凭证不是草稿或已提交状态，不能修改,La fuente Comprobante Contable no está en estado de borrador ni enviada y no se puede modificar.

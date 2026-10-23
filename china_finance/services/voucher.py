@@ -347,6 +347,8 @@ def batch_post_imported_journal_entries(names, reason=None):
 
 
 def on_gl_source_submit(doc, method=None):
+	if doc.doctype not in GL_SOURCE_DOCTYPES:
+		return
 	create_voucher_from_source(doc, "Posting")
 
 
@@ -363,6 +365,8 @@ def _mute_audit_messages():
 @_mute_audit_messages()
 def on_gl_source_cancel(doc, method=None):
 	"""Do not let an audit snapshot failure roll back an ERPNext cancellation."""
+	if doc.doctype not in GL_SOURCE_DOCTYPES:
+		return
 	# The snapshot and its cash-flow assignment dynamically link back to the
 	# source document. They are audit records, not business dependants, so they
 	# must not trigger Frappe's "cancel all linked documents" flow.
@@ -695,6 +699,63 @@ def process_cancellation_snapshot_job(source_doctype, source_name, issue_name=No
 		raise frappe.RetryBackgroundJobError(str(exc)) from exc
 
 
+def _obsolete_cancellation_issue_reason(issue):
+	"""Return a reason only when a pending cancellation can no longer be retried."""
+	if issue.issue_key != f"Cancellation|{issue.source_doctype}|{issue.source_name}":
+		return None
+	# Any accounting evidence requires manual review. Do not infer that a stale
+	# source state makes an existing ledger, snapshot, or assignment disposable.
+	if issue.cancellation_voucher:
+		return None
+	for doctype, filters in (
+		("China Accounting Voucher", {
+			"source_doctype": issue.source_doctype, "source_name": issue.source_name,
+		}),
+		("China Cash Flow Assignment", {
+			"source_doctype": issue.source_doctype, "source_name": issue.source_name,
+		}),
+		("GL Entry", {
+			"voucher_type": issue.source_doctype, "voucher_no": issue.source_name,
+		}),
+	):
+		if frappe.db.exists(doctype, filters):
+			return None
+
+	if not frappe.db.exists("DocType", issue.source_doctype):
+		return _("来源业务单据已删除，无需补齐冲销审计快照")
+	meta = frappe.get_meta(issue.source_doctype)
+	fields = ["name", "docstatus"]
+	if meta.has_field("company"):
+		fields.append("company")
+	source = frappe.db.get_value(
+		issue.source_doctype, issue.source_name, fields, as_dict=True,
+	)
+	if not source:
+		return _("来源业务单据已删除，无需补齐冲销审计快照")
+	if "company" not in source or source.company != issue.company:
+		return None
+	if issue.source_doctype not in GL_SOURCE_DOCTYPES:
+		return _(
+			"来源单据类型 {0} 不是支持的总账来源，无需补齐冲销审计快照"
+		).format(issue.source_doctype)
+	if cint(source.docstatus) != 2:
+		return _("来源业务单据未处于已取消状态，无需补齐冲销审计快照")
+	return None
+
+
+def _resolve_obsolete_cancellation_issue(issue, reason):
+	frappe.db.set_value(
+		"China Voucher Sync Issue",
+		issue.name,
+		{
+			"status": "Resolved",
+			"resolved_on": now_datetime(),
+			"last_error": reason,
+		},
+		update_modified=False,
+	)
+
+
 def get_pending_cancellation_sync_issues(company, from_date, to_date):
 	issues = frappe.get_all(
 		"China Voucher Sync Issue",
@@ -703,23 +764,20 @@ def get_pending_cancellation_sync_issues(company, from_date, to_date):
 			"posting_date": ["between", [from_date, to_date]],
 			"status": "Pending",
 		},
-		fields=["name", "source_doctype", "source_name", "last_error", "retry_count"],
+		fields=[
+			"name", "company", "source_doctype", "source_name", "issue_key", "cancellation_voucher",
+			"last_error", "retry_count",
+		],
 	)
 	pending = []
 	for issue in issues:
-		# A cancelled source may later be deleted in ERPNext. Keep the audit row,
-		# but do not leave an impossible retry as a permanent month-end blocker.
-		if not frappe.db.exists(issue.source_doctype, issue.source_name):
-			frappe.db.set_value(
-				"China Voucher Sync Issue",
-				issue.name,
-				{
-					"status": "Resolved",
-					"resolved_on": now_datetime(),
-					"last_error": _("来源业务单据已删除，无需补齐冲销审计快照"),
-				},
-				update_modified=False,
-			)
+		# Old wildcard cancellation hooks could leave rows for non-ledger sources,
+		# and historical repair work may restore a source to a non-cancelled state.
+		# Preserve the row for audit, but do not make an impossible retry block every
+		# later close. A row with linked cancellation evidence remains blocking.
+		reason = _obsolete_cancellation_issue_reason(issue)
+		if reason:
+			_resolve_obsolete_cancellation_issue(issue, reason)
 			continue
 		pending.append(issue)
 	return pending
@@ -731,6 +789,10 @@ def retry_cancellation_snapshot(issue_name):
 	issue = frappe.get_doc("China Voucher Sync Issue", issue_name)
 	if issue.status != "Pending":
 		return {"status": issue.status, "issue": issue.name, "voucher": issue.cancellation_voucher}
+	reason = _obsolete_cancellation_issue_reason(issue)
+	if reason:
+		_resolve_obsolete_cancellation_issue(issue, reason)
+		return {"status": "Resolved", "issue": issue.name, "voucher": None, "reason": reason}
 	return process_cancellation_snapshot(issue.source_doctype, issue.source_name, issue.name)
 
 

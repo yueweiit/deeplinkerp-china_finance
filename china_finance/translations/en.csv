@@ -1289,6 +1289,8 @@ records 必须是发票对象数组,records must be an array of invoice objects
 来源与冲销,Source and Reversal
 来源与电子原件,Source and electronic original
 来源业务单据已删除，无需补齐冲销审计快照,The source business document has been deleted and there is no need to complete the Reversal audit snapshot.
+来源业务单据未处于已取消状态，无需补齐冲销审计快照,The source business document is not cancelled and does not require a cancellation audit snapshot.
+来源单据类型 {0} 不是支持的总账来源，无需补齐冲销审计快照,Source document type {0} is not a supported general ledger source and does not require a cancellation audit snapshot.
 来源事件,Source event
 来源凭证不存在,Source Voucher does not exist
 来源凭证不是草稿或已提交状态，不能修改,Source Voucher is not in draft or submitted status and cannot be modified.

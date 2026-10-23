@@ -7,7 +7,14 @@ import frappe
 from frappe.utils import flt
 
 from china_finance.services.cash_flow_assignment import cancel_assignments_for_source
-from china_finance.services.voucher import _ensure_cancellation_sync_issue, on_gl_source_cancel, process_cancellation_snapshot
+from china_finance.services.voucher import (
+	_ensure_cancellation_sync_issue,
+	get_pending_cancellation_sync_issues,
+	on_gl_source_cancel,
+	on_gl_source_submit,
+	process_cancellation_snapshot,
+	retry_cancellation_snapshot,
+)
 
 
 class TestCancellationSync(unittest.TestCase):
@@ -131,6 +138,183 @@ class TestCancellationSync(unittest.TestCase):
 		self.assertEqual(issue[1], "Pending")
 		self.assertTrue(enqueue.call_args.kwargs["enqueue_after_commit"])
 		self.assertEqual(enqueue.call_args.kwargs["issue_name"], issue[0])
+
+	def test_global_hooks_ignore_unsupported_source_without_audit_noise(self):
+		source = self.insert(
+			"Purchase Order", company=self.company, transaction_date="2026-07-02", docstatus=2,
+		)
+		doc = frappe.get_doc("Purchase Order", source)
+		with (
+			patch("china_finance.services.voucher.create_voucher_from_source") as create_snapshot,
+			patch("china_finance.services.voucher._ensure_cancellation_sync_issue") as ensure_issue,
+			patch("frappe.enqueue") as enqueue,
+			patch("frappe.log_error") as log_error,
+		):
+			on_gl_source_submit(doc)
+			on_gl_source_cancel(doc)
+		create_snapshot.assert_not_called()
+		ensure_issue.assert_not_called()
+		enqueue.assert_not_called()
+		log_error.assert_not_called()
+
+	def test_pending_cancelled_source_remains_blocking(self):
+		frappe.db.set_value("China Voucher Sync Issue", self.issue, "posting_date", "2026-07-01")
+		issues = get_pending_cancellation_sync_issues(self.company, "2026-07-01", "2026-07-31")
+		self.assertEqual([issue.name for issue in issues], [self.issue])
+		self.assertEqual(frappe.db.get_value("China Voucher Sync Issue", self.issue, "status"), "Pending")
+
+	def test_pending_unsupported_source_is_resolved(self):
+		source = self.insert(
+			"Purchase Order", company=self.company, transaction_date="2026-07-02", docstatus=0,
+		)
+		issue = self.insert(
+			"China Voucher Sync Issue", company=self.company, posting_date="2026-07-02",
+			source_doctype="Purchase Order", source_name=source,
+			issue_key=f"Cancellation|Purchase Order|{source}", status="Pending", retry_count=0,
+		)
+
+		self.assertEqual(get_pending_cancellation_sync_issues(self.company, "2026-07-01", "2026-07-31"), [])
+		status = frappe.db.get_value("China Voucher Sync Issue", issue, ["status", "last_error"], as_dict=True)
+		self.assertEqual(status.status, "Resolved")
+		self.assertIn("不是支持的总账来源", status.last_error)
+
+	def test_retry_resolves_unsupported_source_without_snapshot(self):
+		source = self.insert(
+			"Purchase Order", company=self.company, transaction_date="2026-07-02", docstatus=0,
+		)
+		issue = self.insert(
+			"China Voucher Sync Issue", company=self.company, posting_date="2026-07-02",
+			source_doctype="Purchase Order", source_name=source,
+			issue_key=f"Cancellation|Purchase Order|{source}", status="Pending", retry_count=0,
+		)
+
+		with patch("frappe.only_for"):
+			result = retry_cancellation_snapshot(issue)
+		self.assertEqual(result["status"], "Resolved")
+		self.assertIsNone(result["voucher"])
+		self.assertIn("不是支持的总账来源", result["reason"])
+		self.assertFalse(frappe.db.exists(
+			"China Accounting Voucher",
+			{"source_doctype": "Purchase Order", "source_name": source},
+		))
+
+	def test_pending_non_cancelled_source_is_resolved(self):
+		frappe.db.set_value("Payment Entry", self.source, "docstatus", 1)
+		frappe.db.delete("China Accounting Voucher", {"name": self.voucher})
+		frappe.db.set_value(
+			"China Voucher Sync Issue",
+			self.issue,
+			{
+				"posting_date": "2026-07-01",
+				"issue_key": f"Cancellation|Payment Entry|{self.source}",
+			},
+		)
+
+		self.assertEqual(get_pending_cancellation_sync_issues(self.company, "2026-07-01", "2026-07-31"), [])
+		status = frappe.db.get_value(
+			"China Voucher Sync Issue", self.issue, ["status", "last_error"], as_dict=True,
+		)
+		self.assertEqual(status.status, "Resolved")
+		self.assertIn("未处于已取消状态", status.last_error)
+
+	def test_non_cancelled_source_with_posting_snapshot_remains_blocking(self):
+		frappe.db.set_value("Payment Entry", self.source, "docstatus", 1)
+		frappe.db.set_value("China Voucher Sync Issue", self.issue, "posting_date", "2026-07-01")
+
+		issues = get_pending_cancellation_sync_issues(self.company, "2026-07-01", "2026-07-31")
+		self.assertEqual([row.name for row in issues], [self.issue])
+		self.assertEqual(frappe.db.get_value("China Voucher Sync Issue", self.issue, "status"), "Pending")
+
+	def test_inconsistent_issue_with_cancellation_voucher_remains_blocking(self):
+		source = self.insert(
+			"Purchase Order", company=self.company, transaction_date="2026-07-02", docstatus=0,
+		)
+		issue = self.insert(
+			"China Voucher Sync Issue", company=self.company, posting_date="2026-07-02",
+			source_doctype="Purchase Order", source_name=source,
+			issue_key=f"Cancellation|Purchase Order|{source}", status="Pending", retry_count=0,
+			cancellation_voucher=self.voucher,
+		)
+
+		issues = get_pending_cancellation_sync_issues(self.company, "2026-07-01", "2026-07-31")
+		self.assertEqual([row.name for row in issues], [issue])
+		self.assertEqual(frappe.db.get_value("China Voucher Sync Issue", issue, "status"), "Pending")
+
+	def test_missing_source_with_cancellation_voucher_remains_blocking(self):
+		missing_source = self.prefix + "-MISSING-PO"
+		issue = self.insert(
+			"China Voucher Sync Issue", company=self.company, posting_date="2026-07-02",
+			source_doctype="Purchase Order", source_name=missing_source,
+			issue_key=f"Cancellation|Purchase Order|{missing_source}", status="Pending", retry_count=0,
+			cancellation_voucher=self.voucher,
+		)
+
+		issues = get_pending_cancellation_sync_issues(self.company, "2026-07-01", "2026-07-31")
+		self.assertEqual([row.name for row in issues], [issue])
+		self.assertEqual(frappe.db.get_value("China Voucher Sync Issue", issue, "status"), "Pending")
+
+	def test_unsupported_source_with_financial_evidence_remains_blocking(self):
+		for evidence_doctype in ("China Accounting Voucher", "China Cash Flow Assignment", "GL Entry"):
+			with self.subTest(evidence_doctype=evidence_doctype):
+				source = self.insert(
+					"Purchase Order", company=self.company, transaction_date="2026-07-02", docstatus=0,
+				)
+				issue = self.insert(
+					"China Voucher Sync Issue", company=self.company, posting_date="2026-07-02",
+					source_doctype="Purchase Order", source_name=source,
+					issue_key=f"Cancellation|Purchase Order|{source}", status="Pending", retry_count=0,
+				)
+				if evidence_doctype == "China Accounting Voucher":
+					self.insert(
+						evidence_doctype, company=self.company, posting_date="2026-07-02", currency="CNY",
+						source_doctype="Purchase Order", source_name=source,
+						source_event="Posting", source_key=f"Posting|Purchase Order|{source}",
+					)
+				elif evidence_doctype == "China Cash Flow Assignment":
+					self.insert(
+						evidence_doctype, company=self.company, posting_date="2026-07-02", currency="CNY",
+						source_doctype="Purchase Order", source_name=source, status="Draft",
+					)
+				else:
+					self.insert(
+						evidence_doctype, company=self.company, posting_date="2026-07-02",
+						voucher_type="Purchase Order", voucher_no=source, is_cancelled=1,
+					)
+
+				issues = get_pending_cancellation_sync_issues(self.company, "2026-07-01", "2026-07-31")
+				self.assertIn(issue, [row.name for row in issues])
+				self.assertEqual(frappe.db.get_value("China Voucher Sync Issue", issue, "status"), "Pending")
+
+	def test_mismatched_issue_identity_or_company_remains_blocking(self):
+		other_company = self.insert(
+			"Company", company_name=self.prefix + "-OTHER", abbr=self.prefix[-4:] + "O", default_currency="CNY",
+		)
+		cases = []
+		wrong_key_source = self.insert(
+			"Purchase Order", company=self.company, transaction_date="2026-07-02", docstatus=0,
+		)
+		cases.append(self.insert(
+			"China Voucher Sync Issue", company=self.company, posting_date="2026-07-02",
+			source_doctype="Purchase Order", source_name=wrong_key_source,
+			issue_key=f"Cancellation|Purchase Order|{wrong_key_source}|WRONG", status="Pending", retry_count=0,
+		))
+		wrong_company_source = self.insert(
+			"Purchase Order", company=other_company, transaction_date="2026-07-03", docstatus=0,
+		)
+		cases.append(self.insert(
+			"China Voucher Sync Issue", company=self.company, posting_date="2026-07-03",
+			source_doctype="Purchase Order", source_name=wrong_company_source,
+			issue_key=f"Cancellation|Purchase Order|{wrong_company_source}", status="Pending", retry_count=0,
+		))
+
+		issues = get_pending_cancellation_sync_issues(self.company, "2026-07-01", "2026-07-31")
+		self.assertEqual(set(cases), {row.name for row in issues})
+		self.assertEqual(
+			frappe.get_all(
+				"China Voucher Sync Issue", filters={"name": ["in", cases]}, pluck="status",
+			),
+			["Pending", "Pending"],
+		)
 
 	def test_issue_creation_requires_persisted_supported_cancelled_source(self):
 		frappe.db.set_value("Payment Entry", self.source, "docstatus", 1)
