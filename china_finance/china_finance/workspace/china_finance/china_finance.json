@@ -103,7 +103,7 @@
    "hidden": 0,
    "is_query_report": 0,
    "label": "\u94f6\u884c\u4e0e\u5bf9\u8d26",
-   "link_count": 4,
+   "link_count": 2,
    "link_type": "DocType",
    "onboard": 0,
    "type": "Card Break"
@@ -115,26 +115,6 @@
    "link_count": 0,
    "link_to": "China Bank Receipt Import",
    "link_type": "DocType",
-   "onboard": 0,
-   "type": "Link"
-  },
-  {
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "\u94f6\u884c\u56de\u5355",
-   "link_count": 0,
-   "link_to": "China Bank Receipt",
-   "link_type": "DocType",
-   "onboard": 0,
-   "type": "Link"
-  },
-  {
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "\u94f6\u884c\u5bf9\u8d26",
-   "link_count": 0,
-   "link_to": "china-banking",
-   "link_type": "Page",
    "onboard": 0,
    "type": "Link"
   },

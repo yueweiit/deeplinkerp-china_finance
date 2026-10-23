@@ -176,30 +176,6 @@
    "collapsible": 1,
    "indent": 0,
    "keep_closed": 0,
-   "label": "\u94f6\u884c\u56de\u5355",
-   "link_to": "China Bank Receipt",
-   "link_type": "DocType",
-   "route_options": "{\"sidebar\": \"China Finance\"}",
-   "show_arrow": 0,
-   "type": "Link"
-  },
-  {
-   "child": 1,
-   "collapsible": 1,
-   "indent": 0,
-   "keep_closed": 0,
-   "label": "\u94f6\u884c\u5bf9\u8d26",
-   "link_to": "china-banking",
-   "link_type": "Page",
-   "route_options": "{\"sidebar\": \"China Finance\"}",
-   "show_arrow": 0,
-   "type": "Link"
-  },
-  {
-   "child": 1,
-   "collapsible": 1,
-   "indent": 0,
-   "keep_closed": 0,
    "label": "\u5bf9\u8d26\u5355",
    "link_to": "China Reconciliation Statement",
    "link_type": "DocType",
@@ -514,7 +490,7 @@
    "type": "Link"
   }
  ],
- "modified": "2026-09-29 11:45:28.061597",
+ "modified": "2026-10-14 15:08:55.873806",
  "modified_by": "Administrator",
  "module": "China Finance",
  "name": "China Finance",

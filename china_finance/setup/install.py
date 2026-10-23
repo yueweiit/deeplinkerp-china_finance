@@ -31,9 +31,12 @@ REPORT_NAVIGATION = (
 
 BANK_NAVIGATION = (
 	("China Bank Receipt Import", "银行回单导入", "DocType"),
+	("China Reconciliation Statement", "对账单", "DocType"),
+)
+
+HIDDEN_NAVIGATION = (
 	("China Bank Receipt", "银行回单", "DocType"),
 	("china-banking", "银行对账", "Page"),
-	("China Reconciliation Statement", "对账单", "DocType"),
 )
 
 CORE_NAVIGATION = DAILY_NAVIGATION + VOUCHER_NAVIGATION + REPORT_NAVIGATION + BANK_NAVIGATION
@@ -678,7 +681,11 @@ def sync_banking_sidebar_navigation():
 
 
 def _known_navigation_links():
-	return {link[0] for link in (*CORE_NAVIGATION, *ADMIN_NAVIGATION)} | LEGACY_NAVIGATION | {"China Finance"}
+	return (
+		{link[0] for link in (*CORE_NAVIGATION, *ADMIN_NAVIGATION, *HIDDEN_NAVIGATION)}
+		| LEGACY_NAVIGATION
+		| {"China Finance"}
+	)
 
 
 def _sidebar_link(link_to, label, link_type, sidebar=None):
