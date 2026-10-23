@@ -156,6 +156,7 @@ CHINA_FINANCIAL_STATEMENT_REPORT_FILTERS = (
 
 
 def after_install():
+	sync_voucher_source_indexes()
 	sync_roles()
 	from china_finance.setup.templates import (
 		ensure_company_mappings,
@@ -183,6 +184,7 @@ def after_install():
 
 
 def after_migrate():
+	sync_voucher_source_indexes()
 	sync_roles()
 	from china_finance.setup.templates import (
 		ensure_company_mappings,
@@ -923,3 +925,13 @@ def validate_deployment_schema():
 		missing.append("DisabledReport:China Purchase Document Chain")
 	if missing:
 		frappe.throw("China Finance schema is incomplete: " + ", ".join(missing))
+
+
+def sync_voucher_source_indexes():
+	"""Bound numbering current reads to one company and month, including drafts."""
+	for doctype, date_field in (
+		("Journal Entry", "posting_date"),
+		("Payment Entry", "posting_date"),
+		("Period Closing Voucher", "period_end_date"),
+	):
+		frappe.db.add_index(doctype, ["company", date_field], "china_company_voucher_date")

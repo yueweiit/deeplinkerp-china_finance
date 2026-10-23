@@ -98,7 +98,7 @@ def _cleanup(company):
 	frappe.db.rollback()
 	snapshots = frappe.get_all("China Accounting Voucher", filters={"company": company}, pluck="name")
 	sequences = frappe.get_all("China Voucher Sequence", filters={"company": company}, pluck="name")
-	for doctype in ("Journal Entry", "Payment Entry"):
+	for doctype in ("Journal Entry", "Payment Entry", "Period Closing Voucher"):
 		names = frappe.get_all(doctype, filters={"company": company}, pluck="name")
 		if names:
 			frappe.db.delete("Comment", {"reference_doctype": doctype, "reference_name": ["in", names]})
@@ -111,6 +111,7 @@ def _cleanup(company):
 		frappe.db.delete("China Accounting Voucher Entry", {"parent": ["in", snapshots]})
 	frappe.db.delete("China Accounting Voucher", {"company": company})
 	frappe.db.delete("China Voucher Sequence", {"company": company})
+	frappe.db.delete("GL Entry", {"company": company})
 	frappe.db.delete("Company", {"name": company})
 	frappe.db.commit()
 
@@ -142,11 +143,19 @@ def run_concurrency_scenario(scenario):
 				"company": company, "docstatus": 0, "posting_date": "2026-07-20", "amended_from": source.name})
 			amendment.db_insert()
 			if scenario == "unrelated":
+				fixtures.make_voucher("Period Closing Voucher", "2026-07-31")
 				other_company = prefix + " Other Company"
 				frappe.get_doc({"doctype": "Company", "name": other_company, "company_name": other_company,
 					"abbr": frappe.generate_hash(length=5), "default_currency": "CNY"}).db_insert()
 				fixtures.company = other_company
-				_, other_snapshot = fixtures.make_voucher("Journal Entry", "2026-07-20")
+				other_sources = []
+				for doctype in ("Journal Entry", "Payment Entry", "Period Closing Voucher"):
+					other_source, other_snapshot = fixtures.make_voucher(doctype, "2026-07-20")
+					other_sources.append((doctype, other_source.name, other_snapshot.name))
+				other_gl = prefix + " other GL"
+				frappe.get_doc({"doctype": "GL Entry", "name": other_gl, "company": other_company,
+					"voucher_type": "Period Closing Voucher", "voucher_no": other_source.name,
+					"posting_date": "2026-07-20", "account": "Test Expense", "debit": 100}).db_insert()
 			frappe.db.commit()
 			preview = organize_monthly_voucher_numbers(company, "2026-07")
 			assert preview["can_apply"], preview
@@ -154,7 +163,10 @@ def run_concurrency_scenario(scenario):
 
 			def reader(retrying=False):
 				if scenario == "unrelated":
-					frappe.get_doc("China Accounting Voucher", other_snapshot.name, for_update=True)
+					for doctype, name, snapshot_name in other_sources:
+						frappe.get_doc(doctype, name, for_update=True)
+						frappe.get_doc("China Accounting Voucher", snapshot_name, for_update=True)
+					frappe.db.get_value("GL Entry", other_gl, "name", for_update=True)
 					started.set()
 					_wait(organized)
 					return

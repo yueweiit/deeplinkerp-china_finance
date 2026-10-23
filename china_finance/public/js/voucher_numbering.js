@@ -93,13 +93,15 @@ frappe.provide("china_finance.voucher_numbering");
 	function render_preview(result) {
 		const summary = __("有效凭证 {0} 张，保留取消历史 {1} 张，需改号 {2} 张；整理后下一字号为 {3}。",
 			[result.voucher_count, result.history_count, result.changed_count, esc(result.next_number)]);
+		const completeness = __("本月全部凭证字范围：待补齐正式凭证 {0} 张，未提交草稿 {1} 张。草稿不参与本次编号，后续记账或补录可能需要再次整理。",
+			[result.missing_snapshot_count || 0, result.draft_count || 0]);
 		const blockers = result.blockers.map(message => `<li>${esc(message)}</li>`).join("");
 		const status = blockers
 			? `<div class="alert alert-danger"><ul class="mb-0">${blockers}</ul></div>`
 			: !result.needs_update ? `<div class="alert alert-success">${__("本月有效凭证编号已连续，无需整理")}</div>` : "";
 		const rows = result.changes.map(row => `<tr><td>${esc(row.posting_date)}</td><td>${esc(row.source_name)}</td>
 			<td>${esc(row.old_number)}</td><td>${esc(row.new_number)}</td></tr>`).join("");
-		return `<p>${summary}</p>${status}<div style="max-height:360px;overflow:auto"><table class="table table-bordered">
+		return `<p>${summary}</p><p>${esc(completeness)}</p>${status}<div style="max-height:360px;overflow:auto"><table class="table table-bordered">
 			<thead><tr><th>${__("凭证日期")}</th><th>${__("来源单据")}</th><th>${__("原字号")}</th><th>${__("新字号")}</th></tr></thead>
 			<tbody>${rows}</tbody></table></div>`;
 	}

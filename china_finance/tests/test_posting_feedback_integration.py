@@ -171,6 +171,24 @@ class PostingFeedbackLifecycleTests(unittest.TestCase):
 		voucher.restore_negative_journal_entry_debits(doc, [other, matching])
 		self.assertEqual((matching.debit, matching.credit, matching.remarks), (-1, 0, "Offset A"))
 
+	def test_number_organization_blocks_missing_snapshots_and_reports_drafts(self):
+		from china_finance.services.voucher_number_organization import organize_monthly_voucher_numbers
+
+		doc = self.manual_voucher()
+		with patch.object(voucher, "create_voucher_from_source", return_value=None):
+			doc.submit()
+		self.manual_voucher()
+		plan = organize_monthly_voucher_numbers(self.company, "2026-10")
+		self.assertEqual(plan["missing_snapshot_count"], 1)
+		self.assertEqual(plan["draft_count"], 1)
+		self.assertFalse(plan["can_apply"])
+		self.assertTrue(plan["blockers"])
+		voucher_posting_status.repair_posting_snapshot(doc.doctype, doc.name)
+		ready = organize_monthly_voucher_numbers(self.company, "2026-10")
+		self.assertEqual(ready["missing_snapshot_count"], 0)
+		self.assertEqual(ready["draft_count"], 1)
+		self.assertNotEqual(plan["plan_hash"], ready["plan_hash"])
+		self.assertFalse(ready["blockers"])
 
 	def test_cash_flow_entry_cannot_bypass_activation_or_frozen_period(self):
 		doc = self.manual_voucher()
@@ -206,6 +224,15 @@ class PostingFeedbackLifecycleTests(unittest.TestCase):
 		self.assertEqual(frappe.db.count("China Accounting Voucher", {"source_key": f"Posting|{doc.doctype}|{doc.name}"}), 1)
 		self.assertEqual(frappe.db.count("GL Entry", {"voucher_type": doc.doctype, "voucher_no": doc.name}), 2)
 
+	def test_organization_rejects_plan_when_draft_inventory_changes(self):
+		from china_finance.services.voucher_number_organization import organize_monthly_voucher_numbers
+
+		self.manual_voucher().submit()
+		plan = organize_monthly_voucher_numbers(self.company, "2026-10")
+		self.manual_voucher()
+		with self.assertRaises(frappe.ValidationError):
+			organize_monthly_voucher_numbers(self.company, "2026-10", apply=1,
+				expected_plan_hash=plan["plan_hash"], reason="stale draft inventory")
 
 	def test_ledger_numeric_order_preserves_whole_voucher_groups(self):
 		from china_finance.china_finance.report.china_voucher_ledger.china_voucher_ledger import voucher_ledger_sort_key, build_tree_data
@@ -242,6 +269,27 @@ class PostingFeedbackLifecycleTests(unittest.TestCase):
 		self.assertFalse(get_inline_summary_edit_metadata(doc,
 			{"account": "Other", "source_row_name": "A"})["editable"])
 
+	def test_only_completed_empty_closing_is_exempt_from_snapshot_requirement(self):
+		from china_finance.services.voucher_number_organization import _source_completeness
+
+		for state in ("Completed", "Failed", "In Progress"):
+			name = self.company + " " + state
+			frappe.get_doc({"doctype": "Period Closing Voucher", "name": name, "company": self.company,
+				"period_start_date": "2026-10-01", "period_end_date": "2026-10-31",
+				"docstatus": 1, "gle_processing_status": state}).db_insert()
+		for lock in (False, True):
+			missing = _source_completeness(self.company, "2026-10-01", "2026-10-31", lock=lock)["missing"]
+			self.assertEqual({r[1] for r in missing}, {self.company + " Failed", self.company + " In Progress"})
+		frappe.get_doc({"doctype": "GL Entry", "name": self.company + " closing gl", "company": self.company,
+			"posting_date": "2026-10-31", "voucher_type": "Period Closing Voucher",
+			"voucher_no": self.company + " Completed", "account": self.accounts[0], "is_cancelled": 0,
+			"debit": 10, "credit": 0}).db_insert()
+		self.assertEqual(len(_source_completeness(self.company, "2026-10-01", "2026-10-31")["missing"]), 3)
+		frappe.db.set_value("GL Entry", self.company + " closing gl", "is_cancelled", 1)
+		self.assertEqual(len(_source_completeness(self.company, "2026-10-01", "2026-10-31", lock=True)["missing"]), 3)
+		frappe.db.delete("GL Entry", {"name": self.company + " closing gl"})
+		frappe.db.set_value("Period Closing Voucher", self.company + " Completed", "error_message", "unfinished processing")
+		self.assertEqual(len(_source_completeness(self.company, "2026-10-01", "2026-10-31", lock=True)["missing"]), 3)
 
 
 

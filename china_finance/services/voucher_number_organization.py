@@ -87,6 +87,57 @@ def _read_plan(scope, start, end, revision, lock):
 	return rows, active, history, blockers
 
 
+def _source_completeness(company, start, end, lock=False):
+	"""Check the whole month, not only numbered snapshots or visible report rows.
+
+	The apply caller owns the company lock used by native posting and repairs.
+	Keep source identities in the preview hash to reject stale plans; return only
+	counts to the UI, since source-document read permissions may differ.
+	"""
+	from china_finance.services.opening_identity import get_opening_sources
+
+	opening = set(get_opening_sources(company))
+	missing, drafts = [], []
+	for doctype in vouchers.FORMAL_VOUCHER_SOURCES:
+		date_field = "period_end_date" if doctype == "Period Closing Voucher" else "posting_date"
+		# Force the company/date range for locking reads. A full scan FOR UPDATE
+		# can lock other companies even when the WHERE predicate excludes them.
+		index_hint = " FORCE INDEX (`china_company_voucher_date`)" if lock else ""
+		closing_fields = ""
+		if doctype == "Period Closing Voucher":
+			closing_fields = f""", s.gle_processing_status, s.error_message,
+				EXISTS(SELECT 1 FROM `tabGL Entry` g FORCE INDEX (`voucher_no`)
+					WHERE g.voucher_type='Period Closing Voucher' AND g.voucher_no=s.name
+					{'FOR UPDATE' if lock else ''}) AS has_gl"""
+		rows = frappe.db.sql(f"""
+			SELECT s.name, s.docstatus, s.modified, v.name AS snapshot,
+				v.docstatus AS snapshot_docstatus, v.status AS snapshot_status,
+				v.sequence_number {closing_fields}
+			FROM `tab{doctype}` s{index_hint}
+			LEFT JOIN `tabChina Accounting Voucher` v FORCE INDEX (`source_key`)
+				ON v.source_key=CONCAT('Posting|', %s, '|', s.name)
+			WHERE s.company=%s AND s.{date_field} BETWEEN %s AND %s
+				AND s.docstatus IN (0, 1)
+			ORDER BY s.name
+		""" + (" FOR UPDATE" if lock else ""), (doctype, company, start, end), as_dict=True)
+		for row in rows:
+			if doctype == "Journal Entry" and row.name in opening:
+				continue
+			# A completed closing without GL cannot have an empty snapshot.
+			# Failed/in-flight processing and sources with GL remain blockers.
+			if (doctype == "Period Closing Voucher" and row.docstatus == 1
+				and row.gle_processing_status == "Completed" and not row.error_message
+				and not row.has_gl and not row.snapshot):
+				continue
+			identity = (doctype, row.name, str(row.modified))
+			if row.docstatus == 0:
+				drafts.append(identity)
+			elif not (row.snapshot and row.snapshot_docstatus == 1
+				and row.snapshot_status == "Posted" and cint(row.sequence_number) > 0):
+				missing.append(identity)
+	return {"missing": missing, "drafts": drafts}
+
+
 @frappe.whitelist(methods=["POST"])
 def organize_monthly_voucher_numbers(company, accounting_period, voucher_word="记", apply=0,
 		expected_plan_hash=None, reason=None):
@@ -120,6 +171,9 @@ def organize_monthly_voucher_numbers(company, accounting_period, voucher_word="�
 			["name", "current_value", "numbering_revision"], as_dict=True, for_update=apply)
 		revision = cint(sequence.numbering_revision) if sequence else 0
 		rows, active, history, blockers = _read_plan(scope, start, end, revision, apply)
+		completeness = _source_completeness(company, start, end, lock=apply)
+		if completeness["missing"]:
+			blockers.append(_("本月有 {0} 张已提交单据缺少有效正式凭证，请先补齐或处理异常，再整理编号").format(len(completeness["missing"])))
 		blockers.extend(_protected_periods(company_doc, start, end, rows, lock=apply))
 		if active and not sequence:
 			blockers.append(_("月份编号序列不存在，需先检查数据完整性"))
@@ -139,12 +193,13 @@ def organize_monthly_voucher_numbers(company, accounting_period, voucher_word="�
 		changes = [row for row in assignments if row["old_number"] != row["new_number"]]
 		needs_update = bool(sequence and (changes or cint(sequence.current_value) != len(active)))
 		plan_hash = hashlib.sha256(json.dumps({
-			"scope": scope, "sequence": sequence, "rows": rows, "blockers": blockers,
+			"scope": scope, "sequence": sequence, "rows": rows, "blockers": blockers, "completeness": completeness,
 		}, sort_keys=True, ensure_ascii=False, default=str).encode()).hexdigest()
 		result = {**scope, "voucher_count": len(active), "history_count": len(history),
 			"changed_count": len(changes), "changes": assignments, "next_number": f"{voucher_word}{len(active) + 1}",
 			"blockers": blockers, "can_apply": not blockers and needs_update,
-			"needs_update": needs_update, "plan_hash": plan_hash, "applied": False}
+			"needs_update": needs_update, "plan_hash": plan_hash, "applied": False,
+			"missing_snapshot_count": len(completeness["missing"]), "draft_count": len(completeness["drafts"])}
 		if not apply:
 			return result
 		if expected_plan_hash != plan_hash:

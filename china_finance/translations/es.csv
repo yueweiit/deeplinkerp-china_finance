@@ -3645,3 +3645,5 @@ Adjustment,Ajuste
 正在读取…,Cargando…
 删除所选,Eliminar seleccionados
 请先选择公司。,Seleccione primero una empresa.
+本月有 {0} 张已提交单据缺少有效正式凭证，请先补齐或处理异常，再整理编号,Hay {0} documentos enviados este mes sin comprobantes oficiales válidos. Complételos o resuelva las incidencias antes de renumerar.
+本月全部凭证字范围：待补齐正式凭证 {0} 张，未提交草稿 {1} 张。草稿不参与本次编号，后续记账或补录可能需要再次整理。,En todos los prefijos de este mes: {0} comprobantes oficiales pendientes de completar y {1} borradores sin enviar. Los borradores se excluyen; los registros posteriores pueden requerir otra renumeración.

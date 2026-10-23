@@ -106,3 +106,19 @@ test("blocked preview cannot apply and server failures require a new preview", a
 	assert.equal(h.dialog.values.acknowledge, 0);
 	assert.equal(h.report.refreshed, undefined);
 });
+
+
+test("preview shows whole-month missing snapshots and drafts without enabling blocked apply", async () => {
+ const h = harness();
+ h.result.missing_snapshot_count = 2;
+ h.result.draft_count = 3;
+ h.result.blockers = ["Missing snapshots must be repaired"];
+ h.result.can_apply = false;
+ h.open();
+ await h.dialog.primary();
+ assert.match(h.dialog.preview, /待补齐正式凭证 2 张/);
+ assert.match(h.dialog.preview, /未提交草稿 3 张/);
+ assert.match(h.dialog.preview, /Missing snapshots must be repaired/);
+ await h.dialog.primary();
+ assert.equal(h.requests.at(-1).args.apply, 0);
+});
