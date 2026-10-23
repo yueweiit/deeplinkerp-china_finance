@@ -593,6 +593,14 @@ test("independent additions keep the original amount and can be cancelled or rem
 	assert.equal(r._china_inline_edit_state, null);
 });
 
+test("posted sources missing a snapshot display an explicit pending badge", () => {
+ const h = harness(), format = h.context.frappe.query_reports["China Voucher Ledger"].formatter;
+ const pending = format(1, {}, {fieldname: "voucher_status"}, {voucher_status: 1, snapshot_pending: true}, value => value);
+ assert.match(pending, /已记账，待补齐/); assert.match(pending, /orange/);
+ const posted = format(1, {}, {fieldname: "voucher_status"}, {voucher_status: 1}, value => value);
+ assert.match(posted, /已记账/); assert.doesNotMatch(posted, /待补齐/);
+});
+
 test('initial voucher filters await company validation before the first refresh', async () => {
  const h = harness();
  h.context.frappe.defaults = { get_user_default: () => 'Company A' };

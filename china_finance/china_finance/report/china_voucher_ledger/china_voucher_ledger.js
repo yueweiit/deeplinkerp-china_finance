@@ -92,6 +92,7 @@ frappe.query_reports["China Voucher Ledger"] = {
 			data?.voucher_status !== undefined &&
 			data?.voucher_status !== null
 		) {
+			if (data.snapshot_pending) return `<span class="indicator-pill orange">${__("已记账，待补齐")}</span>`;
 			const status = {
 				0: [__("未记账"), "orange"],
 				3: [__("待记账"), "blue"],

@@ -2679,6 +2679,31 @@ Reopen Failed,Reopening failed
 刷新页面,Reload page
 月末结账操作正在执行，请等待处理完成后再切换公司,A month-end closing action is running. Wait for it to finish before switching companies
 请先保存或放弃当前单据的修改，再切换公司,Save or discard changes to the current document before switching companies
+已记账，待补齐,Posted; voucher record pending
+公司未启用中国财务，未生成正式凭证展示记录,China Finance is not enabled for this company; no formal voucher record was generated
+凭证日期早于中国财务启用日期，请联系财务管理员核对历史数据,The voucher date precedes China Finance activation. Ask a finance administrator to review historical data
+尚未找到有效总账，请检查后台处理状态,No active general ledger entries were found. Check background processing
+仅支持补齐记账凭证和收付款凭证的展示记录,Only Journal Entry and Payment Entry voucher records can be repaired
+当前凭证不满足补齐条件,This voucher does not meet the repair requirements
+未生成正式凭证记录，请检查总账和中国财务设置,No formal voucher record was generated. Check the general ledger and China Finance settings
+正式凭证记录状态异常，请联系财务管理员核对,The formal voucher record has an invalid status. Contact a finance administrator
+已补齐正式凭证展示记录，未重复记账。,The formal voucher record was repaired without posting again.
+待补齐 · {0},Pending record · {0}
+请先补齐正式凭证记录，再进行表内更正,Repair the formal voucher record before editing in this table
+记账未完成，请刷新凭证核对结果,Posting did not complete. Reload the voucher to check its status
+在查凭证中查看,View in Check Voucher
+已记账，正式凭证待补齐,Posted; formal voucher record pending
+已提交，请核对总账处理状态,Submitted; check general ledger processing status
+补齐正式凭证,Repair formal voucher record
+凭证正在后台记账，请稍后刷新核对,The voucher is being posted in the background. Reload it shortly to check
+已记账，凭证字号：{0},Posted. Voucher number: {0}
+记账结果,Posting result
+未能读取记账结果，请刷新原单核对，勿重复记账,Unable to read the posting result. Reload the source document to check; do not post again
+补齐正式凭证只生成展示记录，不会再次记账。是否继续？,Repairing creates only the formal voucher record and does not post again. Continue?
+正式凭证补齐失败，请刷新原单核对,The formal voucher repair failed. Reload the source document to check
+请先暂停月末结账，再补齐正式凭证,Pause month-end closing before repairing the formal voucher record
+可在已记账凭证中查看；未记账筛选不再显示此凭证。,View this voucher under posted vouchers; it no longer appears in the unposted filter.
+记账,Post
 新建现金流量指定单必须为草稿，确认必须通过原生提交,New cash flow assignments must be drafts; confirm them using the standard submit action
 已提交现金流量指定单的状态或审计信息不能修改,The status or audit information of a submitted cash flow assignment cannot be changed
 保存版本,Save version

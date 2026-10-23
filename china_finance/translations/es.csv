@@ -3407,6 +3407,31 @@ Reopen Failed,Error de reapertura
 刷新页面,Recargar página
 月末结账操作正在执行，请等待处理完成后再切换公司,Hay una operación de cierre mensual en curso. Espere a que termine antes de cambiar de empresa
 请先保存或放弃当前单据的修改，再切换公司,Guarde o descarte los cambios del documento actual antes de cambiar de empresa
+已记账，待补齐,Contabilizado; comprobante pendiente
+公司未启用中国财务，未生成正式凭证展示记录,China Finance no está habilitado para esta empresa; no se generó el comprobante formal
+凭证日期早于中国财务启用日期，请联系财务管理员核对历史数据,La fecha del comprobante es anterior a la activación de China Finance. Solicite al administrador financiero que revise los datos históricos
+尚未找到有效总账，请检查后台处理状态,No se encontraron asientos vigentes en el libro mayor. Revise el procesamiento en segundo plano
+仅支持补齐记账凭证和收付款凭证的展示记录,Solo se pueden completar los comprobantes de asientos de diario y de pagos
+当前凭证不满足补齐条件,Este comprobante no cumple los requisitos para completar su registro
+未生成正式凭证记录，请检查总账和中国财务设置,No se generó el comprobante formal. Revise el libro mayor y la configuración de China Finance
+正式凭证记录状态异常，请联系财务管理员核对,El comprobante formal tiene un estado inválido. Contacte al administrador financiero
+已补齐正式凭证展示记录，未重复记账。,Se completó el comprobante formal sin volver a contabilizar.
+待补齐 · {0},Registro pendiente · {0}
+请先补齐正式凭证记录，再进行表内更正,Complete el comprobante formal antes de corregirlo en esta tabla
+记账未完成，请刷新凭证核对结果,La contabilización no se completó. Recargue el comprobante para revisar el resultado
+在查凭证中查看,Ver en Consultar comprobantes
+已记账，正式凭证待补齐,Contabilizado; comprobante formal pendiente
+已提交，请核对总账处理状态,Enviado; revise el estado del procesamiento del libro mayor
+补齐正式凭证,Completar comprobante formal
+凭证正在后台记账，请稍后刷新核对,El comprobante se está contabilizando en segundo plano. Recárguelo en unos momentos para revisarlo
+已记账，凭证字号：{0},Contabilizado. Número de comprobante: {0}
+记账结果,Resultado de contabilización
+未能读取记账结果，请刷新原单核对，勿重复记账,No se pudo leer el resultado. Recargue el documento original para revisarlo; no vuelva a contabilizar
+补齐正式凭证只生成展示记录，不会再次记账。是否继续？,Completar el comprobante solo crea su registro y no vuelve a contabilizar. ¿Desea continuar?
+正式凭证补齐失败，请刷新原单核对,No se pudo completar el comprobante formal. Recargue el documento original para revisarlo
+请先暂停月末结账，再补齐正式凭证,Pause el cierre mensual antes de completar el comprobante formal
+可在已记账凭证中查看；未记账筛选不再显示此凭证。,Consulte este comprobante entre los contabilizados; ya no aparece en el filtro de pendientes de contabilizar.
+记账,Contabilizar
 新建现金流量指定单必须为草稿，确认必须通过原生提交,Las nuevas asignaciones de flujo de efectivo deben ser borradores; confírmelas mediante la acción estándar de envío
 已提交现金流量指定单的状态或审计信息不能修改,No se puede modificar el estado ni la información de auditoría de una asignación de flujo de efectivo enviada
 China Opening Balance,Saldo inicial de China

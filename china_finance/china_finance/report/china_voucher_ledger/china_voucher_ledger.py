@@ -142,6 +142,9 @@ def execute(filters=None):
 	entries = [
 		entry for entry in entries if frappe.has_permission(entry.source_doctype, "read", entry.source_name)
 	]
+	from china_finance.services.voucher_posting_status import get_pending_ledger_rows
+
+	entries.extend(get_pending_ledger_rows(filters))
 	from china_finance.services.opening_identity import get_opening_sources
 
 	opening_names = get_opening_sources(filters.company)
@@ -173,7 +176,7 @@ def execute(filters=None):
 	)
 	from china_finance.services.source_voucher_edit import annotate_inline_edit_rows
 
-	annotate_inline_edit_rows(entries)
+	annotate_inline_edit_rows([entry for entry in entries if not entry.get("snapshot_pending")])
 	_format_account_labels(entries, filters.company)
 	if display_number_filter and re.search(r"\d+$", str(display_number_filter)):
 		entries = [entry for entry in entries if entry.get("statutory_number") == display_number_filter]
