@@ -2404,7 +2404,7 @@ records 必须是发票对象数组,records must be an array of invoice objects
 凭证 {0} 的状态或来源不支持整理编号,The status or source of voucher {0} does not support number organization
 凭证 {0} 的取消审计尚未完成，请先处理冲销同步问题,The cancellation audit for voucher {0} is incomplete. Resolve the reversal synchronization issue first.
 凭证 {0} 的分录哈希不一致，请先检查凭证完整性,The entry hash for voucher {0} does not match. Check the integrity of the voucher first.
-请填写凭证字，例如记、收、付或转，不要填写流水号,"Enter a voucher prefix, such as 记, 收, 付 or 转, without a sequence number"
+请填写凭证字，例如记、收、付或转，不要填写流水号,"Enter the configured voucher category prefix (journal, receipt, payment or transfer), without a sequence number"
 整理原因不能超过 500 个字符,The reason must not exceed 500 characters
 请先暂停月末结账，再整理本期凭证编号,Pause monthly closing before organizing voucher numbers for this period
 本期存在待处理的冲销同步问题，不能整理编号,Pending reversal synchronization issues prevent number organization for this period
@@ -2679,3 +2679,213 @@ Reopen Failed,Reopening failed
 刷新页面,Reload page
 月末结账操作正在执行，请等待处理完成后再切换公司,A month-end closing action is running. Wait for it to finish before switching companies
 请先保存或放弃当前单据的修改，再切换公司,Save or discard changes to the current document before switching companies
+新建现金流量指定单必须为草稿，确认必须通过原生提交,New cash flow assignments must be drafts; confirm them using the standard submit action
+已提交现金流量指定单的状态或审计信息不能修改,The status or audit information of a submitted cash flow assignment cannot be changed
+保存版本,Save version
+公司初始化键,Company initialization key
+初始化批次,Initialization batch
+前一期初版本,Previous opening balance version
+历史来源,Historical sources
+启用人,Activated by
+启用回执,Activation receipt
+启用时间,Activated on
+启用预览指纹,Activation preview fingerprint
+当前启用版本,Currently active version
+期初分录,Opening entries
+期初日期,Opening date
+期初版本,Opening balance version
+模式,Mode
+调整前置版本键,Preceding adjustment version key
+已启用的期初版本不可修改，请新建调整,An active opening balance version cannot be changed; create an adjustment
+期初初始化键与公司不一致,The opening initialization key does not match the company
+期初调整必须关联初始化批次及前一版本,An opening adjustment must reference the initialization batch and previous version
+期初余额保留完整审计历史，不能删除,Opening balances retain a complete audit history and cannot be deleted
+期初余额批次不能重命名或合并,Opening balance batches cannot be renamed or merged
+会计维度,Accounting dimensions
+借方原币,Debit in account currency
+借方本位币,Debit in company currency
+行标识,Row identifier
+贷方原币,Credit in account currency
+贷方本位币,Credit in company currency
+待计算,Pending calculation
+保留原有账务，仅建立关联，不新增会计凭证或总账分录。,Keep the existing accounting records and only create links; no accounting vouchers or general ledger entries will be added.
+本操作将影响正式余额。,This action will affect posted balances.
+本次差额开账金额待服务器校验。,The opening adjustment amount is pending server validation.
+本次差额为零，不新增账务，不新增会计凭证或总账分录。,"The adjustment is zero; no accounting records, accounting vouchers or general ledger entries will be added."
+本次差额开账（本位币 {0}）：借方 {1}，贷方 {2}。,"Opening adjustment (company currency {0}): debit {1}, credit {2}."
+启用期初余额,Activate opening balances
+启用期初调整,Activate opening adjustment
+接管已有期初,Adopt existing opening balances
+"{0}
+公司：{1}
+切换日期：{2}
+本位币：{3}
+{9} {4} 行，借方 {5}，贷方 {6}，差额 {7}。
+{8}
+确认继续？","{0}
+Company: {1}
+Cutover date: {2}
+Company currency: {3}
+{9}: {4} rows, debit {5}, credit {6}, difference {7}.
+{8}
+Continue?"
+整批,Entire batch
+目标整批,Target batch
+请先重新校验本次操作。,Validate this action again first.
+会计维度格式无效，原始内容已保留。请先修正原文件后重新导入。,Invalid accounting dimension format. The original content has been preserved. Correct the source file and import it again.
+一次最多粘贴 500 行，请分批粘贴。,Paste up to 500 rows at a time; split larger sets into batches.
+请求失败，编辑内容已保留，请核对后重试,The request failed. Your edits have been preserved; review them and retry
+服务器未返回已保存批次，编辑内容已保留,The server did not return the saved batch. Your edits have been preserved
+服务器未返回启用结果，请刷新核对,The server did not return an activation result. Refresh to check the outcome
+历史期初切换日期不同，请分别核对来源。,The historical opening balances have different cutover dates. Review each source separately.
+借方期初,Opening debit
+科目全称,Full account name
+贷方期初,Opening credit
+股东,Shareholder
+切换日期,Cutover date
+创建调整,Create adjustment
+启用整批,Activate entire batch
+已启用 · 只读,Active · Read only
+接管整批,Adopt entire batch
+校验整表,Validate entire table
+草稿 · 未保存,Draft · Unsaved
+下载模板,Download template
+仅错误,Errors only
+仅非零,Nonzero only
+历史期初接管…,Adopt historical opening balances…
+外币列,Foreign currency columns
+导入预览,Import preview
+搜索科目 / 往来 / 备注,Search accounts / parties / remarks
+添加空行,Add blank row
+筛选科目、往来或备注,"Filter by account, party or remarks"
+载入全部历史期初,Load all historical opening balances
+载入历史期初,Load historical opening balances
+预填科目,Prefill accounts
+取消预览,Cancel preview
+导入内容为空或含文件、表头、结构错误；请先修正原文件后重新导入。,"The import is empty or has file, header or structure errors. Correct the source file and import it again."
+导入表格并修正,Import into table and correct
+导入预览：{0} 行,Import preview: {0} rows
+批量应用到表格,Apply to table in bulk
+正在读取期初余额…,Loading opening balances…
+点击预填科目、添加空行，或从 Excel 粘贴。,"Click Prefill accounts, add a blank row, or paste from Excel."
+选择可见行,Select visible rows
+选择第 {0} 行,Select row {0}
+水平滚动期初余额表,Scroll the opening balance table horizontally
+当前显示 {0} 行 · 借 {1} · 贷 {2},Showing {0} rows · Debit {1} · Credit {2}
+整批 {0} 行 · 借 {1} · 贷 {2} · 差额 {3} · 错误 {4},Batch: {0} rows · Debit {1} · Credit {2} · Difference {3} · Errors {4}
+内容已修改，请重新校验；以下为上次校验结果。,The content has changed. Validate it again; the previous validation results are shown below.
+整表校验发现 {0} 个错误,Full table validation found {0} errors
+整表校验已完成,Full table validation completed
+内容已修改，请重新校验；当前显示上次校验标记。,The content has changed. Validate it again; the previous validation markers are currently shown.
+尚有未保存的期初余额，离开将放弃这些修改。是否继续？,There are unsaved opening balance changes. Leaving will discard them. Continue?
+现金流量指定单的来源身份不可见，请刷新后重试,The source identity of the cash flow assignment is not visible. Refresh and retry
+现金流量指定必须来自有效的过账凭证,Cash flow assignments must originate from a valid posted voucher
+现金流量指定单的来源信息与凭证不一致,The source information of the cash flow assignment does not match the voucher
+来源单据 {0} 已取消或未提交，不能修改或确认现金流量指定,Source document {0} is cancelled or not submitted; the cash flow assignment cannot be changed or confirmed
+现金分录证据与来源总账不一致，不能修改现金科目、收付方向或发生额,"The cash entry evidence does not match the source general ledger. The cash account, receipt/payment direction and transaction amount cannot be changed"
+中国会计凭证的来源身份不可见，请刷新后重试,The source identity of the China accounting voucher is not visible. Refresh and retry
+无权修改该现金流量指定单,You do not have permission to change this cash flow assignment
+无权确认该现金流量指定单,You do not have permission to confirm this cash flow assignment
+请选择有效的现金流量指定单状态,Select a valid cash flow assignment status
+请选择有效的收付方向,Select a valid receipt/payment direction
+只能修改现金流量指定项目、金额和说明，不能修改来源证据,"Only the cash flow assignment item, amount and description can be changed; source evidence cannot be changed"
+请提交该指定单的完整明细,Submit all detail rows for this assignment
+明细包含不可修改的现金分录证据字段,The details contain cash entry evidence fields that cannot be changed
+指定明细 {0} 不属于本单或重复提交,Assignment row {0} does not belong to this document or was submitted more than once
+不能修改指定明细的现金总账分录,The cash general ledger entry of an assignment row cannot be changed
+新增拆分必须来自本单已有的合法现金总账分录,A new split must originate from an existing valid cash general ledger entry in this document
+指定金额必须是有效数字,The assigned amount must be a valid number
+请选择保存草稿或确认指定,Choose Save draft or Confirm assignment
+请选择 1 至 100 张现金流量指定单,Select 1 to 100 cash flow assignments
+请指定有效的现金流量指定单编号,Specify a valid cash flow assignment ID
+同一批次不能重复提交现金流量指定单,A cash flow assignment cannot be submitted twice in the same batch
+请指定需要处理的现金流量指定单,Specify the cash flow assignments to process
+现金流量指定单已被其他用户修改，请刷新后重试,Another user has changed the cash flow assignment. Refresh and retry
+期初余额只能通过期初余额页面保存、启用或调整,"Opening balances can only be saved, activated or adjusted from the opening balances page"
+期初暂存只能保存专用批次,Opening balance staging can only save dedicated batches
+数据格式无效，请刷新后重试,Invalid data format. Refresh and retry
+历史来源列表无效,Invalid historical source list
+历史来源不能重复选择,Historical sources cannot be selected more than once
+期初余额版本已变化，请刷新并重新核对,The opening balance version has changed. Refresh and review it again
+请填写期初日期,Enter the opening date
+期初本位币必须与公司币种一致,The opening balance company currency must match the company's currency
+请填写期初余额分录,Enter the opening balance entries
+行标识重复,Duplicate row identifier
+请选择本公司启用的末级科目,Select an enabled leaf account belonging to this company
+期初余额只允许资产负债表科目,Opening balances only allow balance sheet accounts
+科目币种与原生科目设置不一致,The account currency does not match the native account settings
+往来类型与往来单位必须同时填写,Party type and party must both be provided
+应收或应付科目必须选择对应的客户或供应商,Receivable or payable accounts require the corresponding customer or supplier
+往来类型或往来单位不存在,The party type or party does not exist
+无权读取或已停用的往来单位,The party is disabled or you do not have permission to read it
+往来单位属于其他公司,The party belongs to another company
+会计维度未启用或不属于原生分录字段,The accounting dimension is disabled or is not a native entry field
+缺少资产负债表必填会计维度,A required balance sheet accounting dimension is missing
+会计维度值不存在,The accounting dimension value does not exist
+会计维度值无权读取、已停用或不是末级记录,"The accounting dimension value is inaccessible, disabled or is not a leaf record"
+会计维度属于其他公司,The accounting dimension belongs to another company
+期初本位币借贷不平衡，请核实真实来源，系统不会自动补平,Opening debits and credits in company currency are not balanced. Check the actual source; the system will not balance them automatically
+期初分录必须为列表，且最多 5000 行,Opening entries must be a list with no more than 5000 rows
+期初分录格式无效,Invalid opening entry format
+来源 {0}：{1},Source {0}: {1}
+来源 {0} 包含业务单据引用，不能接管为纯期初余额,Source {0} references business documents and cannot be adopted as pure opening balances
+来源 {0} 总账包含业务单据引用，不能接管为纯期初余额,The general ledger of source {0} references business documents and cannot be adopted as pure opening balances
+来源 {0} 的原生分录与总账在科目、币种、往来、维度或金额上不一致,"The native entries and general ledger of source {0} differ in accounts, currencies, parties, dimensions or amounts"
+来源 {0} 的会计快照状态或公司日期不一致,"The accounting snapshot of source {0} has an inconsistent status, company or date"
+来源 {0} 的会计快照校验值不一致,The accounting snapshot checksum of source {0} does not match
+来源 {0} 的总账与会计快照分录不一致,The general ledger and accounting snapshot entries of source {0} do not match
+来源 {0} 的会计快照汇总与分录不一致,The accounting snapshot totals and entries of source {0} do not match
+来源 {0} 借贷不平衡,Source {0} has unbalanced debits and credits
+期初余额目前只支持公司默认账簿；来源 {0} 使用了独立账簿,Opening balances currently support only the company's default finance book; source {0} uses a separate finance book
+没有读取期初余额的权限,You do not have permission to read opening balances
+期初余额数据格式无效,Invalid opening balance data format
+已启用的期初版本不可修改，公司也不可变更，请新建调整,An active opening balance version and its company cannot be changed; create an adjustment
+没有创建期初余额的权限,You do not have permission to create opening balances
+本公司已存在期初初始化，请刷新现有批次,This company already has an opening initialization. Refresh the existing batch
+期初模式无效,Invalid opening balance mode
+调整必须从已启用期初版本发起,An adjustment must be initiated from an active opening balance version
+调整必须沿用原期初日期；系统不会解除冻结或结账,An adjustment must retain the original opening date; the system will not unfreeze or reopen the period
+请明确选择至少一张历史期初来源,Explicitly select at least one historical opening source
+历史来源 {0} 已被其他期初批次接管,Historical source {0} has already been adopted by another opening balance batch
+接管明细必须与历史来源的科目、原币、本位币、往来和会计维度完全一致,"Adopted entries must exactly match the historical sources in accounts, account currency, company currency, parties and accounting dimensions"
+接管明细必须保留原始摘要，包括尚未建立往来档案的文字,"Adopted entries must retain the original descriptions, including text for parties without master records"
+调整的原期初版本已失效或公司日期不一致,The original opening balance version for this adjustment is no longer valid or has a different company or date
+原期初已存在更新版本，请刷新,A newer opening balance version already exists. Refresh
+公司已有原生期初总账，请核对并选择历史接管，避免重复初始化,This company already has native opening ledger entries. Review them and adopt the historical balances to avoid duplicate initialization
+请先启用本公司的中国财务设置，期初启用必须保留可核对的技术会计快照,Enable China Finance Settings for this company first; opening activation must retain a verifiable technical accounting snapshot
+原生期初凭证缺少可信的技术会计快照，启用已回滚,The native opening voucher lacks a trusted technical accounting snapshot; activation has been rolled back
+期初余额 {0}，版本 {1},"Opening balance {0}, version {1}"
+期初来源核对版本已变化,The opening source review version has changed
+原生期初凭证未完成提交,The native opening voucher has not completed submission
+期初凭证核对上下文无效,Invalid opening voucher review context
+保存的期初版本已变化，请重新核对,The saved opening balance version has changed. Review it again
+原生期初凭证内容已变化，请重新核对,The native opening voucher content has changed. Review it again
+该原生凭证已关联启用的期初余额，不能直接取消或修改。请在期初余额中发起受控调整。,This native voucher is linked to active opening balances and cannot be cancelled or changed directly. Initiate a controlled adjustment from opening balances.
+已启用期初的保存内容与启用回执不一致,The saved content of the active opening balances does not match the activation receipt
+已启用期初的原生凭证、总账或会计快照证据已变化，请先核查,"The native voucher, general ledger or accounting snapshot evidence of the active opening balances has changed. Investigate first"
+期初核对预览已变化，请重新预览后启用,The opening balance review preview has changed. Preview again before activation
+原生期初凭证或总账结果与已核对的期初目标不一致，启用已回滚,The native opening voucher or general ledger result does not match the reviewed opening target; activation has been rolled back
+启用期间会计主数据或期间设置已变化，请重新预览,Accounting master data or period settings changed during activation. Generate a new preview
+启用期初余额需要原生记账凭证的创建和提交权限,Activating opening balances requires permission to create and submit native journal entries
+启用请求与已完成回执版本不一致,The activation request does not match the version of the completed receipt
+没有创建期初调整的权限,You do not have permission to create opening adjustments
+请先启用当前期初版本,Activate the current opening balance version first
+该期初版本已被更新，请刷新,This opening balance version has been superseded. Refresh
+没有导入期初余额的权限,You do not have permission to import opening balances
+请提供粘贴表格或一个已上传文件,Provide a pasted table or one uploaded file
+文件不存在,The file does not exist
+上传文件属于其他公司,The uploaded file belongs to another company
+没有读取期初余额模板的权限,You do not have permission to read the opening balance template
+期初余额请在期初余额页面整批调整，不能作为普通凭证修改,Adjust opening balances as a batch on the opening balances page; they cannot be edited as ordinary vouchers
+本期含保留历史字号的期初记录，不能自动重排；请在期初余额查看初始化依据,This period contains opening records that retain historical voucher numbers and cannot be renumbered automatically. Review the initialization evidence in opening balances
+Active,Active
+Adjustment,Adjustment
+New,New
+读取失败，请重试,Failed to load. Please retry
+本位币借方,Debit in company currency
+本位币贷方,Credit in company currency
+第 {0} 行 {1},Row {0}: {1}
+员工,Employee
+正在读取…,Loading…
+删除所选,Delete selected
+请先选择公司。,Please select a company first.

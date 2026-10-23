@@ -989,3 +989,9 @@ Reopen Failed,反结账失败
 刷新页面,刷新页面
 月末结账操作正在执行，请等待处理完成后再切换公司,月末结账操作正在执行，请等待处理完成后再切换公司
 请先保存或放弃当前单据的修改，再切换公司,请先保存或放弃当前单据的修改，再切换公司
+China Opening Balance,期初余额
+Takeover,历史接管
+China Opening Balance Line,期初余额分录
+Active,已启用
+Adjustment,调整
+New,新建

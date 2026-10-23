@@ -3132,7 +3132,7 @@ Unable to load statement mapping. Check the reported error and try again.,No se 
 凭证 {0} 的状态或来源不支持整理编号,El estado o el origen del comprobante {0} no permite ordenar su numeración
 凭证 {0} 的取消审计尚未完成，请先处理冲销同步问题,La auditoría de cancelación del comprobante {0} está incompleta. Resuelva primero la sincronización de la reversión.
 凭证 {0} 的分录哈希不一致，请先检查凭证完整性,El hash de los asientos del comprobante {0} no coincide. Compruebe primero su integridad.
-请填写凭证字，例如记、收、付或转，不要填写流水号,"Introduzca un prefijo de comprobante, como 记, 收, 付 o 转, sin número secuencial"
+请填写凭证字，例如记、收、付或转，不要填写流水号,"Introduzca el prefijo de categoría de comprobante configurado (diario, cobro, pago o transferencia), sin número secuencial"
 整理原因不能超过 500 个字符,El motivo no puede superar los 500 caracteres
 请先暂停月末结账，再整理本期凭证编号,Pause el cierre mensual antes de ordenar los números de comprobantes de este período
 本期存在待处理的冲销同步问题，不能整理编号,Hay problemas pendientes de sincronización de reversiones que impiden ordenar la numeración de este período
@@ -3407,3 +3407,216 @@ Reopen Failed,Error de reapertura
 刷新页面,Recargar página
 月末结账操作正在执行，请等待处理完成后再切换公司,Hay una operación de cierre mensual en curso. Espere a que termine antes de cambiar de empresa
 请先保存或放弃当前单据的修改，再切换公司,Guarde o descarte los cambios del documento actual antes de cambiar de empresa
+新建现金流量指定单必须为草稿，确认必须通过原生提交,Las nuevas asignaciones de flujo de efectivo deben ser borradores; confírmelas mediante la acción estándar de envío
+已提交现金流量指定单的状态或审计信息不能修改,No se puede modificar el estado ni la información de auditoría de una asignación de flujo de efectivo enviada
+China Opening Balance,Saldo inicial de China
+New,Nuevo
+Takeover,Adopción de saldos existentes
+保存版本,Guardar versión
+公司初始化键,Clave de inicialización de la empresa
+初始化批次,Lote de inicialización
+前一期初版本,Versión anterior de saldos iniciales
+历史来源,Orígenes históricos
+启用人,Activado por
+启用回执,Constancia de activación
+启用时间,Fecha de activación
+启用预览指纹,Huella de la vista previa de activación
+当前启用版本,Versión activa actual
+期初分录,Asientos de apertura
+期初日期,Fecha de apertura
+期初版本,Versión de saldos iniciales
+模式,Modo
+调整前置版本键,Clave de la versión anterior al ajuste
+已启用的期初版本不可修改，请新建调整,No se puede modificar una versión activa de saldos iniciales; cree un ajuste
+期初初始化键与公司不一致,La clave de inicialización de apertura no coincide con la empresa
+期初调整必须关联初始化批次及前一版本,Un ajuste de apertura debe hacer referencia al lote de inicialización y a la versión anterior
+期初余额保留完整审计历史，不能删除,Los saldos iniciales conservan un historial de auditoría completo y no se pueden eliminar
+期初余额批次不能重命名或合并,No se puede cambiar el nombre de los lotes de saldos iniciales ni combinarlos
+China Opening Balance Line,Línea de saldo inicial de China
+会计维度,Dimensiones contables
+借方原币,Debe en moneda de la cuenta
+借方本位币,Debe en moneda de la empresa
+行标识,Identificador de fila
+贷方原币,Haber en moneda de la cuenta
+贷方本位币,Haber en moneda de la empresa
+待计算,Pendiente de cálculo
+保留原有账务，仅建立关联，不新增会计凭证或总账分录。,Se conservarán los registros contables existentes y solo se crearán vínculos; no se añadirán comprobantes contables ni asientos en el libro mayor.
+本操作将影响正式余额。,Esta acción afectará los saldos contabilizados.
+本次差额开账金额待服务器校验。,El importe del ajuste de apertura está pendiente de validación por el servidor.
+本次差额为零，不新增账务，不新增会计凭证或总账分录。,"El ajuste es cero; no se añadirán registros contables, comprobantes contables ni asientos en el libro mayor."
+本次差额开账（本位币 {0}）：借方 {1}，贷方 {2}。,"Ajuste de apertura (moneda de la empresa {0}): debe {1}, haber {2}."
+启用期初余额,Activar saldos iniciales
+启用期初调整,Activar ajuste de apertura
+接管已有期初,Adoptar saldos iniciales existentes
+"{0}
+公司：{1}
+切换日期：{2}
+本位币：{3}
+{9} {4} 行，借方 {5}，贷方 {6}，差额 {7}。
+{8}
+确认继续？","{0}
+Empresa: {1}
+Fecha de transición: {2}
+Moneda de la empresa: {3}
+{9}: {4} filas, debe {5}, haber {6}, diferencia {7}.
+{8}
+¿Continuar?"
+整批,Lote completo
+目标整批,Lote objetivo
+请先重新校验本次操作。,Vuelva a validar esta acción antes de continuar.
+会计维度格式无效，原始内容已保留。请先修正原文件后重新导入。,El formato de las dimensiones contables no es válido. Se ha conservado el contenido original. Corrija el archivo de origen e impórtelo de nuevo.
+一次最多粘贴 500 行，请分批粘贴。,Puede pegar hasta 500 filas a la vez; divida los conjuntos más grandes en lotes.
+请求失败，编辑内容已保留，请核对后重试,La solicitud falló. Se han conservado sus cambios; revíselos e inténtelo de nuevo
+服务器未返回已保存批次，编辑内容已保留,El servidor no devolvió el lote guardado. Se han conservado sus cambios
+服务器未返回启用结果，请刷新核对,El servidor no devolvió un resultado de activación. Actualice para comprobar el resultado
+历史期初切换日期不同，请分别核对来源。,Los saldos iniciales históricos tienen distintas fechas de transición. Revise cada origen por separado.
+借方期初,Debe inicial
+科目全称,Nombre completo de la cuenta
+贷方期初,Haber inicial
+股东,Accionista
+切换日期,Fecha de transición
+创建调整,Crear ajuste
+启用整批,Activar lote completo
+已启用 · 只读,Activo · Solo lectura
+接管整批,Adoptar lote completo
+校验整表,Validar tabla completa
+草稿 · 未保存,Borrador · Sin guardar
+下载模板,Descargar plantilla
+仅错误,Solo errores
+仅非零,Solo valores distintos de cero
+历史期初接管…,Adoptar saldos iniciales históricos…
+外币列,Columnas de moneda extranjera
+导入预览,Vista previa de importación
+搜索科目 / 往来 / 备注,Buscar cuentas / terceros / observaciones
+添加空行,Añadir fila vacía
+筛选科目、往来或备注,"Filtrar por cuenta, tercero u observaciones"
+载入全部历史期初,Cargar todos los saldos iniciales históricos
+载入历史期初,Cargar saldos iniciales históricos
+预填科目,Precargar cuentas
+取消预览,Cancelar vista previa
+导入内容为空或含文件、表头、结构错误；请先修正原文件后重新导入。,"La importación está vacía o contiene errores de archivo, encabezado o estructura. Corrija el archivo de origen e impórtelo de nuevo."
+导入表格并修正,Importar a la tabla y corregir
+导入预览：{0} 行,Vista previa de importación: {0} filas
+批量应用到表格,Aplicar a la tabla en lote
+正在读取期初余额…,Cargando saldos iniciales…
+点击预填科目、添加空行，或从 Excel 粘贴。,"Haga clic en Precargar cuentas, añada una fila vacía o pegue datos desde Excel."
+选择可见行,Seleccionar filas visibles
+选择第 {0} 行,Seleccionar fila {0}
+水平滚动期初余额表,Desplazar horizontalmente la tabla de saldos iniciales
+当前显示 {0} 行 · 借 {1} · 贷 {2},Mostrando {0} filas · Debe {1} · Haber {2}
+整批 {0} 行 · 借 {1} · 贷 {2} · 差额 {3} · 错误 {4},Lote: {0} filas · Debe {1} · Haber {2} · Diferencia {3} · Errores {4}
+内容已修改，请重新校验；以下为上次校验结果。,El contenido ha cambiado. Vuelva a validarlo; a continuación se muestran los resultados de la validación anterior.
+整表校验发现 {0} 个错误,La validación de la tabla completa detectó {0} errores
+整表校验已完成,Validación de la tabla completa finalizada
+内容已修改，请重新校验；当前显示上次校验标记。,El contenido ha cambiado. Vuelva a validarlo; se muestran los indicadores de la validación anterior.
+尚有未保存的期初余额，离开将放弃这些修改。是否继续？,"Hay cambios sin guardar en los saldos iniciales. Si sale, se descartarán. ¿Continuar?"
+现金流量指定单的来源身份不可见，请刷新后重试,La identidad del origen de la asignación de flujo de efectivo no es visible. Actualice e inténtelo de nuevo
+现金流量指定必须来自有效的过账凭证,Las asignaciones de flujo de efectivo deben proceder de un comprobante contabilizado válido
+现金流量指定单的来源信息与凭证不一致,La información de origen de la asignación de flujo de efectivo no coincide con el comprobante
+来源单据 {0} 已取消或未提交，不能修改或确认现金流量指定,El documento de origen {0} está cancelado o no está enviado; no se puede modificar ni confirmar la asignación de flujo de efectivo
+现金分录证据与来源总账不一致，不能修改现金科目、收付方向或发生额,"La evidencia del asiento de efectivo no coincide con el libro mayor de origen. No se pueden modificar la cuenta de efectivo, el sentido del cobro/pago ni el importe de la operación"
+中国会计凭证的来源身份不可见，请刷新后重试,La identidad del origen del comprobante contable de China no es visible. Actualice e inténtelo de nuevo
+无权修改该现金流量指定单,No tiene permiso para modificar esta asignación de flujo de efectivo
+无权确认该现金流量指定单,No tiene permiso para confirmar esta asignación de flujo de efectivo
+请选择有效的现金流量指定单状态,Seleccione un estado válido de asignación de flujo de efectivo
+请选择有效的收付方向,Seleccione un sentido válido de cobro/pago
+只能修改现金流量指定项目、金额和说明，不能修改来源证据,"Solo se pueden modificar el concepto, el importe y la descripción de la asignación de flujo de efectivo; no se puede modificar la evidencia de origen"
+请提交该指定单的完整明细,Envíe todas las filas de detalle de esta asignación
+明细包含不可修改的现金分录证据字段,Los detalles contienen campos de evidencia de asientos de efectivo que no se pueden modificar
+指定明细 {0} 不属于本单或重复提交,La fila de asignación {0} no pertenece a este documento o se envió más de una vez
+不能修改指定明细的现金总账分录,No se puede modificar el asiento de efectivo del libro mayor de una fila de asignación
+新增拆分必须来自本单已有的合法现金总账分录,Una nueva división debe proceder de un asiento de efectivo válido del libro mayor ya existente en este documento
+指定金额必须是有效数字,El importe asignado debe ser un número válido
+请选择保存草稿或确认指定,Seleccione Guardar borrador o Confirmar asignación
+请选择 1 至 100 张现金流量指定单,Seleccione entre 1 y 100 asignaciones de flujo de efectivo
+请指定有效的现金流量指定单编号,Indique un identificador válido de asignación de flujo de efectivo
+同一批次不能重复提交现金流量指定单,No se puede enviar dos veces una asignación de flujo de efectivo en el mismo lote
+请指定需要处理的现金流量指定单,Indique las asignaciones de flujo de efectivo que desea procesar
+现金流量指定单已被其他用户修改，请刷新后重试,Otro usuario ha modificado la asignación de flujo de efectivo. Actualice e inténtelo de nuevo
+期初余额只能通过期初余额页面保存、启用或调整,"Los saldos iniciales solo se pueden guardar, activar o ajustar desde la página de saldos iniciales"
+期初暂存只能保存专用批次,El almacenamiento provisional de saldos iniciales solo permite guardar lotes específicos
+数据格式无效，请刷新后重试,Formato de datos no válido. Actualice e inténtelo de nuevo
+历史来源列表无效,Lista de orígenes históricos no válida
+历史来源不能重复选择,No se puede seleccionar un origen histórico más de una vez
+期初余额版本已变化，请刷新并重新核对,La versión de saldos iniciales ha cambiado. Actualice y revísela de nuevo
+请填写期初日期,Introduzca la fecha de apertura
+期初本位币必须与公司币种一致,La moneda de la empresa en los saldos iniciales debe coincidir con la moneda de la empresa
+请填写期初余额分录,Introduzca los asientos de saldos iniciales
+行标识重复,Identificador de fila duplicado
+请选择本公司启用的末级科目,Seleccione una cuenta de detalle habilitada de esta empresa
+期初余额只允许资产负债表科目,Los saldos iniciales solo permiten cuentas del balance general
+科目币种与原生科目设置不一致,La moneda de la cuenta no coincide con la configuración de la cuenta nativa
+往来类型与往来单位必须同时填写,Deben indicarse tanto el tipo de tercero como el tercero
+应收或应付科目必须选择对应的客户或供应商,Las cuentas por cobrar o por pagar requieren el cliente o proveedor correspondiente
+往来类型或往来单位不存在,El tipo de tercero o el tercero no existe
+无权读取或已停用的往来单位,El tercero está deshabilitado o no tiene permiso para consultarlo
+往来单位属于其他公司,El tercero pertenece a otra empresa
+会计维度未启用或不属于原生分录字段,La dimensión contable está deshabilitada o no es un campo de asiento nativo
+缺少资产负债表必填会计维度,Falta una dimensión contable obligatoria del balance general
+会计维度值不存在,El valor de la dimensión contable no existe
+会计维度值无权读取、已停用或不是末级记录,"El valor de la dimensión contable no es accesible, está deshabilitado o no es un registro de detalle"
+会计维度属于其他公司,La dimensión contable pertenece a otra empresa
+期初本位币借贷不平衡，请核实真实来源，系统不会自动补平,Los débitos y créditos iniciales en moneda de la empresa no están equilibrados. Compruebe el origen real; el sistema no los equilibrará automáticamente
+期初分录必须为列表，且最多 5000 行,Los asientos de apertura deben ser una lista de un máximo de 5000 filas
+期初分录格式无效,Formato de asiento de apertura no válido
+来源 {0}：{1},Origen {0}: {1}
+来源 {0} 包含业务单据引用，不能接管为纯期初余额,El origen {0} hace referencia a documentos comerciales y no se puede adoptar como saldos iniciales puros
+来源 {0} 总账包含业务单据引用，不能接管为纯期初余额,El libro mayor del origen {0} hace referencia a documentos comerciales y no se puede adoptar como saldos iniciales puros
+来源 {0} 的原生分录与总账在科目、币种、往来、维度或金额上不一致,"Los asientos nativos y el libro mayor del origen {0} difieren en cuentas, monedas, terceros, dimensiones o importes"
+来源 {0} 的会计快照状态或公司日期不一致,"La instantánea contable del origen {0} tiene un estado, una empresa o una fecha incoherentes"
+来源 {0} 的会计快照校验值不一致,La suma de verificación de la instantánea contable del origen {0} no coincide
+来源 {0} 的总账与会计快照分录不一致,El libro mayor y los asientos de la instantánea contable del origen {0} no coinciden
+来源 {0} 的会计快照汇总与分录不一致,Los totales y los asientos de la instantánea contable del origen {0} no coinciden
+来源 {0} 借贷不平衡,El origen {0} tiene débitos y créditos desequilibrados
+期初余额目前只支持公司默认账簿；来源 {0} 使用了独立账簿,Los saldos iniciales solo admiten actualmente el libro contable predeterminado de la empresa; el origen {0} utiliza un libro contable independiente
+没有读取期初余额的权限,No tiene permiso para consultar los saldos iniciales
+期初余额数据格式无效,Formato de datos de saldos iniciales no válido
+已启用的期初版本不可修改，公司也不可变更，请新建调整,No se pueden modificar una versión activa de saldos iniciales ni su empresa; cree un ajuste
+没有创建期初余额的权限,No tiene permiso para crear saldos iniciales
+本公司已存在期初初始化，请刷新现有批次,Esta empresa ya tiene una inicialización de apertura. Actualice el lote existente
+期初模式无效,Modo de saldos iniciales no válido
+调整必须从已启用期初版本发起,Un ajuste debe iniciarse desde una versión activa de saldos iniciales
+调整必须沿用原期初日期；系统不会解除冻结或结账,Un ajuste debe conservar la fecha de apertura original; el sistema no desbloqueará ni reabrirá el período
+请明确选择至少一张历史期初来源,Seleccione explícitamente al menos un origen histórico de apertura
+历史来源 {0} 已被其他期初批次接管,El origen histórico {0} ya ha sido adoptado por otro lote de saldos iniciales
+接管明细必须与历史来源的科目、原币、本位币、往来和会计维度完全一致,"Los asientos adoptados deben coincidir exactamente con los orígenes históricos en cuentas, moneda de la cuenta, moneda de la empresa, terceros y dimensiones contables"
+接管明细必须保留原始摘要，包括尚未建立往来档案的文字,"Los asientos adoptados deben conservar las descripciones originales, incluido el texto de terceros sin registros maestros"
+调整的原期初版本已失效或公司日期不一致,La versión original de saldos iniciales de este ajuste ya no es válida o tiene una empresa o fecha diferentes
+原期初已存在更新版本，请刷新,Ya existe una versión más reciente de saldos iniciales. Actualice
+公司已有原生期初总账，请核对并选择历史接管，避免重复初始化,Esta empresa ya tiene asientos de apertura nativos en el libro mayor. Revíselos y adopte los saldos históricos para evitar una inicialización duplicada
+请先启用本公司的中国财务设置，期初启用必须保留可核对的技术会计快照,Active primero la configuración de Finanzas de China para esta empresa; la activación de apertura debe conservar una instantánea contable técnica verificable
+原生期初凭证缺少可信的技术会计快照，启用已回滚,El comprobante de apertura nativo carece de una instantánea contable técnica fiable; se ha revertido la activación
+期初余额 {0}，版本 {1},"Saldo inicial {0}, versión {1}"
+期初来源核对版本已变化,La versión de revisión del origen de apertura ha cambiado
+原生期初凭证未完成提交,El comprobante de apertura nativo no ha completado el envío
+期初凭证核对上下文无效,Contexto de revisión del comprobante de apertura no válido
+保存的期初版本已变化，请重新核对,La versión guardada de saldos iniciales ha cambiado. Revísela de nuevo
+原生期初凭证内容已变化，请重新核对,El contenido del comprobante de apertura nativo ha cambiado. Revíselo de nuevo
+该原生凭证已关联启用的期初余额，不能直接取消或修改。请在期初余额中发起受控调整。,Este comprobante nativo está vinculado a saldos iniciales activos y no se puede cancelar ni modificar directamente. Inicie un ajuste controlado desde los saldos iniciales.
+已启用期初的保存内容与启用回执不一致,El contenido guardado de los saldos iniciales activos no coincide con la constancia de activación
+已启用期初的原生凭证、总账或会计快照证据已变化，请先核查,"La evidencia del comprobante nativo, el libro mayor o la instantánea contable de los saldos iniciales activos ha cambiado. Investigue antes de continuar"
+期初核对预览已变化，请重新预览后启用,La vista previa de revisión de saldos iniciales ha cambiado. Genere otra vista previa antes de activar
+原生期初凭证或总账结果与已核对的期初目标不一致，启用已回滚,El comprobante de apertura nativo o el resultado del libro mayor no coincide con el objetivo de apertura revisado; se ha revertido la activación
+启用期间会计主数据或期间设置已变化，请重新预览,Los datos maestros contables o la configuración del período cambiaron durante la activación. Genere una nueva vista previa
+启用期初余额需要原生记账凭证的创建和提交权限,La activación de saldos iniciales requiere permiso para crear y enviar asientos contables nativos
+启用请求与已完成回执版本不一致,La solicitud de activación no coincide con la versión de la constancia completada
+没有创建期初调整的权限,No tiene permiso para crear ajustes de apertura
+请先启用当前期初版本,Active primero la versión actual de saldos iniciales
+该期初版本已被更新，请刷新,Esta versión de saldos iniciales ha sido sustituida. Actualice
+没有导入期初余额的权限,No tiene permiso para importar saldos iniciales
+请提供粘贴表格或一个已上传文件,Proporcione una tabla pegada o un archivo cargado
+文件不存在,El archivo no existe
+上传文件属于其他公司,El archivo cargado pertenece a otra empresa
+没有读取期初余额模板的权限,No tiene permiso para consultar la plantilla de saldos iniciales
+期初余额请在期初余额页面整批调整，不能作为普通凭证修改,Ajuste los saldos iniciales en lote en la página de saldos iniciales; no se pueden editar como comprobantes ordinarios
+本期含保留历史字号的期初记录，不能自动重排；请在期初余额查看初始化依据,Este período contiene registros de apertura que conservan números históricos de comprobante y no se pueden renumerar automáticamente. Revise la evidencia de inicialización en los saldos iniciales
+Active,Activo
+Adjustment,Ajuste
+读取失败，请重试,Error al cargar. Inténtelo de nuevo
+本位币借方,Debe en moneda de la empresa
+本位币贷方,Haber en moneda de la empresa
+第 {0} 行 {1},Fila {0}: {1}
+员工,Empleado
+正在读取…,Cargando…
+删除所选,Eliminar seleccionados
+请先选择公司。,Seleccione primero una empresa.
