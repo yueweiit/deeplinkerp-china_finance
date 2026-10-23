@@ -967,10 +967,7 @@ def _create_voucher(
 		party_not_required = party_not_required or line_party_not_required
 		if a.account_type in ("Receivable", "Payable") and not (party_type and party) and not line_party_not_required:
 			frappe.throw(_("往来科目必须选择真实往来单位；复杂拆分请手工制证后关联"))
-	if party_type or party:
-		if party_type not in ("Customer", "Supplier", "Employee", "Shareholder") or not party:
-			frappe.throw(_("往来单位类型或名称不完整"))
-		frappe.get_doc(party_type, party).check_permission("read")
+	party_fields = _voucher_party_fields(accounts, party_type, party)
 	je = frappe.get_doc(
 		{
 			"doctype": "Journal Entry",
@@ -1010,8 +1007,7 @@ def _create_voucher(
 				"account_currency": "CNY",
 				"exchange_rate": 1,
 				"cost_center": cost_center,
-				"party_type": party_type,
-				"party": party,
+				**party_fields,
 				"debit": debit,
 				"credit": credit,
 				"debit_in_account_currency": debit,
@@ -1037,6 +1033,40 @@ def _create_voucher(
 		"Bank Transaction", bt.name, bank_transaction_updates, update_modified=False
 	)
 	return je
+
+
+def _voucher_party_fields(accounts, party_type=None, party=None):
+	"""Validate one explicit counterparty against every generated counter-account."""
+	if bool(party_type) != bool(party):
+		frappe.throw(_("往来单位类型或名称不完整"))
+	if not party_type:
+		return {}
+	if party_type not in ("Customer", "Supplier", "Employee", "Shareholder"):
+		frappe.throw(_("往来单位类型或名称不完整"))
+
+	expected = {
+		"Customer": {"Receivable"},
+		"Supplier": {"Payable"},
+		"Employee": {"Receivable", "Payable"},
+	}
+	invalid = []
+	for account in accounts.values():
+		allowed = (
+			account.root_type == "Equity"
+			if party_type == "Shareholder"
+			else account.account_type in expected[party_type]
+		)
+		if not allowed:
+			invalid.append(account.name)
+	if invalid:
+		frappe.throw(
+			_("科目 {0} 不支持当前往来单位；请清空往来类型和往来单位，或改用匹配的应收、应付或权益科目").format(
+				"、".join(invalid)
+			)
+		)
+	party_doc = frappe.get_doc(party_type, party)
+	party_doc.check_permission("read")
+	return {"party_type": party_type, "party": party}
 
 
 def _check_bt_links(bt, voucher=None):

@@ -4,7 +4,7 @@ import io
 import json
 import unittest
 from decimal import Decimal
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 import frappe
 from frappe.utils.file_manager import save_file
@@ -139,6 +139,34 @@ def cross_border_text(fx=False, september=False):
 		"收款账号：98765432101234 收款人：测试收款人\n收款开户行：招商银行",
 		"收款账号： 收款人：\n收 款 行：",
 	)
+
+
+class TestVoucherPartyFields(unittest.TestCase):
+	def test_rejects_party_on_inventory_account_before_reading_party_master(self):
+		account = frappe._dict(
+			name="1405 - 库存商品 - TEST", account_type="", root_type="Asset"
+		)
+		with (
+			patch.object(frappe, "get_doc") as get_doc,
+			self.assertRaisesRegex(frappe.ValidationError, "1405 - 库存商品 - TEST"),
+		):
+			service._voucher_party_fields(
+				{account.name: account}, "Supplier", "测试供应商"
+			)
+		get_doc.assert_not_called()
+
+	def test_accepts_supplier_only_for_payable_account(self):
+		account = frappe._dict(
+			name="2202 - 应付账款 - TEST", account_type="Payable", root_type="Liability"
+		)
+		party = Mock()
+		with patch.object(frappe, "get_doc", return_value=party) as get_doc:
+			fields = service._voucher_party_fields(
+				{account.name: account}, "Supplier", "测试供应商"
+			)
+		self.assertEqual(fields, {"party_type": "Supplier", "party": "测试供应商"})
+		get_doc.assert_called_once_with("Supplier", "测试供应商")
+		party.check_permission.assert_called_once_with("read")
 
 
 class TestReceiptParser(unittest.TestCase):
@@ -761,6 +789,31 @@ class TestReceiptIntegration(unittest.TestCase):
 		)
 		self.assertIn("error", result)
 		self.assertEqual(before, frappe.db.count("Bank Transaction"))
+		self.assertFalse(
+			frappe.db.exists(service.RECEIPT, service.identity(self.bank.name, self.data["transaction_id"]))
+		)
+
+	def test_non_party_account_rejects_party_before_creating_draft(self):
+		batch = self.batch()
+		inventory = frappe.db.get_value(
+			"Account", {"company": self.company, "account_number": "1405", "is_group": 0}, "name"
+		)
+		before = {
+			"bank_transactions": frappe.db.count("Bank Transaction"),
+			"journal_entries": frappe.db.count("Journal Entry"),
+		}
+		result = service.process_receipt(
+			batch.name,
+			batch.rows[0].name,
+			"create",
+			account=inventory,
+			party_type="Supplier",
+			party="不应创建的测试供应商",
+			confirmed=1,
+		)
+		self.assertIn(inventory, result["error"])
+		self.assertEqual(before["bank_transactions"], frappe.db.count("Bank Transaction"))
+		self.assertEqual(before["journal_entries"], frappe.db.count("Journal Entry"))
 		self.assertFalse(
 			frappe.db.exists(service.RECEIPT, service.identity(self.bank.name, self.data["transaction_id"]))
 		)

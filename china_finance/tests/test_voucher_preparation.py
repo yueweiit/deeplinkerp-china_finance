@@ -166,6 +166,8 @@ class TestVoucherPreparation(unittest.TestCase):
 			result = month_end.advance(run.name)
 		self.assertEqual(result["state"], "Failed")
 		self.assertEqual(result["completed"], 0)
+		self.assertIn(doc.name, result["message"])
+		self.assertIn("记账失败", result["message"])
 		self.assertEqual(frappe.db.get_value("Journal Entry", doc.name, "docstatus"), 0)
 		self.assertEqual(frappe.db.count("GL Entry", {"voucher_no": doc.name}), 0)
 

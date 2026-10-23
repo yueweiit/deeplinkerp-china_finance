@@ -354,7 +354,13 @@ def advance(name):
 		frappe.db.rollback(save_point=point)
 		doc.reload()
 		data = json.loads(doc.preparation_data or "{}")
-		return _store(doc, "Failed", data, str(exc))
+		message = str(exc)
+		if doc.preparation_state == "Posting":
+			index = len(data.get("done", []))
+			items = data.get("items", [])
+			if index < len(items) and items[index].get("name"):
+				message = _("凭证 {0} 记账失败：{1}").format(items[index]["name"], message)
+		return _store(doc, "Failed", data, message)
 	finally:
 		frappe.flags.china_month_end_run = previous
 

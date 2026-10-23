@@ -162,14 +162,39 @@ function receipt_dialog(frm, row) {
 	const allocation_name = row.suggestion.rule_type === "公积金分摊" ? "公积金" : "社保";
 	const create_label = row.suggestion.allocations ? __("按{0}计提及支付生成草稿", [allocation_name]) : "生成凭证草稿";
 	const candidate = row.candidates.find(c => !c.restricted);
-	const dialog = new frappe.ui.Dialog({ title: __("核对回单"), fields: [
+	let party_policy_request = 0;
+	let dialog;
+	const sync_party_fields = async () => {
+		if (!dialog) return;
+		const request = ++party_policy_request;
+		const account = dialog.get_value("account");
+		const is_single_account_create = dialog.get_value("action") === create_label && !row.suggestion.allocations;
+		let party_types = [];
+		if (is_single_account_create && account) {
+			const result = await frappe.db.get_value("Account", account, ["account_type", "root_type"]);
+			if (request !== party_policy_request) return;
+			const values = result.message || {};
+			if (values.account_type === "Receivable") party_types = ["Customer", "Employee"];
+			else if (values.account_type === "Payable") party_types = ["Supplier", "Employee"];
+			else if (values.root_type === "Equity") party_types = ["Shareholder"];
+		}
+		const visible = party_types.length > 0;
+		dialog.set_df_property("party_type", "options", ["", ...party_types].join("\n"));
+		dialog.set_df_property("party_type", "hidden", !visible);
+		dialog.set_df_property("party", "hidden", !visible);
+		if (!visible || !party_types.includes(dialog.get_value("party_type"))) {
+			await dialog.set_value("party", "");
+			await dialog.set_value("party_type", "");
+		}
+	};
+	dialog = new frappe.ui.Dialog({ title: __("核对回单"), fields: [
 		{ fieldtype: "HTML", options: `<p>${receipt_escape(row.posting_date)} · ${receipt_escape(__(row.direction))} ${receipt_escape(row.amount)} CNY</p><p>${receipt_escape(row.summary)}</p><p>${receipt_escape(row.suggestion.reason)}</p>${china_finance.bank_receipts.allocation_html(row.suggestion, {account: frm.receipt_preview.bank_gl_account, amount: row.amount})}<details><summary>${__("收付款方及费用明细")}</summary>${china_finance.bank_receipts.details_html(row.raw_data)}</details>` },
-		{ fieldname: "action", label: __("处理方式"), fieldtype: "Select", options: can_create ? __("关联已有凭证\n{0}", [create_label]) : "关联已有凭证", default: can_create ? create_label : "关联已有凭证" },
+		{ fieldname: "action", label: __("处理方式"), fieldtype: "Select", options: can_create ? __("关联已有凭证\n{0}", [create_label]) : "关联已有凭证", default: can_create ? create_label : "关联已有凭证", onchange: sync_party_fields },
 		{ fieldname: "allocation_not_accrued", label: __("已核对回单所属时期，该期{0}尚未计提，同意生成计提及支付分录；已计提时应手工冲应付科目后关联", [allocation_name]), fieldtype: "Check", depends_on: 'eval:doc.action=="按社保计提及支付生成草稿" || doc.action=="按公积金计提及支付生成草稿"' },
 		{ fieldname: "account", label: __("对方科目"), fieldtype: "Link", options: "Account", default: row.suggestion.account,
-			depends_on: 'eval:doc.action=="生成凭证草稿"', get_query: () => ({ filters: { company: frm.doc.company, is_group: 0, disabled: 0 } }) },
-		{ fieldname: "party_type", label: __("往来单位类型"), fieldtype: "Select", options: "\nCustomer\nSupplier\nEmployee\nShareholder", depends_on: 'eval:doc.action=="生成凭证草稿"' },
-		{ fieldname: "party", label: __("往来单位"), fieldtype: "Dynamic Link", options: "party_type", depends_on: 'eval:doc.action=="生成凭证草稿"' },
+			depends_on: 'eval:doc.action=="生成凭证草稿"', get_query: () => ({ filters: { company: frm.doc.company, is_group: 0, disabled: 0 } }), onchange: sync_party_fields },
+		{ fieldname: "party_type", label: __("往来单位类型"), fieldtype: "Select", options: "", hidden: 1 },
+		{ fieldname: "party", label: __("往来单位"), fieldtype: "Dynamic Link", options: "party_type", hidden: 1 },
 		{ fieldname: "voucher_type", label: __("凭证类型"), fieldtype: "Select", options: "Journal Entry\nPayment Entry", default: candidate?.doctype || "Journal Entry", depends_on: 'eval:doc.action=="关联已有凭证"' },
 		{ fieldname: "voucher_name", label: __("已有凭证"), fieldtype: "Dynamic Link", options: "voucher_type", default: candidate?.name, depends_on: 'eval:doc.action=="关联已有凭证"', get_query: () => ({ filters: { company: frm.doc.company, docstatus: ["!=", 2] } }) },
 		{ fieldname: "create_bank_transaction", label: __("同时补建银行交易（用于后续核销）"), fieldtype: "Check", default: 0, depends_on: 'eval:doc.action=="关联已有凭证"' },
@@ -186,4 +211,5 @@ function receipt_dialog(frm, row) {
 		} finally { dialog.get_primary_btn().prop("disabled", false); }
 	} });
 	dialog.show();
+	sync_party_fields();
 }
