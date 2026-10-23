@@ -787,11 +787,17 @@ def get_source_snapshot_status(source_doctype, source_name):
 def create_cash_flow_assignment_from_source(source_doctype, source_name):
 	frappe.only_for(("Accounts User", "China Finance User", "Accounts Manager", "China Finance Manager", "System Manager"))
 	doc = _get_source_document(source_doctype, source_name)
-	# The public missing-snapshot path can create a voucher before cash-flow
-	# creation acquires its gate. Lock the source first, as cancellation does,
-	# and recheck current state/permission after waiting for another writer.
+	# A missing snapshot may allocate a formal number. Use the same company-first
+	# lock order and repair policy as the explicit repair action.
+	from china_finance.services.month_end import lock_company
+
+	company = get_company(doc)
+	lock_company(company)
 	doc = frappe.get_doc(source_doctype, source_name, for_update=True)
 	doc.check_permission("read")
+	if get_company(doc) != company:
+		frappe.throw(_("凭证已被其他人修改，请刷新后重试"), frappe.TimestampMismatchError)
+	frappe.get_doc("Company", company).check_permission("read")
 	if doc.docstatus != 1:
 		frappe.throw(_("仅已提交来源单据可以指定现金流量"))
 	voucher_name = frappe.db.get_value(
@@ -799,7 +805,9 @@ def create_cash_flow_assignment_from_source(source_doctype, source_name):
 		for_update=True,
 	)
 	if not voucher_name:
-		voucher_name = create_voucher_from_source(doc, "Posting", force=True)
+		from china_finance.services.voucher_posting_status import repair_locked_source_snapshot
+
+		voucher_name = repair_locked_source_snapshot(doc).get("snapshot_name")
 	if not voucher_name:
 		frappe.throw(_("审计快照尚未生成，且来源单据没有可用总账分录"))
 	from china_finance.services.cash_flow_assignment import create_cash_flow_assignment
@@ -953,6 +961,8 @@ def restore_negative_journal_entry_debits(doc, entries, source_event="Posting"):
 				entry for entry in entries
 				if id(entry) not in used_entries
 				and entry.get("account") == source_row.account
+				and all((entry.get(field) or "") == (source_row.get(field) or "")
+					for field in ("account_currency", "party_type", "party", "cost_center", "project"))
 				and abs(flt(entry.get("debit"))) <= 0.005
 				and flt(entry.get("credit")) > 0.005
 				and abs(flt(entry.get("credit")) - abs(flt(source_row.debit))) <= 0.005

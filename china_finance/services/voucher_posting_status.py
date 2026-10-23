@@ -3,6 +3,8 @@
 # Chinese user-facing messages intentionally use Chinese punctuation.
 # ruff: noqa: RUF001
 
+from collections import defaultdict
+
 import frappe
 from frappe import _
 from frappe.utils import getdate
@@ -45,23 +47,35 @@ def repair_posting_snapshot(source_doctype, source_name):
 	frappe.only_for(voucher.SNAPSHOT_RETRY_ROLES)
 	if source_doctype not in SOURCES:
 		frappe.throw(_("仅支持补齐记账凭证和收付款凭证的展示记录"))
-	from china_finance.services.source_voucher_edit import _get_closing_blockers, _get_locked_source_document
+	from china_finance.services.source_voucher_edit import _get_locked_source_document
 
 	doc = _get_locked_source_document(source_doctype, source_name)
+	return repair_locked_source_snapshot(doc)
+
+
+def repair_locked_source_snapshot(doc):
+	"""Internal: caller holds company then source locks; never bypass repair policy."""
+	frappe.only_for(voucher.SNAPSHOT_RETRY_ROLES)
+	from china_finance.services.source_voucher_edit import _get_closing_blockers
+
 	frappe.get_doc("Company", doc.company).check_permission("read")
 	frappe.has_permission("China Accounting Voucher", "read", throw=True)
 	state = get_posting_state(doc.doctype, doc.name)
 	if state.get("snapshot_ready"):
 		return state
-	if not state["can_repair"]:
+	allowed = state.get("can_repair") if doc.doctype in SOURCES else (
+		state.get("posted") and state.get("has_gl") and state.get("eligible")
+	)
+	if not allowed:
 		frappe.throw(state.get("reason") or _("当前凭证不满足补齐条件"))
 	if blockers := _get_closing_blockers(doc):
 		frappe.throw("；".join(blockers))
 	from china_finance.services.closing_lifecycle import ensure_no_reversal
 
 	ensure_no_reversal(doc.company)
+	posting_date = voucher.get_posting_date(doc)
 	if frappe.db.get_value("China Closing Run", {"company": doc.company, "docstatus": 0,
-		"from_date": ["<=", doc.posting_date], "to_date": [">=", doc.posting_date],
+		"from_date": ["<=", posting_date], "to_date": [">=", posting_date],
 		"preparation_state": ["in", ["Posting", "Checking", "Closing", "Ready"]]}, "name", for_update=True):
 		frappe.throw(_("请先暂停月末结账，再补齐正式凭证"))
 	if not voucher.create_voucher_from_source(doc):
@@ -112,8 +126,11 @@ def get_pending_ledger_rows(filters):
 			if filters.get(field):
 				gl_filters[field] = filters[field]
 		entries = frappe.get_list("GL Entry", filters=gl_filters, fields=["name", "voucher_no", "posting_date", "account",
-			"account_currency", "party_type", "party", "cost_center", "project", "finance_book", "remarks", "debit", "credit"],
+			"account_currency", "party_type", "party", "cost_center", "project", "finance_book", "remarks", "debit", "credit",
+			"debit_in_account_currency", "credit_in_account_currency"],
 			order_by="posting_date, voucher_no, creation, name", limit_page_length=0)
+		if doctype == "Journal Entry":
+			restore_pending_journal_presentation(entries)
 		indexes = {}
 		for entry in entries:
 			period = str(entry.posting_date)[:7]
@@ -129,3 +146,23 @@ def get_pending_ledger_rows(filters):
 				base_total_amount=entry.debit + entry.credit, editable_account=False, editable_summary=False, editable_amount=False,
 				inline_edit_reason=_("请先补齐正式凭证记录，再进行表内更正")))
 	return rows
+
+
+def restore_pending_journal_presentation(entries):
+	"""Read source rows in bulk only for already permission-filtered GL sources."""
+	by_source = defaultdict(list)
+	for entry in entries:
+		by_source[entry.voucher_no].append(entry)
+	if not by_source:
+		return
+	accounts = defaultdict(list)
+	for row in frappe.get_all("Journal Entry Account",
+		filters={"parent": ["in", list(by_source)], "parenttype": "Journal Entry", "parentfield": "accounts"},
+		fields=["parent", "account", "debit", "credit", "debit_in_account_currency", "user_remark",
+			"account_currency", "party_type", "party", "cost_center", "project"],
+		order_by="parent, idx", limit_page_length=0):
+		accounts[row.parent].append(row)
+	for name, rows in by_source.items():
+		voucher.restore_negative_journal_entry_debits(
+			frappe._dict(doctype="Journal Entry", accounts=accounts[name]), rows,
+		)

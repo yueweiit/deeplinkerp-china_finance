@@ -633,3 +633,29 @@ test('existing voucher date filters are retained on load', async () => {
   get_filter() { assert.fail('complete route filters must not be overwritten'); },
  });
 });
+
+
+test("summary editing uses raw text, preserves empty text and restores display on cancel", () => {
+	for (const raw of ["User summary", ""]) {
+		const h = harness();
+		const stage = vm.runInContext("stage_inline_summary_change", h.context);
+		const cancel = vm.runInContext("cancel_inline_voucher_changes", h.context);
+		const row = {editable_summary: true, edit_voucher_key: "Journal Entry:JV-1",
+			summary_edit_key: "je-summary:row-1", summary_edit_group: "je-summary:row-1",
+			remarks: `${raw}\nGenerated voucher remark`, summary_edit_value: raw};
+		const r = amountReport();
+		r.data = [row];
+		const display = row.remarks;
+		const editor = h.summaryEditor(r, display, {}, row);
+		editor.initValue(display);
+		assert.equal(h.controls[0].get_value(), raw);
+		stage(r, row, raw);
+		assert.equal(r._china_inline_edit_state, null);
+		assert.equal(row.remarks, display);
+		stage(r, row, "Changed summary");
+		assert.equal(row.summary_edit_value, "Changed summary");
+		cancel(r, false);
+		assert.equal(row.summary_edit_value, raw);
+		assert.equal(row.remarks, display);
+	}
+});

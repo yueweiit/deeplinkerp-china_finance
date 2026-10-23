@@ -520,18 +520,27 @@ def get_inline_summary_edit_metadata(doc, ledger_row):
 			"edit_key": target.key if target else None,
 			"edit_group": target.key if target else None,
 			"scope": target.scope if target else None,
+			"value": target.value if target else None,
 			"hint": _("修改后会更新整张收付款凭证的摘要") if target else None,
 		}
 
-	voucher_detail_no = ledger_row.get("voucher_detail_no") or ledger_row.get("source_row_name")
+	# GL idx is a position after merging, not the original source child idx.
+	# Native JE voucher_detail_no points to a referenced document's detail;
+	# only draft source_row_name explicitly identifies a JE child row.
+	source_row_name = ledger_row.get("source_row_name")
 	candidates = []
-	if voucher_detail_no:
-		candidate = targets.get(f"je-summary:{voucher_detail_no}")
-		if candidate:
-			candidates.append(candidate)
-	else:
-		entry_idx = cint(ledger_row.get("entry_idx"))
-		candidates.extend(target for target in targets.values() if target.row_idx == entry_idx)
+	for row in doc.get("accounts") or []:
+		if source_row_name and row.name != source_row_name:
+			continue
+		if row.account != ledger_row.get("account"):
+			continue
+		if any(
+			(row.get(field) or "") != (ledger_row.get(field) or "")
+			for field in ("account_currency", "party_type", "party", "cost_center", "project")
+			if field in ledger_row
+		):
+			continue
+		candidates.append(targets[f"je-summary:{row.name}"])
 
 	unique = {candidate.key: candidate for candidate in candidates}
 	if len(unique) != 1:
@@ -545,6 +554,7 @@ def get_inline_summary_edit_metadata(doc, ledger_row):
 		"edit_key": target.key,
 		"edit_group": target.key,
 		"scope": target.scope,
+		"value": target.value,
 	}
 
 
@@ -692,6 +702,7 @@ def annotate_inline_edit_rows(rows):
 		row["account_currency"] = mapping.get("account_currency") or row.get("account_currency")
 		row["inline_edit_reason"] = mapping.get("reason") or (None if can_edit else status.get("reason"))
 		row["editable_summary"] = bool(summary_mapping.get("editable") and can_edit)
+		row["summary_edit_value"] = summary_mapping.get("value")
 		row["summary_edit_key"] = summary_mapping.get("edit_key")
 		row["summary_edit_group"] = summary_mapping.get("edit_group")
 		row["summary_edit_scope"] = summary_mapping.get("scope")

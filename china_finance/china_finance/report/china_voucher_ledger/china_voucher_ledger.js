@@ -424,7 +424,7 @@ function create_inline_summary_editor(report, value, parent, data) {
 
 	return {
 		initValue(initial_value) {
-			initialize_inline_control(control, initial_value || "");
+			initialize_inline_control(control, data.summary_edit_value ?? initial_value ?? "");
 			control.$input?.select();
 		},
 		getValue() {
@@ -705,7 +705,8 @@ function stage_inline_summary_change(report, data, summary) {
 		state.originals.set(state_key, {
 			field: "summary",
 			edit_key,
-			value: data.remarks || "",
+			value: data.summary_edit_value ?? data.remarks ?? "",
+			display_value: data.remarks || "",
 		});
 	}
 	const original = state.originals.get(state_key);
@@ -719,7 +720,8 @@ function stage_inline_summary_change(report, data, summary) {
 			report_row.summary_edit_group !== data.summary_edit_group
 		)
 			continue;
-		report_row.remarks = value;
+		report_row.remarks = value === original.value ? original.display_value : value;
+		report_row.summary_edit_value = value;
 		report_row._inline_summary_dirty = state.changes.has(state_key);
 	}
 	if (!state.changes.size) report._china_inline_edit_state = null;
@@ -923,7 +925,8 @@ function cancel_inline_voucher_changes(report, show_message = true) {
 				delete row._inline_account_dirty;
 			}
 			if (original.field === "summary" && row.summary_edit_group === original.edit_key) {
-				row.remarks = original.value;
+				row.remarks = original.display_value ?? original.value;
+				row.summary_edit_value = original.value;
 				delete row._inline_summary_dirty;
 			}
 			if (

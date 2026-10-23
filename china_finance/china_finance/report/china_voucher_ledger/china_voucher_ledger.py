@@ -101,7 +101,7 @@ def execute(filters=None):
 					THEN COALESCE(NULLIF(v.statutory_number, ''), '期末结账')
 				ELSE v.statutory_number
 			END AS statutory_number,
-			v.voucher_word, v.source_doctype, v.source_name, v.source_event,
+			v.voucher_word, v.sequence_number, v.source_doctype, v.source_name, v.source_event,
 			COALESCE(NULLIF(v.currency, ''), company.default_currency) AS currency,
 			CASE WHEN v.status='Reversed' THEN 2 ELSE 1 END AS voucher_status,
 			COALESCE(e.debit, 0) + COALESCE(e.credit, 0) AS base_total_amount,
@@ -112,7 +112,7 @@ def execute(filters=None):
 			e.account_currency,
 			e.party_type, e.party, e.cost_center, e.project,
 			CASE
-				WHEN v.source_doctype='Journal Entry' THEN jea.user_remark
+				WHEN v.source_doctype='Journal Entry' THEN e.remarks
 				WHEN v.source_doctype='Period Closing Voucher' THEN COALESCE(pcv.remarks, v.remarks, e.remarks)
 				ELSE e.remarks
 			END AS remarks,
@@ -122,11 +122,6 @@ def execute(filters=None):
 		INNER JOIN `tabChina Accounting Voucher Entry` e ON e.parent=v.name
 		LEFT JOIN `tabGL Entry` gle ON gle.name=e.gl_entry
 		LEFT JOIN `tabJournal Entry` je ON v.source_doctype='Journal Entry' AND je.name=v.source_name
-		LEFT JOIN `tabJournal Entry Account` jea
-			ON v.source_doctype='Journal Entry'
-			AND jea.parent=v.source_name
-			AND jea.parenttype='Journal Entry'
-			AND jea.idx=e.idx
 		LEFT JOIN `tabPayment Entry` pe ON v.source_doctype='Payment Entry' AND pe.name=v.source_name
 		LEFT JOIN `tabPeriod Closing Voucher` pcv
 			ON v.source_doctype='Period Closing Voucher' AND pcv.name=v.source_name
@@ -166,14 +161,7 @@ def execute(filters=None):
 			)
 		)
 		entries = [entry for entry in entries if entry.source_name in linked]
-	entries.sort(
-		key=lambda e: (
-			str(e.posting_date),
-			e.source_doctype == "Period Closing Voucher",
-			e.source_name,
-			e.entry_idx,
-		)
-	)
+	entries.sort(key=voucher_ledger_sort_key)
 	from china_finance.services.source_voucher_edit import annotate_inline_edit_rows
 
 	annotate_inline_edit_rows([entry for entry in entries if not entry.get("snapshot_pending")])
@@ -181,6 +169,23 @@ def execute(filters=None):
 	if display_number_filter and re.search(r"\d+$", str(display_number_filter)):
 		entries = [entry for entry in entries if entry.get("statutory_number") == display_number_filter]
 	return get_columns(), build_tree_data(entries)
+
+
+def voucher_ledger_sort_key(entry):
+	"""Keep voucher groups stable; formal numbers are numeric within a date/word.
+
+	Closing vouchers follow ordinary vouchers in their month. Drafts and missing
+	snapshots have no formal number and follow numbered vouchers on the same day.
+	"""
+	date = str(entry.posting_date)
+	sequence = int(entry.get("sequence_number") or 0)
+	kind = 0 if sequence > 0 else (1 if entry.get("snapshot_pending") else 2)
+	return (
+		date[:7], entry.source_doctype == "Period Closing Voucher", date,
+		kind, entry.get("voucher_word") or "", sequence,
+		entry.source_doctype or "", entry.source_name or "",
+		entry.voucher_snapshot, entry.entry_idx,
+	)
 
 
 def _format_account_labels(entries, company):

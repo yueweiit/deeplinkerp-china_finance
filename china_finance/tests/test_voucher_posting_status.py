@@ -25,6 +25,7 @@ class PostingStatusTests(unittest.TestCase):
 		self.frappe.get_cached_value = Mock(return_value='CNY')
 		self.frappe.get_list = Mock(return_value=[])
 		self.frappe.get_all = Mock(return_value=[])
+		self.frappe.get_all.side_effect = lambda doctype, **kwargs: self.frappe.get_all.return_value if doctype == "China Accounting Voucher" else []
 		self.frappe.db = types.SimpleNamespace(exists=Mock(return_value=True),get_value=Mock(return_value=None))
 		self.doc = types.SimpleNamespace(doctype='Journal Entry', name='JE1', company='A', docstatus=1, posting_date='2026-07-17', add_comment=Mock(), submit=Mock())
 		self.company = types.SimpleNamespace(check_permission=Mock())
@@ -36,6 +37,7 @@ class PostingStatusTests(unittest.TestCase):
 		self.voucher.get_company_settings = Mock(return_value=types.SimpleNamespace(activation_date='2026-01-01'))
 		self.voucher.get_posting_date = lambda doc: doc.posting_date
 		self.voucher.create_voucher_from_source = Mock(return_value='CAV1')
+		self.voucher.restore_negative_journal_entry_debits = Mock()
 		utils = types.ModuleType('frappe.utils')
 		utils.getdate = lambda value: date.fromisoformat(str(value))
 		self.edit = types.ModuleType('china_finance.services.source_voucher_edit')
