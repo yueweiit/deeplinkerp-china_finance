@@ -159,3 +159,81 @@ test('ready closing keeps a pause action for legacy duplicate recovery', async (
 	assert.equal(frm.__month_stop, true);
 	assert.equal(reloaded, 1);
 });
+
+test('month-end progress replaces only its own notice and renders failure lines safely', async () => {
+	const notices = [{className: 'form-message border-bottom blue', content: 'unrelated notice'}];
+	const messageContainer = {
+		find(selector) {
+			assert.equal(selector, '.china-month-end-status');
+			const matching = notices.filter(notice => notice.content.includes('class="china-month-end-status"'));
+			return {
+				closest(parentSelector) {
+					assert.equal(parentSelector, '.form-message');
+					return {remove() {
+						for (const notice of matching) notices.splice(notices.indexOf(notice), 1);
+					}};
+				},
+			};
+		},
+	};
+	const responses = [
+		{state: 'Posting', completed: 0, total: 2, message: '凭证范围检查完成'},
+		{state: 'Posting', completed: 1, total: 2, message: '已记账 ACC-JV-1'},
+		{state: 'Failed', completed: 1, total: 2, message: '检查失败<br><br><script>alert(1)</script>'},
+	];
+	const context = vm.createContext({
+		china_finance: {month_end: {}},
+		__: (text, args) => args ? text.replace(/\{(\d+)\}/g, (_, index) => args[index]) : text,
+		frappe: {
+			provide() {},
+			utils: {escape_html: value => String(value).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')},
+			model: {can_write: () => false},
+			call: async () => ({message: responses.shift()}),
+			confirm: (_message, callback) => callback(),
+		},
+	});
+	vm.runInContext(fs.readFileSync(path.resolve(__dirname, '../public/js/month_end.js'), 'utf8'), context);
+	let primaryAction;
+	const frm = {
+		doc: {name: 'CNC-TEST', company: 'Test', docstatus: 0, preparation_data: '{}'},
+		layout: {message: messageContainer},
+		set_intro: (content, color) => notices.push({className: `form-message border-bottom ${color}`, content}),
+		is_new: () => false, is_dirty: () => false,
+		toggle_display() {}, set_df_property() {}, add_custom_button() {},
+		fields_dict: {preparation_preview: {$wrapper: {html() {}}}},
+		page: {set_primary_action: (_label, callback) => {primaryAction = callback;}},
+		reload_doc: async () => {},
+	};
+	context.china_finance.month_end.render(frm);
+	await primaryAction();
+	assert.equal(notices.length, 2);
+	assert.equal(notices[0].content, 'unrelated notice');
+	assert.match(notices[1].className, /orange/);
+	assert.match(notices[1].content, /待处理问题 · 1\/2 张/);
+	assert.match(notices[1].content, /检查失败<br>&lt;script&gt;alert\(1\)&lt;\/script&gt;/);
+	assert.doesNotMatch(notices[1].content, /ACC-JV-1/);
+
+	frm.doc.preparation_state = 'Failed';
+	frm.doc.preparation_message = '请核对';
+	context.china_finance.month_end.render(frm);
+	assert.equal(notices.length, 2);
+	assert.match(notices[1].content, /请核对/);
+	frm.doc.preparation_state = 'Paused';
+	context.china_finance.month_end.render(frm);
+	assert.equal(notices.length, 2);
+	assert.match(notices[1].content, /已暂停/);
+	frm.doc.preparation_state = 'Ready';
+	context.china_finance.month_end.render(frm);
+	assert.equal(notices.length, 2);
+	assert.match(notices[1].content, /待确认结账/);
+	frm.doc.docstatus = 1;
+	frm.doc.archive_package = 'ARCHIVE-1';
+	context.china_finance.month_end.render(frm);
+	assert.equal(notices.length, 2);
+	assert.match(notices[1].content, /结账档案已生成/);
+	assert.match(notices[1].className, /green/);
+	frm.doc.docstatus = 0;
+	frm.doc.preparation_state = null;
+	context.china_finance.month_end.render(frm);
+	assert.equal(notices.length, 1);
+});
