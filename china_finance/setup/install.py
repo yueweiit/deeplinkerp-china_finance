@@ -738,6 +738,9 @@ def _desired_sidebar_items(custom_links=None):
 		items.append(_sidebar_section(label, icon))
 		for link in links:
 			items.append(_sidebar_link(*link, sidebar="China Finance"))
+	if custom_links:
+		items.append(_sidebar_section("支出管理", "folder", 1))
+		items.extend(custom_links)
 	items.append(_sidebar_section("管理与审计", "settings", 1))
 	for label, icon, links in ADMIN_NAVIGATION_GROUPS:
 		items.append(_sidebar_section(label, icon, 1))
@@ -746,9 +749,6 @@ def _desired_sidebar_items(custom_links=None):
 			for link in links
 			if link[0] not in {MAPPING_CONSOLE_LINK[0], ACCOUNT_TABLE_LINK[0]}
 		)
-	if custom_links:
-		items.append(_sidebar_section("自定义", "folder", 1))
-		items.extend(custom_links)
 	return items
 
 
@@ -771,12 +771,12 @@ def _desired_workspace_links(custom_links=None):
 	for label, _icon, group_links in NAVIGATION_SECTIONS:
 		links.append(_workspace_card(label, len(group_links)))
 		links.extend(_workspace_link(*link) for link in group_links)
+	if custom_links:
+		links.append(_workspace_card("支出管理", len(custom_links)))
+		links.extend(custom_links)
 	for label, _icon, group_links in ADMIN_NAVIGATION_GROUPS:
 		links.append(_workspace_card(label, len(group_links)))
 		links.extend(_workspace_link(*link) for link in group_links)
-	if custom_links:
-		links.append(_workspace_card("自定义", len(custom_links)))
-		links.extend(custom_links)
 	return links
 
 
@@ -829,7 +829,15 @@ def sync_simplified_navigation(navigation_name="China Finance"):
 			workspace.flags.ignore_permissions = True
 			workspace.save()
 		if not workspace.custom_blocks:
-			workspace.db_set("content", WORKSPACE_CONTENT, update_modified=False)
+			content = json.loads(WORKSPACE_CONTENT)
+			if custom:
+				content.insert(len(NAVIGATION_SECTIONS), {
+					"id": "cf-expenses", "type": "card",
+					"data": {"card_name": "支出管理", "col": 4},
+				})
+			content = json.dumps(content, ensure_ascii=False, separators=(",", ":"))
+			if workspace.content != content:
+				workspace.db_set("content", content, update_modified=False)
 
 
 def validate_deployment_schema():
