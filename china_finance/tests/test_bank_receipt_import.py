@@ -4,7 +4,7 @@ import io
 import json
 import unittest
 from decimal import Decimal
-from unittest.mock import Mock, patch
+from unittest.mock import MagicMock, Mock, patch
 
 import frappe
 from frappe.utils.file_manager import save_file
@@ -12,9 +12,12 @@ from frappe.utils.file_manager import save_file
 from china_finance.services import bank_receipt_import as service
 from china_finance.services.accounting_party import account_allows_missing_party
 from china_finance.services.bank_receipt_parser import (
+	CMB_TITLE,
 	PARSER_VERSION,
 	ReceiptParseError,
 	get_receipt_parser,
+	parse_cmb_receipts,
+	parse_fee_receipt_text,
 	parse_receipt_text,
 )
 from china_finance.services.bank_receipt_social import housing_fund_suggestion, social_suggestion
@@ -102,6 +105,26 @@ def receipt_text(
 交易摘要：{summary}
 {details}
 经办： 复核： 授权： 回单编号：RECEIPT-001 2026/09/01 08:43:40
+"""
+
+
+def fee_receipt_text(
+	flow="C4947JM0004FMIZ",
+	receipt_number="168B9N0037267",
+	business_number="7769004150242511307",
+):
+	return f"""对 公 业 务 收 费 回 单
+收费日期：2026年10月09日 业务类型：对公业务收费
+收费方式：转账 交易流水：{flow}
+客户账号：769915416810008 客户名称：拉丁购国际电子商务（东莞）有限公司
+开户行：东莞松山湖支行
+交易金额(小写)： CNY50.00
+交易金额(大写)： 人民币伍拾元整
+交易摘要：业务编号 {business_number}
+收费项目 笔数 金额
+单位账户管理费-协助印鉴变更手续费 1 50.00
+H7AKCFPH
+经办：669366 复核： 授权： 回单编号：{receipt_number} 2026/11/02 09:16:52 HD002250
 """
 
 
@@ -245,6 +268,68 @@ class TestReceiptParser(unittest.TestCase):
 					)
 				)
 				self.assertEqual(service.receipt_summary(data), "支付银行手续费")
+
+	def test_cmb_corporate_fee_receipt_is_a_distinct_supported_layout(self):
+		self.assertTrue(CMB_TITLE.search("对 公 业 务 收 费 回 单"))
+		rows = [
+			parse_fee_receipt_text(fee_receipt_text()),
+			parse_fee_receipt_text(
+				fee_receipt_text(
+					flow="C4947JM0001RMGZ",
+					receipt_number="168B8F0038268",
+					business_number="7769004150754111307",
+				)
+			),
+		]
+		self.assertEqual([row["transaction_id"] for row in rows], ["C4947JM0004FMIZ", "C4947JM0001RMGZ"])
+		self.assertEqual(
+			[row["business_number"] for row in rows],
+			["7769004150242511307", "7769004150754111307"],
+		)
+		for row in rows:
+			self.assertEqual(row["posting_date"], "2026-10-09")
+			self.assertEqual(row["direction"], "支出")
+			self.assertEqual(row["amount"], "50.00")
+			self.assertEqual(row["own_account"], "769915416810008")
+			self.assertEqual(row["own_name"], "拉丁购国际电子商务(东莞)有限公司")
+			self.assertEqual(row["business_type"], "对公业务收费")
+			self.assertEqual(
+				row["fee_details"],
+				[{"item": "单位账户管理费-协助印鉴变更手续费", "count": 1, "amount": "50.00"}],
+			)
+			self.assertEqual(service.receipt_summary(row), "支付银行手续费")
+
+	def test_cmb_corporate_fee_receipt_rejects_incomplete_or_mismatched_details(self):
+		for text in (
+			fee_receipt_text().replace("单位账户管理费-协助印鉴变更手续费 1 50.00", ""),
+			fee_receipt_text().replace("手续费 1 50.00", "手续费 1 49.00"),
+		):
+			with self.subTest(text=text), self.assertRaises(ReceiptParseError):
+				parse_fee_receipt_text(text)
+
+	def test_cmb_corporate_fee_receipt_rejects_unsupported_charge_context(self):
+		for text in (
+			fee_receipt_text().replace("收费方式：转账 ", ""),
+			fee_receipt_text().replace("收费方式：转账", "收费方式：现金"),
+			fee_receipt_text().replace("业务类型：对公业务收费", "业务类型：其他收费"),
+		):
+			with self.subTest(text=text), self.assertRaises(ReceiptParseError):
+				parse_fee_receipt_text(text)
+
+	def test_cmb_pdf_dispatches_corporate_fee_title_to_fee_parser(self):
+		page = Mock(width=595, height=842)
+		page.search.return_value = [{"top": 100}]
+		page.crop.return_value.extract_text.return_value = fee_receipt_text()
+		pdf = MagicMock(pages=[page])
+		pdf.__enter__.return_value = pdf
+		with patch("pdfplumber.open", return_value=pdf):
+			result = parse_cmb_receipts(b"%PDF-test")
+		self.assertEqual(result["errors"], [])
+		self.assertEqual(result["parser_version"], PARSER_VERSION)
+		self.assertEqual(len(result["rows"]), 1)
+		self.assertEqual(result["rows"][0]["transaction_id"], "C4947JM0004FMIZ")
+		self.assertEqual(result["rows"][0]["page"], 1)
+		page.search.assert_called_once_with(CMB_TITLE)
 
 	def test_housing_fund_without_coverage_period_uses_transaction_month(self):
 		data = parse_receipt_text(

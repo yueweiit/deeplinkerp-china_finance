@@ -10,11 +10,14 @@ except ImportError:
 import importlib
 import io
 import re
+import unicodedata
 from datetime import date
 from decimal import Decimal, InvalidOperation
 
-PARSER_VERSION = "cmb-text-v2"
+PARSER_VERSION = "cmb-text-v3"
 TITLE = re.compile(r"[出入]\s*账\s*回\s*单")
+FEE_TITLE = re.compile(r"对\s*公\s*业\s*务\s*收\s*费\s*回\s*单")
+CMB_TITLE = re.compile(rf"(?:{TITLE.pattern}|{FEE_TITLE.pattern})")
 MONEY_TEXT = r"(?:\d+|\d{1,3}(?:,\d{3})+)\.\d{2}"
 
 # Keep bank-specific formats behind a small registry.  A parser is selected
@@ -240,6 +243,95 @@ def parse_receipt_text(text):
 	}
 
 
+def parse_fee_receipt_text(text):
+	"""Parse CMB's standalone corporate-service fee receipt layout."""
+	text = unicodedata.normalize("NFKC", text or "")
+	text = text.replace("：", ":").replace("（", "(").replace("）", ")")
+
+	def field(label, required=False):
+		matches = re.findall(
+			r"(?:^|\s)" + re.escape(label) + r":([^\n]*?)(?=[^\S\n]+[^\s:]+:|\n|$)",
+			text,
+		)
+		value = matches[0].strip() if len(matches) == 1 else ""
+		if len(matches) > 1 or (required and not value):
+			raise ReceiptParseError(_("缺少或重复的字段：{0}").format(label))
+		return value
+
+	if len(FEE_TITLE.findall(text)) != 1:
+		raise ReceiptParseError(_("未识别到文字版回单；扫描件、非回单页面或其他版式暂不支持"))
+
+	d = re.fullmatch(r"(\d{4})年(\d{1,2})月(\d{1,2})日", field("收费日期", True))
+	if not d:
+		raise ReceiptParseError(_("交易日期格式不支持"))
+	try:
+		posting_date = date(*map(int, d.groups())).isoformat()
+	except ValueError as exc:
+		raise ReceiptParseError(_("交易日期无效")) from exc
+	charge_method = field("收费方式", True)
+	if charge_method != "转账":
+		raise ReceiptParseError(_("对公业务收费回单仅支持收费方式为“转账”"))
+	business_type = field("业务类型", True)
+	if business_type != "对公业务收费":
+		raise ReceiptParseError(_("对公业务收费回单的业务类型不支持：{0}").format(business_type))
+
+	amount_match = re.fullmatch(r"CNY\s*(" + MONEY_TEXT + ")", field("交易金额(小写)", True))
+	if not amount_match:
+		raise ReceiptParseError(_("第一期仅支持明确标注的人民币金额"))
+	amount = money(amount_match[1])
+	if amount <= 0:
+		raise ReceiptParseError(_("交易金额必须大于零"))
+
+	flow = field("交易流水", True)
+	if not re.fullmatch(r"[A-Za-z0-9-]{5,140}", flow):
+		raise ReceiptParseError(_("交易流水号无效"))
+	account = re.sub(r"\s+", "", field("客户账号", True))
+	if not re.fullmatch(r"\d{8,32}", account):
+		raise ReceiptParseError(_("本方账号缺失、被掩码或格式不支持"))
+	customer_name = field("客户名称", True)
+
+	fees = []
+	for line in text.splitlines():
+		fees.extend(_parse_fee_line(line.strip()))
+	if not fees:
+		raise ReceiptParseError(_("收费明细无法完整识别"))
+	if sum(money(item["amount"]) for item in fees) != amount:
+		raise ReceiptParseError(_("回单明细合计与交易金额不一致"))
+
+	source_summary = field("交易摘要", True)
+	business_number_match = re.fullmatch(r"业务编号\s+([^\s]+)", source_summary)
+	return {
+		"posting_date": posting_date,
+		"direction": "支出",
+		"currency": "CNY",
+		"amount": str(amount),
+		"transaction_id": flow,
+		"receipt_number": field("回单编号", True).split()[0],
+		"business_type": business_type,
+		"business_number": business_number_match[1] if business_number_match else "",
+		"summary": source_summary,
+		"business_reference": "",
+		"postscript": "",
+		"taxpayer_id": "",
+		"taxpayer_name": "",
+		"own_account": account,
+		"own_name": customer_name,
+		"counterparty": "",
+		"counterparty_account": "",
+		"payer": customer_name,
+		"payer_account": account,
+		"payer_bank": field("开户行"),
+		"payee": "",
+		"payee_account": "",
+		"payee_bank": "",
+		"fee_period": "",
+		"tax_number": "",
+		"fee_details": fees,
+		"tax_details": [],
+		"raw_text": text,
+	}
+
+
 def parse_cmb_receipts(content):
 	import pdfplumber
 
@@ -251,7 +343,7 @@ def parse_cmb_receipts(content):
 			if not 1 <= len(pdf.pages) <= 100:
 				raise ReceiptParseError(_("单次支持 1—100 页回单"))
 			for page_number, page in enumerate(pdf.pages, 1):
-				headings = page.search(TITLE)
+				headings = page.search(CMB_TITLE)
 				if not headings:
 					errors.append(
 						{
@@ -271,7 +363,9 @@ def parse_cmb_receipts(content):
 						bottom - 2 if index + 1 < len(headings) else bottom,
 					)
 					try:
-						row = parse_receipt_text(page.crop(bbox).extract_text() or "")
+						text = page.crop(bbox).extract_text(x_tolerance=2, y_tolerance=2) or ""
+						parser = parse_fee_receipt_text if FEE_TITLE.search(text) else parse_receipt_text
+						row = parser(text)
 						row.update(page=page_number, position=index + 1, bbox=list(bbox))
 						rows.append(row)
 					except ReceiptParseError as exc:
