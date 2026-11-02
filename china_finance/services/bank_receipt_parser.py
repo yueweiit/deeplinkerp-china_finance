@@ -42,7 +42,7 @@ PARSER_REGISTRY = {
 		"bank_keywords": ("中国农业银行", "农业银行"),
 		"currency": "CNY",
 		"parser": "china_finance.services.bank_receipt_parsers_cn.parse_abc_receipts",
-		"parser_version": "abc-text-v1",
+		"parser_version": "abc-text-v2",
 		"label": "中国农业银行文字版回单 PDF",
 	},
 	"icbc_text_pdf_v1": {

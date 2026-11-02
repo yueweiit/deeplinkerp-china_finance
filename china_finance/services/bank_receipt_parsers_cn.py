@@ -20,7 +20,7 @@ MAX_PAGES = 100
 MAX_RECEIPTS = 300
 
 BOC_TITLE = re.compile(r"国内支付业务[收付]款回单|客户付费回单")
-ABC_TITLE = re.compile(r"客户收付款入账通知")
+ABC_TITLE = re.compile(r"客户收付款入账通知|扣费入账通知书")
 ICBC_HEADING = re.compile(r"电.回单号码")
 CGB_TITLE = re.compile(r"广发银行客户回单")
 
@@ -194,14 +194,19 @@ def parse_boc_receipt_text(text):
 
 def parse_abc_receipt_text(text):
 	text = normalize_text(text)
-	if "客户收付款入账通知" not in text:
+	title = ABC_TITLE.search(text)
+	if not title:
 		raise ReceiptParseError(_("未识别到中国农业银行回单标题"))
 	receipt_number = required_match(r"回单编号:\s*([A-Za-z0-9-]+)", text, "缺少农业银行回单编号")
-	accounts = re.search(r"^账号\s+([0-9 ]+)\s+账号\s+([0-9 ]+)$", text, re.M)
+	accounts = re.search(r"^账号[ \t]+([A-Za-z0-9 ]+?)[ \t]+账号[ \t]+([A-Za-z0-9 ]+)$", text, re.M)
 	if not accounts:
 		raise ReceiptParseError(_("缺少农业银行收付款账号"))
-	names = re.search(r"付款方\s+户名\s*(.*?)\s+收款方\s+户名\s*([^\n]*)", text)
-	banks = re.search(r"开户行\s+(.+?)\s+开户行\s*([^\n]*)", text)
+	names = re.search(
+		r"^付款方[ \t]+户名[ \t]*(.*?)[ \t]+收款方[ \t]+户名[ \t]*([^\n]*)$",
+		text,
+		re.M,
+	)
+	banks = re.search(r"^开户行[ \t]+(.+?)[ \t]+开户行[ \t]*([^\n]*)$", text, re.M)
 	payer = names.group(1).strip() if names else ""
 	payee = names.group(2).strip() if names else ""
 	payer_bank = banks.group(1).strip() if banks else ""
@@ -214,11 +219,18 @@ def parse_abc_receipt_text(text):
 	if not re.search(r"币种\s+人民币", text):
 		raise ReceiptParseError(_("农业银行回单币种不是人民币"))
 	summary = optional_match(r"摘要\s+(.+?)\s+凭证号", text)
+	fee_name = optional_match(r"收费名称:\s*(.+?)(?=\s+收费周期:|$)", text, re.M)
+	fee_period = optional_match(r"收费周期:\s*([^\s]+)", text)
+	if title.group() == "扣费入账通知书":
+		if not fee_name:
+			raise ReceiptParseError(_("缺少农业银行收费名称"))
+		summary = fee_name
 	lines = [line.strip() for line in text.splitlines()]
-	for candidate in ("短信费", "手续费", "服务费"):
-		if candidate in lines:
-			summary = candidate
-			break
+	if not fee_name:
+		for candidate in ("短信费", "手续费", "服务费"):
+			if candidate in lines:
+				summary = candidate
+				break
 	if not summary:
 		raise ReceiptParseError(_("缺少农业银行交易摘要"))
 	fee_details = (
@@ -233,7 +245,7 @@ def parse_abc_receipt_text(text):
 		amount=amount,
 		transaction_id=validate_flow(receipt_number),
 		receipt_number=receipt_number,
-		business_type="客户收付款入账通知",
+		business_type=title.group(),
 		business_number=compact_account(optional_match(r"凭证号\s+([A-Za-z0-9-]+)", text)),
 		summary=summary,
 		payer=payer,
@@ -242,6 +254,7 @@ def parse_abc_receipt_text(text):
 		payee=payee,
 		payee_account=compact_account(accounts.group(2)),
 		payee_bank=payee_bank,
+		fee_period=fee_period,
 		fee_details=fee_details,
 		raw_text=text,
 	)
@@ -402,7 +415,7 @@ def parse_boc_receipts(content):
 
 
 def parse_abc_receipts(content):
-	return parse_text_pdf(content, ABC_TITLE, parse_abc_receipt_text, "abc-text-v1", "中国农业银行")
+	return parse_text_pdf(content, ABC_TITLE, parse_abc_receipt_text, "abc-text-v2", "中国农业银行")
 
 
 def parse_icbc_receipts(content):

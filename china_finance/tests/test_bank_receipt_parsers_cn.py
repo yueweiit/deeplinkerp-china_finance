@@ -1,6 +1,7 @@
 import unittest
 
 from china_finance.services.bank_receipt_parsers_cn import (
+	ABC_TITLE,
 	parse_abc_receipt_text,
 	parse_boc_receipt_text,
 	parse_cgb_receipt_text,
@@ -51,7 +52,40 @@ class TestChineseBankReceiptParsers(unittest.TestCase):
 		self.assertEqual(row["transaction_id"], "ABC-RECEIPT-001")
 		self.assertEqual(row["summary"], "短信费")
 		self.assertEqual(row["direction"], "")
+		self.assertEqual(row["payee"], "")
 		self.assertEqual(row["fee_details"][0]["amount"], "15.00")
+
+	def test_abc_charge_notice_preserves_fee_name_period_and_alphanumeric_account(self):
+		self.assertTrue(ABC_TITLE.search("扣费入账通知书"))
+		row = parse_abc_receipt_text(
+			"""网上银行电子回单
+扣费入账通知书
+回单编号： 61714238804992854246 第 2 次打印
+账号 26125801040014640 账号 26125843CNYFC1641
+付款方 户名 广州凌翔电子产品有限公司西安分公司 收款方 户名 中国农业银行股份有限公司西安长延堡支行
+开户行 中国农业银行股份有限公司西安长延堡支行 开户行 中国农业银行股份有限公司西安长延堡支行
+金额（小写） 200.00 金额（大写） 贰佰元整
+币种 人民币 交易渠道 批处理
+摘要 批量扣费 凭证号 26125850000000445
+交易时间 2026-10-24 01:25:02 会计日期 20261024
+批量扣费 收费渠道：TERM 收费名称：企业网银年服务费 收费周期：2026年10月
+附言
+电子回单可以重复打印，回单编号相同表示同一笔业务，请勿重复记账。
+打印日期： 2026-11-02
+"""
+		)
+		self.assertEqual(row["posting_date"], "2026-10-24")
+		self.assertEqual(row["transaction_id"], "61714238804992854246")
+		self.assertEqual(row["business_type"], "扣费入账通知书")
+		self.assertEqual(row["summary"], "企业网银年服务费")
+		self.assertEqual(row["payer_account"], "26125801040014640")
+		self.assertEqual(row["payee_account"], "26125843CNYFC1641")
+		self.assertEqual(row["payee"], "中国农业银行股份有限公司西安长延堡支行")
+		self.assertEqual(row["fee_period"], "2026年10月")
+		self.assertEqual(
+			row["fee_details"],
+			[{"item": "企业网银年服务费", "count": 1, "amount": "200.00"}],
+		)
 
 	def test_icbc_compatibility_characters_and_fee(self):
 		row = parse_icbc_receipt_text(
