@@ -24,15 +24,32 @@ def test_prepared_report_columns_keep_source_labels_and_edit_contract():
 
 
 def test_voucher_summary_collapses_historical_duplicate_lines_only():
-	assert ledger.clean_voucher_summary(
-		"支付宝结算\n支付宝结算", bank_generated=True
-	) == "支付宝结算"
-	assert ledger.clean_voucher_summary(
-		"分录摘要\n凭证摘要", bank_generated=True
-	) == "分录摘要\n凭证摘要"
-	assert ledger.clean_voucher_summary("人工摘要\n人工摘要") == "人工摘要\n人工摘要"
+	assert ledger.clean_voucher_summary("支付宝结算\n支付宝结算") == "支付宝结算"
+	assert ledger.clean_voucher_summary("分录摘要\n凭证摘要") == "分录摘要\n凭证摘要"
+	assert ledger.clean_voucher_summary("人工摘要\n人工摘要") == "人工摘要"
+	assert ledger.clean_voucher_summary("重复摘要\n\n重复摘要") == "重复摘要\n\n重复摘要"
 	assert deduplicate_accounting_remarks("甲\n\n乙") == "甲\n\n乙"
 	assert deduplicate_accounting_remarks("  分录摘要  \n凭证摘要  ") == "  分录摘要  \n凭证摘要  "
+
+
+def test_voucher_tree_cleans_duplicate_summary_without_bank_marker():
+	entry = frappe._dict(
+		voucher_snapshot="CAV-TEST",
+		posting_date="2026-07-27",
+		statutory_number="记2",
+		accounting_period="2026-07",
+		remarks="悦为智能投资款\n悦为智能投资款",
+		source_doctype="Journal Entry",
+		source_name="ACC-JV-TEST",
+		source_event="Posting",
+		voucher_status=1,
+		entry_idx=1,
+	)
+
+	row = ledger.build_tree_data([entry])[0]
+
+	assert "bank_transaction" not in entry
+	assert row["remarks"] == "悦为智能投资款"
 
 
 def test_new_voucher_snapshot_preserves_gl_remarks_verbatim():
