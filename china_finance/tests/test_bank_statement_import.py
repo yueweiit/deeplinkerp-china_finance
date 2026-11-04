@@ -263,14 +263,14 @@ class TestBankStatementImport(UnitTestCase):
 		self.assertEqual(journal_entry.user_remark, "报销-张三")
 		self.assertEqual([row.user_remark for row in journal_entry.accounts], ["报销-张三", "报销-张三"])
 
-	def test_bank_voucher_gl_map_collapses_only_identical_summary_lines(self):
+	def test_journal_entry_gl_map_collapses_only_identical_summary_lines(self):
 		from erpnext.accounts.doctype.journal_entry.journal_entry import JournalEntry
 
 		journal_entry = frappe.new_doc("Journal Entry")
-		journal_entry.custom_china_bank_transaction = "ACC-BTN-TEST"
 		gl_map = [
 			frappe._dict(remarks="支付宝结算\n支付宝结算"),
 			frappe._dict(remarks="分录摘要\n凭证摘要"),
+			frappe._dict(remarks="重复摘要\n\n重复摘要"),
 		]
 		with (
 			patch.object(JournalEntry, "build_gl_map", return_value=gl_map),
@@ -283,3 +283,4 @@ class TestBankStatementImport(UnitTestCase):
 
 		self.assertEqual(result[0].remarks, "支付宝结算")
 		self.assertEqual(result[1].remarks, "分录摘要\n凭证摘要")
+		self.assertEqual(result[2].remarks, "重复摘要\n\n重复摘要")
