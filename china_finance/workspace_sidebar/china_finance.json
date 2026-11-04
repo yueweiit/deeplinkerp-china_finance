@@ -186,6 +186,28 @@
   {
    "child": 0,
    "collapsible": 1,
+   "icon": "folder",
+   "indent": 1,
+   "keep_closed": 1,
+   "label": "\u652f\u51fa\u7ba1\u7406",
+   "link_type": "DocType",
+   "show_arrow": 0,
+   "type": "Section Break"
+  },
+  {
+   "child": 1,
+   "collapsible": 1,
+   "indent": 0,
+   "keep_closed": 0,
+   "label": "\u8fd0\u8425\u652f\u51fa",
+   "link_to": "operating-expenses",
+   "link_type": "Page",
+   "show_arrow": 0,
+   "type": "Link"
+  },
+  {
+   "child": 0,
+   "collapsible": 1,
    "icon": "settings",
    "indent": 1,
    "keep_closed": 1,
@@ -251,6 +273,18 @@
    "link_type": "DocType",
    "show_arrow": 0,
    "type": "Section Break"
+  },
+  {
+   "child": 1,
+   "collapsible": 1,
+   "indent": 0,
+   "keep_closed": 0,
+   "label": "\u671f\u521d\u4f59\u989d",
+   "link_to": "china-opening-balances",
+   "link_type": "Page",
+   "route_options": "{\"sidebar\": \"China Finance\"}",
+   "show_arrow": 0,
+   "type": "Link"
   },
   {
    "child": 1,
@@ -490,7 +524,7 @@
    "type": "Link"
   }
  ],
- "modified": "2026-10-14 15:08:55.873806",
+ "modified": "2026-11-04 10:10:07.443515",
  "modified_by": "Administrator",
  "module": "China Finance",
  "name": "China Finance",
