@@ -140,6 +140,133 @@ class PostingFeedbackLifecycleTests(unittest.TestCase):
 		self.assertEqual([r.user_remark for r in amended.accounts],
 			["First expense", "Second expense", "Corrected bank payment"])
 
+	def test_report_hides_exact_parent_summary_without_changing_snapshot(self):
+		doc = self.manual_voucher()
+		doc.custom_remark = 1
+		doc.user_remark = "报销款-张海立"
+		doc.remark = "报销款-张海立"
+		doc.accounts[0].user_remark = "报销技术开发费用款-张海立"
+		doc.accounts[1].user_remark = "支付报销款-张海立"
+		doc.save()
+		doc.submit()
+
+		snapshot = frappe.db.get_value(
+			"China Accounting Voucher",
+			{"source_doctype": doc.doctype, "source_name": doc.name, "source_event": "Posting"},
+			"name",
+		)
+		stored = frappe.get_all(
+			"China Accounting Voucher Entry",
+			filters={"parent": snapshot},
+			fields=["account", "remarks"],
+		)
+		self.assertEqual(
+			{row.account: row.remarks for row in stored},
+			{
+				self.accounts[0]: "报销技术开发费用款-张海立\n报销款-张海立",
+				self.accounts[1]: "支付报销款-张海立\n报销款-张海立",
+			},
+		)
+
+		displayed = self.report_source(doc)
+		self.assertEqual(
+			{row["account"]: row["remarks"] for row in displayed},
+			{
+				self.accounts[0]: "报销技术开发费用款-张海立",
+				self.accounts[1]: "支付报销款-张海立",
+			},
+		)
+		self.assertFalse(any("source_voucher_summary" in row for row in displayed))
+		self.assertFalse(any("source_row_summary" in row for row in displayed))
+
+	def test_merged_amount_collision_does_not_enable_editing_another_source_summary(self):
+		doc = self.manual_voucher()
+		doc.custom_remark = 1
+		doc.remark = doc.user_remark = "Voucher context"
+		doc.set("accounts", [
+			{"account": self.accounts[0], "debit_in_account_currency": 10, "user_remark": "Expense A"},
+			{"account": self.accounts[0], "debit_in_account_currency": 30, "user_remark": "Expense B"},
+			{"account": self.accounts[0], "debit_in_account_currency": -10, "user_remark": "Offset C"},
+			{"account": self.accounts[1], "credit_in_account_currency": 30, "user_remark": "Capital"},
+		])
+		doc.save()
+		original = frappe.get_single_value
+		with patch.object(frappe, "get_single_value", side_effect=lambda dt, field, *a, **kw:
+			1 if (dt, field) == ("Accounts Settings", "merge_similar_account_heads")
+			else original(dt, field, *a, **kw)):
+			doc.submit()
+		expense = next(row for row in self.report_source(doc) if row["account"] == self.accounts[0])
+		self.assertEqual(expense["debit"], 30)
+		self.assertEqual(expense["remarks"], "Expense A\nVoucher context")
+		self.assertFalse(expense["editable_summary"])
+		self.assertIsNone(expense["summary_edit_key"])
+
+	def test_pending_and_formal_summaries_agree_and_use_verified_source_row(self):
+		from frappe.desk.query_report import build_xlsx_data
+		from china_finance.china_finance.report.china_voucher_ledger.china_voucher_ledger import get_columns
+
+		for row_summary, voucher_summary, expected in (
+			("报销技术开发费用款-张海立", "报销款-张海立", "报销技术开发费用款-张海立"),
+			("支付手续费", "招商银行2026年账户管理费", "支付手续费"),
+			("支付员工4月工资", "计提员工4月工资", "支付员工4月工资"),
+			("计提6月公积金", "计提6月社保费用", "计提6月公积金"),
+		):
+			with self.subTest(voucher_summary=voucher_summary):
+				doc = self.manual_voucher()
+				doc.custom_remark = 1
+				doc.remark = doc.user_remark = voucher_summary
+				for row in doc.accounts:
+					row.user_remark = row_summary
+				doc.save()
+				with patch.object(voucher, "create_voucher_from_source", return_value=None):
+					doc.submit()
+				before = self.report_source(doc)
+				self.assertTrue(all(row["snapshot_pending"] for row in before))
+				self.assertTrue(all(not row["editable_summary"] for row in before))
+				gl_count = frappe.db.count("GL Entry", {"voucher_no": doc.name, "voucher_type": doc.doctype})
+				voucher_posting_status.repair_posting_snapshot(doc.doctype, doc.name)
+				after = self.report_source(doc)
+				self.assertEqual([row["remarks"] for row in before], [expected, expected])
+				self.assertEqual([row["remarks"] for row in after], [expected, expected])
+				columns = get_columns()
+				summary_index = [column["fieldname"] for column in columns if not column.get("hidden")].index("remarks")
+				for report_rows in (before, after):
+					export_rows, _, _ = build_xlsx_data(frappe._dict(columns=columns, result=report_rows))
+					self.assertEqual([row[summary_index] for row in export_rows[1:]], [expected, expected])
+				self.assertFalse(any("source_voucher_summary" in row for row in before + after))
+				self.assertFalse(any("source_row_summary" in row for row in before + after))
+				self.assertEqual(
+					frappe.db.count("GL Entry", {"voucher_no": doc.name, "voucher_type": doc.doctype}), gl_count,
+				)
+
+	def test_filtered_same_account_summaries_agree_before_and_after_repair(self):
+		from china_finance.china_finance.report.china_voucher_ledger.china_voucher_ledger import execute
+
+		doc = self.manual_voucher()
+		doc.custom_remark = 1
+		doc.remark = doc.user_remark = "报销款-张海立"
+		doc.set("accounts", [
+			{"account": self.accounts[0], "debit_in_account_currency": 10, "user_remark": "报销办公用品-张海立"},
+			{"account": self.accounts[0], "debit_in_account_currency": 20, "user_remark": "报销差旅费-张海立"},
+			{"account": self.accounts[1], "credit_in_account_currency": 30, "user_remark": "支付报销款-张海立"},
+		])
+		doc.save()
+		original = frappe.get_single_value
+		with (
+			patch.object(frappe, "get_single_value", side_effect=lambda dt, field, *a, **kw:
+				0 if (dt, field) == ("Accounts Settings", "merge_similar_account_heads")
+				else original(dt, field, *a, **kw)),
+			patch.object(voucher, "create_voucher_from_source", return_value=None),
+		):
+			doc.submit()
+		filters = dict(company=self.company, from_date=doc.posting_date, to_date=doc.posting_date,
+			source_doctype=doc.doctype, source_name=doc.name, voucher_status="全部有效凭证", search_text="办公用品")
+		before = execute(filters)[1]
+		voucher_posting_status.repair_posting_snapshot(doc.doctype, doc.name)
+		after = execute(filters)[1]
+		self.assertEqual(len(before), 1)
+		self.assertEqual([row["remarks"] for row in before], [row["remarks"] for row in after])
+		self.assertFalse(after[0]["editable_summary"])
 
 	def test_negative_debit_is_identical_before_and_after_repair(self):
 		doc = self.manual_voucher()
@@ -269,52 +396,6 @@ class PostingFeedbackLifecycleTests(unittest.TestCase):
 		self.assertFalse(get_inline_summary_edit_metadata(doc,
 			{"account": "Other", "source_row_name": "A"})["editable"])
 
-	def test_only_completed_empty_closing_is_exempt_from_snapshot_requirement(self):
-		from china_finance.services.voucher_number_organization import _source_completeness
-
-		for state in ("Completed", "Failed", "In Progress"):
-			name = self.company + " " + state
-			frappe.get_doc({"doctype": "Period Closing Voucher", "name": name, "company": self.company,
-				"period_start_date": "2026-10-01", "period_end_date": "2026-10-31",
-				"docstatus": 1, "gle_processing_status": state}).db_insert()
-		for lock in (False, True):
-			missing = _source_completeness(self.company, "2026-10-01", "2026-10-31", lock=lock)["missing"]
-			self.assertEqual({r[1] for r in missing}, {self.company + " Failed", self.company + " In Progress"})
-		frappe.get_doc({"doctype": "GL Entry", "name": self.company + " closing gl", "company": self.company,
-			"posting_date": "2026-10-31", "voucher_type": "Period Closing Voucher",
-			"voucher_no": self.company + " Completed", "account": self.accounts[0], "is_cancelled": 0,
-			"debit": 10, "credit": 0}).db_insert()
-		self.assertEqual(len(_source_completeness(self.company, "2026-10-01", "2026-10-31")["missing"]), 3)
-		frappe.db.set_value("GL Entry", self.company + " closing gl", "is_cancelled", 1)
-		self.assertEqual(len(_source_completeness(self.company, "2026-10-01", "2026-10-31", lock=True)["missing"]), 3)
-		frappe.db.delete("GL Entry", {"name": self.company + " closing gl"})
-		frappe.db.set_value("Period Closing Voucher", self.company + " Completed", "error_message", "unfinished processing")
-		self.assertEqual(len(_source_completeness(self.company, "2026-10-01", "2026-10-31", lock=True)["missing"]), 3)
-
-
-	def test_merged_amount_collision_does_not_enable_editing_another_source_summary(self):
-		doc = self.manual_voucher()
-		doc.custom_remark = 1
-		doc.remark = doc.user_remark = "Voucher context"
-		doc.set("accounts", [
-			{"account": self.accounts[0], "debit_in_account_currency": 10, "user_remark": "Expense A"},
-			{"account": self.accounts[0], "debit_in_account_currency": 30, "user_remark": "Expense B"},
-			{"account": self.accounts[0], "debit_in_account_currency": -10, "user_remark": "Offset C"},
-			{"account": self.accounts[1], "credit_in_account_currency": 30, "user_remark": "Capital"},
-		])
-		doc.save()
-		original = frappe.get_single_value
-		with patch.object(frappe, "get_single_value", side_effect=lambda dt, field, *a, **kw:
-			1 if (dt, field) == ("Accounts Settings", "merge_similar_account_heads")
-			else original(dt, field, *a, **kw)):
-			doc.submit()
-		expense = next(row for row in self.report_source(doc) if row["account"] == self.accounts[0])
-		self.assertEqual(expense["debit"], 30)
-		self.assertEqual(expense["remarks"], "Expense A\nVoucher context")
-		self.assertFalse(expense["editable_summary"])
-		self.assertIsNone(expense["summary_edit_key"])
-
-
 	def test_summary_mapping_uses_debit_and_credit_to_distinguish_same_account(self):
 		from china_finance.services.source_voucher_edit import get_inline_summary_edit_metadata
 
@@ -352,6 +433,27 @@ class PostingFeedbackLifecycleTests(unittest.TestCase):
 		self.assertEqual(accrual["value"], "计提6月公积金")
 		self.assertEqual(payment["value"], "支付6月公积金")
 
+	def test_only_completed_empty_closing_is_exempt_from_snapshot_requirement(self):
+		from china_finance.services.voucher_number_organization import _source_completeness
+
+		for state in ("Completed", "Failed", "In Progress"):
+			name = self.company + " " + state
+			frappe.get_doc({"doctype": "Period Closing Voucher", "name": name, "company": self.company,
+				"period_start_date": "2026-10-01", "period_end_date": "2026-10-31",
+				"docstatus": 1, "gle_processing_status": state}).db_insert()
+		for lock in (False, True):
+			missing = _source_completeness(self.company, "2026-10-01", "2026-10-31", lock=lock)["missing"]
+			self.assertEqual({r[1] for r in missing}, {self.company + " Failed", self.company + " In Progress"})
+		frappe.get_doc({"doctype": "GL Entry", "name": self.company + " closing gl", "company": self.company,
+			"posting_date": "2026-10-31", "voucher_type": "Period Closing Voucher",
+			"voucher_no": self.company + " Completed", "account": self.accounts[0], "is_cancelled": 0,
+			"debit": 10, "credit": 0}).db_insert()
+		self.assertEqual(len(_source_completeness(self.company, "2026-10-01", "2026-10-31")["missing"]), 3)
+		frappe.db.set_value("GL Entry", self.company + " closing gl", "is_cancelled", 1)
+		self.assertEqual(len(_source_completeness(self.company, "2026-10-01", "2026-10-31", lock=True)["missing"]), 3)
+		frappe.db.delete("GL Entry", {"name": self.company + " closing gl"})
+		frappe.db.set_value("Period Closing Voucher", self.company + " Completed", "error_message", "unfinished processing")
+		self.assertEqual(len(_source_completeness(self.company, "2026-10-01", "2026-10-31", lock=True)["missing"]), 3)
 
 
 

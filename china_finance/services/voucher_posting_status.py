@@ -10,6 +10,7 @@ from frappe import _
 from frappe.utils import getdate
 
 from china_finance.services import voucher
+from china_finance.services.voucher_summary import find_journal_summary_row, journal_summary_context
 
 SOURCES = ("Journal Entry", "Payment Entry")
 
@@ -130,13 +131,11 @@ def get_pending_ledger_rows(filters):
 			"debit_in_account_currency", "credit_in_account_currency"],
 			order_by="posting_date, voucher_no, creation, name", limit_page_length=0)
 		if doctype == "Journal Entry":
-			restore_pending_journal_presentation(entries)
+			restore_pending_journal_presentation(entries, filters=filters)
 		indexes = {}
 		for entry in entries:
 			period = str(entry.posting_date)[:7]
-			if filters.get("accounting_period") and filters.accounting_period != period:
-				continue
-			if filters.get("search_text") and str(filters.search_text).lower() not in f"{entry.voucher_no} {entry.remarks or ''} {entry.account}".lower():
+			if not _matches_pending_filters(entry, filters):
 				continue
 			indexes[entry.voucher_no] = indexes.get(entry.voucher_no, 0) + 1
 			rows.append(frappe._dict(**entry, voucher_snapshot=f"pending:{doctype}:{entry.voucher_no}",
@@ -148,7 +147,15 @@ def get_pending_ledger_rows(filters):
 	return rows
 
 
-def restore_pending_journal_presentation(entries):
+def _matches_pending_filters(entry, filters):
+	if filters.get("accounting_period") and filters.accounting_period != str(entry.posting_date)[:7]:
+		return False
+	return not filters.get("search_text") or str(filters.search_text).lower() in (
+		f"{entry.voucher_no} {entry.remarks or ''} {entry.account}".lower()
+	)
+
+
+def restore_pending_journal_presentation(entries, *, filters=None):
 	"""Read source rows in bulk only for already permission-filtered GL sources."""
 	by_source = defaultdict(list)
 	for entry in entries:
@@ -158,11 +165,22 @@ def restore_pending_journal_presentation(entries):
 	accounts = defaultdict(list)
 	for row in frappe.get_all("Journal Entry Account",
 		filters={"parent": ["in", list(by_source)], "parenttype": "Journal Entry", "parentfield": "accounts"},
-		fields=["parent", "account", "debit", "credit", "debit_in_account_currency", "user_remark",
+		fields=["name", "parent", "account", "debit", "credit", "debit_in_account_currency", "user_remark",
 			"account_currency", "party_type", "party", "cost_center", "project"],
 		order_by="parent, idx", limit_page_length=0):
 		accounts[row.parent].append(row)
-	for name, rows in by_source.items():
-		voucher.restore_negative_journal_entry_debits(
-			frappe._dict(doctype="Journal Entry", accounts=accounts[name]), rows,
+	headers = {
+		row.name: row for row in frappe.get_all(
+			"Journal Entry", filters={"name": ["in", list(by_source)]},
+			fields=["name", "remark"], limit_page_length=0,
 		)
+	}
+	for name, rows in by_source.items():
+		doc = frappe._dict(accounts=accounts[name], remark=headers.get(name, {}).get("remark"))
+		voucher.restore_negative_journal_entry_debits(
+			frappe._dict(doc, doctype="Journal Entry"), rows,
+		)
+		visible_rows = [row for row in rows if filters is None or _matches_pending_filters(row, filters)]
+		for row in visible_rows:
+			source_row = find_journal_summary_row(doc, row, ledger_rows=visible_rows)
+			row.update(journal_summary_context(doc, source_row))

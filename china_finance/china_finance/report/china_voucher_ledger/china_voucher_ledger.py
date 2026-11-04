@@ -13,6 +13,7 @@ from china_finance.services.account_display import (
 	strip_account_company_suffix,
 )
 from china_finance.services.voucher import deduplicate_accounting_remarks
+from china_finance.services.voucher_summary import SUMMARY_CONTEXT_FIELDS
 
 
 def execute(filters=None):
@@ -232,16 +233,23 @@ def build_tree_data(entries):
 			voucher_order.append(voucher_snapshot)
 			voucher_rows[voucher_snapshot] = []
 		first_line = not voucher_rows[voucher_snapshot]
+		public_entry = dict(entry)
+		for field in SUMMARY_CONTEXT_FIELDS:
+			public_entry.pop(field, None)
 		voucher_rows[voucher_snapshot].append(
 			{
-				**entry,
+				**public_entry,
 				"is_voucher_first_row": first_line,
 				"posting_date": entry.posting_date if first_line else None,
 				"statutory_number": entry.statutory_number if first_line else None,
 				"voucher_number": None,
 				"print_voucher": None,
 				"accounting_period": entry.accounting_period if first_line else None,
-				"remarks": clean_voucher_summary(entry.remarks),
+				"remarks": clean_voucher_summary(
+					entry.remarks,
+					entry.get("source_row_summary"),
+					entry.get("source_voucher_summary"),
+				),
 				"source_doctype": entry.source_doctype if first_line else None,
 				"source_name": entry.source_name if first_line else None,
 				"source_event": entry.source_event if first_line else None,
@@ -256,12 +264,22 @@ def build_tree_data(entries):
 	return [row for voucher_snapshot in voucher_order for row in voucher_rows[voucher_snapshot]]
 
 
-def clean_voucher_summary(value):
-	"""Remove historical metadata and adjacent duplicate summary lines."""
+def clean_voucher_summary(value, source_row_summary=None, source_voucher_summary=None):
+	"""Show the source row when the snapshot exactly matches native concatenation."""
 	value = (value or "").strip()
 	if "｜" in value:
 		value = value.split("｜", 1)[0].strip()
 	value = re.split(r"\s*参考\s*#?.*$", value, maxsplit=1, flags=re.IGNORECASE)[0].strip()
+	row_summary = (source_row_summary or "").strip()
+	voucher_summary = (source_voucher_summary or "").strip()
+	# Native GL joins the raw fields; a trailing source newline becomes an
+	# extra separator. Keep it when verifying the stored summary's origin.
+	source_combined = "\n".join((source_row_summary or "", source_voucher_summary or "")).strip()
+	if (
+		row_summary and voucher_summary
+		and value in (f"{row_summary}\n{voucher_summary}", source_combined)
+	):
+		return row_summary
 	return deduplicate_accounting_remarks(value)
 
 

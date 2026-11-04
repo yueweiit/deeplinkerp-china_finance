@@ -145,6 +145,28 @@ class PostingStatusTests(unittest.TestCase):
 		self.assertEqual(self.module.get_pending_ledger_rows(self.filters()),[])
 		self.frappe.get_list.assert_not_called()
 
+	def test_pending_summary_context_is_batched_and_does_not_enable_inline_editing(self):
+		self.frappe.get_list.side_effect = [
+			["JE1", "JE2"],
+			[self.gl(), self.gl(name="GL2", voucher_no="JE2")],
+		]
+		source_rows = [Row(name=name + "-row", parent=name, account="Bank", debit=50, credit=0,
+			account_currency="CNY", user_remark="报销办公费-张三") for name in ("JE1", "JE2")]
+		headers = [Row(name=name, remark="报销款-张三") for name in ("JE1", "JE2")]
+		def read_all(doctype, **kwargs):
+			return {"Journal Entry Account": source_rows, "Journal Entry": headers}.get(doctype, [])
+		self.frappe.get_all.side_effect = read_all
+		rows = self.module.get_pending_ledger_rows(self.filters(source_doctype="Journal Entry"))
+		self.assertEqual([row.source_row_summary for row in rows], ["报销办公费-张三"] * 2)
+		self.assertEqual([row.source_voucher_summary for row in rows], ["报销款-张三"] * 2)
+		self.assertTrue(all(not row.editable_summary for row in rows))
+		self.frappe.get_doc.assert_not_called()
+		self.assertEqual(self.frappe.get_all.call_count, 3)
+		for call in self.frappe.get_all.call_args_list:
+			if call.args[0] in ("Journal Entry Account", "Journal Entry"):
+				self.assertEqual(call.kwargs["filters"]["parent" if call.args[0] == "Journal Entry Account" else "name"],
+					["in", ["JE1", "JE2"]])
+
 	def test_pending_rows_obey_draft_reversal_word_period_search_and_source_filters(self):
 		for changes in ({'voucher_status':'未记账'},{'voucher_status':'待记账'},{'voucher_status':'已冲销'},
 						{'voucher_word':'记1'},{'source_event':'Cancellation'}, {'source_name':'JE1','voucher_number':'JE2'}):

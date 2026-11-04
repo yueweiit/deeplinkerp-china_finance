@@ -13,7 +13,7 @@ from frappe.utils import cint, flt, getdate
 
 from china_finance.services.month_end import lock_company
 from china_finance.services.voucher import _complete_voucher_workflow, get_company, get_posting_date
-from china_finance.services.voucher_summary import find_journal_summary_row
+from china_finance.services.voucher_summary import find_journal_summary_row, journal_summary_context
 
 EDITABLE_SOURCE_DOCTYPES = ("Journal Entry", "Payment Entry")
 EDIT_TOLERANCE = 0.005
@@ -682,6 +682,9 @@ def annotate_inline_edit_rows(rows):
 		row["edit_source_modified"] = str(doc.modified)
 		mapping = get_inline_row_edit_metadata(doc, row)
 		summary_mapping = get_inline_summary_edit_metadata(doc, row, ledger_rows=source_groups[key])
+		if doc.doctype == "Journal Entry":
+			source_row = find_journal_summary_row(doc, row, ledger_rows=source_groups[key])
+			row.update(journal_summary_context(doc, source_row))
 		amount_mapping = get_inline_amount_edit_metadata(doc, row, mapping)
 		can_edit = bool(status.get("can_edit") or status.get("quick_unreconcile"))
 		row["inline_bank_transaction"] = next(iter(status.get("bank_transactions") or []), None)
