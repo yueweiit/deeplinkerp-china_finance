@@ -292,6 +292,68 @@ class PostingFeedbackLifecycleTests(unittest.TestCase):
 		self.assertEqual(len(_source_completeness(self.company, "2026-10-01", "2026-10-31", lock=True)["missing"]), 3)
 
 
+	def test_merged_amount_collision_does_not_enable_editing_another_source_summary(self):
+		doc = self.manual_voucher()
+		doc.custom_remark = 1
+		doc.remark = doc.user_remark = "Voucher context"
+		doc.set("accounts", [
+			{"account": self.accounts[0], "debit_in_account_currency": 10, "user_remark": "Expense A"},
+			{"account": self.accounts[0], "debit_in_account_currency": 30, "user_remark": "Expense B"},
+			{"account": self.accounts[0], "debit_in_account_currency": -10, "user_remark": "Offset C"},
+			{"account": self.accounts[1], "credit_in_account_currency": 30, "user_remark": "Capital"},
+		])
+		doc.save()
+		original = frappe.get_single_value
+		with patch.object(frappe, "get_single_value", side_effect=lambda dt, field, *a, **kw:
+			1 if (dt, field) == ("Accounts Settings", "merge_similar_account_heads")
+			else original(dt, field, *a, **kw)):
+			doc.submit()
+		expense = next(row for row in self.report_source(doc) if row["account"] == self.accounts[0])
+		self.assertEqual(expense["debit"], 30)
+		self.assertEqual(expense["remarks"], "Expense A\nVoucher context")
+		self.assertFalse(expense["editable_summary"])
+		self.assertIsNone(expense["summary_edit_key"])
+
+
+	def test_summary_mapping_uses_debit_and_credit_to_distinguish_same_account(self):
+		from china_finance.services.source_voucher_edit import get_inline_summary_edit_metadata
+
+		rows = [
+			frappe._dict(
+				name="accrual",
+				account="Payable",
+				idx=1,
+				debit=0,
+				credit=624,
+				user_remark="计提6月公积金",
+			),
+			frappe._dict(
+				name="payment",
+				account="Payable",
+				idx=2,
+				debit=624,
+				credit=0,
+				user_remark="支付6月公积金",
+			),
+		]
+		doc = frappe._dict(doctype="Journal Entry", accounts=rows)
+		ledger_rows = [
+			frappe._dict(account="Payable", debit=0, credit=624),
+			frappe._dict(account="Payable", debit=624, credit=0),
+		]
+		accrual = get_inline_summary_edit_metadata(
+			doc,
+			ledger_rows[0], ledger_rows=ledger_rows,
+		)
+		payment = get_inline_summary_edit_metadata(
+			doc,
+			ledger_rows[1], ledger_rows=ledger_rows,
+		)
+		self.assertEqual(accrual["value"], "计提6月公积金")
+		self.assertEqual(payment["value"], "支付6月公积金")
+
+
+
 
 
 def run_local_lifecycle_tests(query_only=False):

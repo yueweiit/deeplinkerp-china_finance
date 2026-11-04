@@ -13,6 +13,7 @@ from frappe.utils import cint, flt, getdate
 
 from china_finance.services.month_end import lock_company
 from china_finance.services.voucher import _complete_voucher_workflow, get_company, get_posting_date
+from china_finance.services.voucher_summary import find_journal_summary_row
 
 EDITABLE_SOURCE_DOCTYPES = ("Journal Entry", "Payment Entry")
 EDIT_TOLERANCE = 0.005
@@ -510,7 +511,7 @@ def _resolve_inline_summary_target(doc, edit_key):
 	return target
 
 
-def get_inline_summary_edit_metadata(doc, ledger_row):
+def get_inline_summary_edit_metadata(doc, ledger_row, *, ledger_rows=None):
 	"""Map a rendered summary back to one source row or one voucher field."""
 	targets = _inline_summary_targets(doc)
 	if doc.doctype == "Payment Entry":
@@ -527,28 +528,13 @@ def get_inline_summary_edit_metadata(doc, ledger_row):
 	# GL idx is a position after merging, not the original source child idx.
 	# Native JE voucher_detail_no points to a referenced document's detail;
 	# only draft source_row_name explicitly identifies a JE child row.
-	source_row_name = ledger_row.get("source_row_name")
-	candidates = []
-	for row in doc.get("accounts") or []:
-		if source_row_name and row.name != source_row_name:
-			continue
-		if row.account != ledger_row.get("account"):
-			continue
-		if any(
-			(row.get(field) or "") != (ledger_row.get(field) or "")
-			for field in ("account_currency", "party_type", "party", "cost_center", "project")
-			if field in ledger_row
-		):
-			continue
-		candidates.append(targets[f"je-summary:{row.name}"])
-
-	unique = {candidate.key: candidate for candidate in candidates}
-	if len(unique) != 1:
+	source_row = find_journal_summary_row(doc, ledger_row, ledger_rows=ledger_rows)
+	if source_row is None:
 		return {
 			"editable": False,
 			"reason": _("无法把该摘要唯一对应到来源凭证分录"),
 		}
-	target = next(iter(unique.values()))
+	target = targets[f"je-summary:{source_row.name}"]
 	return {
 		"editable": True,
 		"edit_key": target.key,
@@ -668,6 +654,9 @@ def annotate_inline_edit_rows(rows):
 	"""Attach non-persistent editing metadata to report rows in-place."""
 	documents = {}
 	statuses = {}
+	source_groups = {}
+	for row in rows:
+		source_groups.setdefault((row.get("source_doctype"), row.get("source_name")), []).append(row)
 	for row in rows:
 		doctype = row.get("source_doctype")
 		name = row.get("source_name")
@@ -692,7 +681,7 @@ def annotate_inline_edit_rows(rows):
 			continue
 		row["edit_source_modified"] = str(doc.modified)
 		mapping = get_inline_row_edit_metadata(doc, row)
-		summary_mapping = get_inline_summary_edit_metadata(doc, row)
+		summary_mapping = get_inline_summary_edit_metadata(doc, row, ledger_rows=source_groups[key])
 		amount_mapping = get_inline_amount_edit_metadata(doc, row, mapping)
 		can_edit = bool(status.get("can_edit") or status.get("quick_unreconcile"))
 		row["inline_bank_transaction"] = next(iter(status.get("bank_transactions") or []), None)
