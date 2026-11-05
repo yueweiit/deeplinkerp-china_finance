@@ -23,7 +23,7 @@ from china_finance.services.accounting_party import (
 DEFAULT_ACCOUNT_MAPPING = {
 	"利息": "660302",
 	"手续费": "660303",
-	"服务费": "660303",
+	"网银服务费": "660303",
 	"报销": "660201",
 	"社保": "221103",
 	"工资": "221101",
@@ -224,6 +224,7 @@ def _preferred_party_type(bank_transaction):
 		bank_transaction.get("company"),
 		reference_number=bank_transaction.get("reference_number"),
 		counterparty_name=bank_transaction.get("bank_party_name"),
+		direction=_transaction_direction(bank_transaction),
 	)
 	if not account:
 		return None
@@ -232,6 +233,14 @@ def _preferred_party_type(bank_transaction):
 		return "Customer"
 	if account_info and account_info.account_type == "Payable":
 		return "Supplier"
+	return None
+
+
+def _transaction_direction(transaction):
+	if flt(transaction.get("withdrawal")) > 0:
+		return "支出"
+	if flt(transaction.get("deposit")) > 0:
+		return "收入"
 	return None
 
 
@@ -463,6 +472,7 @@ def auto_create_voucher_on_submit(doc, method=None):
 		company,
 		reference_number=doc.reference_number,
 		counterparty_name=doc.get("bank_party_name"),
+		direction=_transaction_direction(doc),
 	)
 	if not expense_account:
 		frappe.log_error(
@@ -721,10 +731,52 @@ def _ensure_company_party(bank_transaction):
 	return {"party_type": party_type, "party": party_doc.name}
 
 
-def _resolve_account(description, company, reference_number=None, counterparty_name=None):
+def _customer_advance_review_reason(description, direction, *, postscript=None):
+	"""Do not turn an explicit customer advance into a keyword-mapped journal."""
+	if direction != "收入":
+		return None
+	# Display cleanup discards everything after "参考" or a separator. Business
+	# classification must retain that text and the independently parsed postscript.
+	# Exclude only the identity/trace fields appended by the XLSX converter;
+	# counterparty names are not evidence of an advance. Keep 扩展摘要 as business text.
+	summary = re.sub(
+		r"｜(?:对方|账号|开户行|交易类型|开户地址|业务参考号|流程实例号|交易时间|起息日|交易分析码)\s*[:：][^｜\n]*",
+		"",
+		str(description or ""),
+	)
+	text = "\n".join((summary, str(postscript or "")))
+	# Incoming supplier refunds are not customer advances. Leave their existing
+	# review path intact, but a negated/conditional refund statement is not
+	# evidence of returned funds. Mixed statements require review as well.
+	refund_condition = re.search(
+		r"(?:不(?:可|能|予|得|会|支持|允许|接受|办理)?|未(?:曾|发生|申请|约定|办理)?|无|无需|无须|禁止|可以|可否|是否|支持|允许|约定|申请)"
+		r"\s*(?:退款|退回|退还)|\b(?:no|not|without)\s+refund(?:s|ed|able)?\b",
+		text,
+		re.IGNORECASE,
+	)
+	has_refund = any(term in text for term in ("退款", "退回", "退还", "退预付款")) or re.search(
+		r"\brefund\b", text, re.IGNORECASE
+	)
+	if has_refund and not refund_condition:
+		return None
+	if any(term in text for term in ("预收", "预付", "定金", "订金")) or re.search(
+		r"\b(?:advance payment|prepayment|customer deposit)\b", text, re.IGNORECASE
+	):
+		return _("客户预收款需核对客户及预收科目配置，请创建收款单（Payment Entry）后关联已有凭证；不按摘要自动生成记账凭证")
+	return None
+
+
+def _resolve_account(description, company, reference_number=None, counterparty_name=None, direction=None):
 	"""Resolve high-confidence bank summaries; leave unclassified rows for review."""
 	raw_description = str(description or "")
 	description = clean_bank_summary(raw_description)
+	if _customer_advance_review_reason(raw_description, direction):
+		return None
+	# A customer's service payment is neither proof of a bank charge nor proof
+	# of earned revenue. Explicit company receipt rules can classify it after
+	# review; the generic XLSX/PDF fallback must not guess.
+	if direction == "收入" and any(term in description for term in ("手续费", "服务费")):
+		return None
 	search_text = f"{description}｜{raw_description}"
 	# Finance has confirmed that a combined rent/property/utilities payment is
 	# intentionally booked as one line in Management Expense - Other.
@@ -755,7 +807,10 @@ def _resolve_account(description, company, reference_number=None, counterparty_n
 		account_number = "660302"
 	elif "工资" in search_text or "代发" in search_text:
 		account_number = "221101"
-	elif "手续费" in search_text or "服务费" in search_text:
+	elif direction != "收入" and (
+		"手续费" in search_text
+		or any(term in description for term in ("网银服务费", "网银年服务费", "账户管理费", "短信费"))
+	):
 		account_number = "660303"
 	elif "投资" in search_text or (
 		reference_number == "C0347H30010RMVZ"

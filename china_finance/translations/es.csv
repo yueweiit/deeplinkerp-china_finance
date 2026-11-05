@@ -3653,3 +3653,4 @@ Adjustment,Ajuste
 科目 {0} 不支持当前往来单位；请清空往来类型和往来单位，或改用匹配的应收、应付或权益科目,"La cuenta {0} no admite la contraparte seleccionada. Borre el tipo y la contraparte, o use una cuenta por cobrar, por pagar o de patrimonio compatible."
 凭证 {0} 记账失败：{1},Error al contabilizar el comprobante {0}: {1}
 支出管理,Gestión de gastos
+客户预收款需核对客户及预收科目配置，请创建收款单（Payment Entry）后关联已有凭证；不按摘要自动生成记账凭证,"Para anticipos de clientes, verifique el cliente y la configuración de la cuenta de anticipos, cree una entrada de pago (Payment Entry) y vincule el comprobante existente. No se generará automáticamente un asiento a partir del resumen."

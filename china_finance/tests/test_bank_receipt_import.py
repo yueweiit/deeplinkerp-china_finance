@@ -470,6 +470,12 @@ class TestReceiptParser(unittest.TestCase):
 			paid_amount=123.45,
 		)
 		self.assertEqual(service.voucher_bank_amount(pe, bank), Decimal("-123.45"))
+		pe.update(payment_type="Receive", paid_from="advance", paid_to="bank", paid_to_account_currency="CNY", received_amount=123.45)
+		self.assertEqual(service.voucher_bank_amount(pe, bank), Decimal("123.45"))
+		pe.docstatus = 0
+		with self.assertRaises(frappe.ValidationError):
+			service.voucher_bank_amount(pe, bank)
+		pe.docstatus = 1
 		pe.payment_type = "Internal Transfer"
 		with self.assertRaises(frappe.ValidationError):
 			service.voucher_bank_amount(pe, bank)
@@ -709,6 +715,127 @@ class TestReceiptParser(unittest.TestCase):
 		with patch.object(frappe, "get_all", return_value=rules):
 			self.assertIn("冲突", service.suggest_account("Test", data)["reason"])
 
+	def test_service_income_does_not_use_bank_fee_fallback(self):
+		data = parse_receipt_text(receipt_text(direction="入", business="收款", summary="服务费", details=""))
+		with (
+			patch.object(frappe, "get_all", return_value=[]),
+			patch.object(frappe.db, "get_value") as get_value,
+		):
+			decision = service.suggest_account("Test", data)
+			self.assertIsNone(decision["account"])
+			get_value.assert_not_called()
+
+	def test_reviewed_company_rule_can_classify_ordinary_service_income(self):
+		data = parse_receipt_text(receipt_text(direction="入", business="收款", summary="服务费", details=""))
+		rule = frappe._dict(name="REVIEWED", priority=10, business_type="收款", keyword="服务费", account="revenue")
+		with patch.object(frappe, "get_all", return_value=[rule]):
+			decision = service.suggest_account("Test", data)
+			self.assertEqual(decision["account"], "revenue")
+			self.assertEqual(decision["rule"], rule.name)
+
+	def test_explicit_customer_advance_blocks_journal_suggestions(self):
+		data = parse_receipt_text(receipt_text(direction="入", business="收款", summary="服务费", details=""))
+		data["postscript"] = "客户预付款"
+		with patch.object(frappe, "get_all") as get_rules:
+			decision = service.suggest_account("Test", data)
+			self.assertTrue(decision["blocked"])
+			self.assertIsNone(decision["account"])
+			self.assertIn("Payment Entry", decision["reason"])
+			get_rules.assert_not_called()
+
+	def test_parsed_advance_fields_cannot_fall_through_to_rent_expense(self):
+		with (
+			patch.object(frappe, "get_all") as get_rules,
+			patch.object(frappe.db, "get_value") as get_account,
+		):
+			for summary, postscript in (
+				("房租 参考合同A", "客户预付款"),
+				("房租｜合同A", "客户预付款"),
+				("房租｜对方：客户公司", "客户预付款"),
+				("收到预付租金", ""),
+				("收到预付货款", ""),
+				("收到房租定金，不可退款", ""),
+				("房租", "预付租金，不支持退款"),
+			):
+				with self.subTest(summary=summary, postscript=postscript):
+					text = receipt_text(direction="入", business="收款", summary=summary, details="")
+					text = text.replace("\n经办：", "\n附言：" + postscript + "\n经办：")
+					data = parse_receipt_text(text)
+					decision = service.suggest_account("Test", data)
+					self.assertTrue(decision["blocked"])
+					self.assertIsNone(decision["account"])
+			get_rules.assert_not_called()
+			get_account.assert_not_called()
+
+	def test_customer_advance_create_is_rejected_before_bank_writes(self):
+		data = parse_receipt_text(receipt_text(direction="入", business="收款", summary="服务费预付款", details=""))
+		source = b"advance-receipt-test"
+		row = frappe._dict(name="ROW", raw_data=json.dumps(data))
+		doc = frappe._dict(name="BATCH", company="Test", bank_account="Bank", source_hash=hashlib.sha256(source).hexdigest(),
+			status="待处理", rows=[row], mode="新业务制证")
+		with (
+			patch.object(service, "_get_import", return_value=doc),
+			patch.object(service, "_source", return_value=source),
+			patch.object(service, "validate_bank_context", return_value=frappe._dict(name="Bank")),
+			patch.object(service, "validate_receipt_context"),
+			patch.object(service, "existing_transaction", return_value=None),
+			patch.object(service, "_existing_receipt", return_value=None),
+			patch.object(service, "voucher_candidates", return_value=[]),
+			patch.object(frappe.db, "sql"),
+			patch.object(service, "_bank_transaction") as create_bank,
+			patch.object(service, "_create_voucher") as create_voucher,
+		):
+			with self.assertRaisesRegex(frappe.ValidationError, "Payment Entry"):
+				service._process_receipt("BATCH", "ROW", "create", account="receivable", confirmed=1)
+			create_bank.assert_not_called()
+			create_voucher.assert_not_called()
+
+	def test_advance_boundary_cases_cannot_create_single_or_batch_drafts(self):
+		for summary, postscript in (
+			("房租 参考合同A", "客户预付款"),
+			("房租｜合同A", "客户预付款"),
+			("收到预付租金", ""),
+			("收到房租定金，不可退款", ""),
+		):
+			with self.subTest(summary=summary, postscript=postscript):
+				data = parse_receipt_text(receipt_text(direction="入", business="收款", summary=summary, details=""))
+				data["postscript"] = postscript
+				source = b"advance-receipt-boundary-test"
+				row = frappe._dict(name="ROW", raw_data=json.dumps(data))
+				doc = frappe._dict(name="BATCH", company="Test", bank_account="Bank",
+					source_hash=hashlib.sha256(source).hexdigest(), status="待处理", rows=[row], mode="新业务制证")
+				with (
+					patch.object(service, "_get_import", return_value=doc),
+					patch.object(service, "_source", return_value=source),
+					patch.object(service, "validate_bank_context", return_value=frappe._dict(name="Bank")),
+					patch.object(service, "validate_receipt_context"),
+					patch.object(service, "existing_transaction", return_value=None),
+					patch.object(service, "_existing_receipt", return_value=None),
+					patch.object(service, "voucher_candidates", return_value=[]),
+					patch.object(frappe.db, "sql"),
+					patch.object(service, "_bank_transaction") as create_bank,
+					patch.object(service, "_create_voucher") as create_voucher,
+					patch("china_finance.services.month_end.guard_period_write"),
+				):
+					with self.assertRaisesRegex(frappe.ValidationError, "Payment Entry"):
+						service._process_receipt("BATCH", "ROW", "create", account="rent", confirmed=1)
+					decision = service.suggest_account("Test", data)
+					preview = dict(name="ROW", suggestion=decision, receipt=None, status="待分类", candidates=[])
+					with (
+						patch.object(service, "preview_import", return_value={"rows": [preview]}),
+						patch.object(service, "process_receipt") as process_single,
+					):
+						result = service.process_import_batch("BATCH", confirmed=1)
+						self.assertEqual((result["created"], result["failed"]), (0, 1))
+						process_single.assert_not_called()
+					create_bank.assert_not_called()
+					create_voucher.assert_not_called()
+
+	def test_supplier_prepayment_refund_is_not_forced_into_customer_advance(self):
+		data = parse_receipt_text(receipt_text(direction="入", business="收款", summary="供应商退回预付款", details=""))
+		with patch.object(frappe, "get_all", return_value=[]):
+			self.assertFalse(service.suggest_account("Test", data).get("blocked"))
+
 
 class TestReceiptIntegration(unittest.TestCase):
 	"""Run on a configured CNY test company; every case rolls back all business writes."""
@@ -812,6 +939,16 @@ class TestReceiptIntegration(unittest.TestCase):
 		second = self.batch()
 		self.assertEqual(second.rows[0].receipt, result["receipt"])
 		self.assertEqual(second.status, "处理完成")
+
+	def test_customer_advance_rejected_before_bank_or_voucher_creation(self):
+		data = copy.deepcopy(self.data)
+		data.update(direction="收入", summary="收到服务费预付款", fee_details=[], tax_details=[])
+		batch = self.batch(data=data)
+		with patch.object(service, "_bank_transaction") as create_bank:
+			result = self.process(batch, action="create")
+			self.assertIn("Payment Entry", result["error"])
+			create_bank.assert_not_called()
+		self.assertFalse(frappe.db.exists(service.RECEIPT, service.identity(self.bank.name, data["transaction_id"])))
 
 	def test_deleted_draft_restores_receipt_for_regeneration(self):
 		batch = self.batch()

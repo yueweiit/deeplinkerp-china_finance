@@ -2922,3 +2922,4 @@ New,New
 科目 {0} 不支持当前往来单位；请清空往来类型和往来单位，或改用匹配的应收、应付或权益科目,"Account {0} does not support the selected party. Clear Party Type and Party, or use a matching receivable, payable, or equity account."
 凭证 {0} 记账失败：{1},Failed to post voucher {0}: {1}
 支出管理,Expense Management
+客户预收款需核对客户及预收科目配置，请创建收款单（Payment Entry）后关联已有凭证；不按摘要自动生成记账凭证,"For customer advances, verify the customer and advance account settings, create a Payment Entry, and link the existing voucher. A Journal Entry will not be generated automatically from the summary."

@@ -9,7 +9,10 @@ from china_finance.overrides.bank_statement_import import get_full_import_previe
 from china_finance.overrides.journal_entry import ChinaFinanceJournalEntry
 from china_finance.services.bank_reconciliation import (
 	_apply_journal_entry_summary,
+	auto_create_voucher_on_submit,
+	_customer_advance_review_reason,
 	_get_safe_party_fields,
+	_preferred_party_type,
 	_resolve_account,
 	_resolve_company_party,
 )
@@ -164,6 +167,89 @@ class TestBankStatementImport(UnitTestCase):
 
 		self.assertEqual(account, "222199 - 其他应交税费")
 		self.assertEqual(get_value.call_args.args[1]["account_number"], "222199")
+
+	def test_generic_service_payments_are_not_bank_fees(self):
+		with patch("china_finance.services.bank_reconciliation.frappe.db.get_value") as get_value:
+			for direction in ("收入", "支出", None):
+				with self.subTest(direction=direction):
+					self.assertIsNone(_resolve_account("服务费", "Test", direction=direction))
+			get_value.assert_not_called()
+
+	def test_bank_fee_fallback_requires_outgoing_flow(self):
+		with patch(
+			"china_finance.services.bank_reconciliation.frappe.db.get_value", return_value="fee"
+		) as get_value:
+			for summary in ("支付银行手续费", "企业网银年服务费", "短信费"):
+				with self.subTest(summary=summary):
+					self.assertEqual(_resolve_account(summary, "Test", direction="支出"), "fee")
+					self.assertEqual(get_value.call_args.args[1]["account_number"], "660303")
+			self.assertIsNone(_resolve_account("收到手续费", "Test", direction="收入"))
+
+	def test_customer_advance_needs_review_without_inferred_account(self):
+		with patch("china_finance.services.bank_reconciliation.frappe.db.get_value") as get_value:
+			for summary in ("收到凌翔服务费预付款", "收到客户定金", "工资服务预收款", "customer deposit"):
+				with self.subTest(summary=summary):
+					self.assertIn("Payment Entry", _customer_advance_review_reason(summary, "收入"))
+					self.assertIsNone(_resolve_account(summary, "Test", direction="收入"))
+			get_value.assert_not_called()
+		for summary in ("退回供应商预付款", "收到预付款退款", "customer deposit refund"):
+			self.assertIsNone(_customer_advance_review_reason(summary, "收入"))
+		self.assertIsNone(_customer_advance_review_reason("支付预付款", "支出"))
+
+	def test_advance_classification_retains_business_text_hidden_in_display(self):
+		with patch("china_finance.services.bank_reconciliation.frappe.db.get_value") as get_value:
+			for summary in (
+				"房租 参考合同A 客户预付款",
+				"房租｜客户预付款",
+				"房租｜对方：客户公司｜扩展摘要：客户预付款",
+			):
+				with self.subTest(summary=summary):
+					self.assertIsNone(_resolve_account(summary, "Test", direction="收入"))
+			get_value.assert_not_called()
+
+	def test_prepaid_rent_goods_and_negated_refunds_require_review(self):
+		with patch("china_finance.services.bank_reconciliation.frappe.db.get_value") as get_value:
+			for summary in (
+				"收到预付租金", "收到预付货款", "预付物业管理费", "预付 房租",
+				"收到房租定金，不可退款", "定金不予退还", "定金未退款", "定金未约定退款",
+				"定金可以退款", "定金是否退款另议", "customer deposit no refund",
+			):
+				with self.subTest(summary=summary):
+					self.assertIn("Payment Entry", _customer_advance_review_reason(summary, "收入"))
+					self.assertIsNone(_resolve_account(summary, "Test", direction="收入"))
+			get_value.assert_not_called()
+
+	def test_advance_words_in_counterparty_and_trace_fields_are_not_business_evidence(self):
+		with patch(
+			"china_finance.services.bank_reconciliation.frappe.db.get_value", return_value="capital"
+		) as get_value:
+			self.assertEqual(_resolve_account(
+				"投资款｜对方：定金科技有限公司｜业务参考号：预付款001",
+				"Test", direction="收入",
+			), "capital")
+			self.assertEqual(get_value.call_args.args[1]["account_number"], "4001")
+
+	def test_party_account_resolution_passes_bank_flow_direction(self):
+		with patch("china_finance.services.bank_reconciliation._resolve_account", return_value=None) as resolve:
+			for deposit, withdrawal, direction in ((15000, 0, "收入"), (0, 50, "支出")):
+				self.assertIsNone(_preferred_party_type(frappe._dict(
+					company="Test", description="服务费", deposit=deposit, withdrawal=withdrawal
+				)))
+				self.assertEqual(resolve.call_args.kwargs["direction"], direction)
+
+	def test_service_income_does_not_auto_create_journal_on_bank_submit(self):
+		transaction = frappe._dict(
+			name="TEST-INCOME", company="Test", bank_account="Bank", description="服务费",
+			deposit=15000, withdrawal=0, allocated_amount=0, flags=frappe._dict(),
+		)
+		with (
+			patch("china_finance.services.bank_receipt_import.reuse_receipt_for_transaction", return_value=False),
+			patch("china_finance.services.bank_reconciliation._get_valid_bank_account_gl", return_value="bank"),
+			patch.object(frappe, "log_error"),
+			patch.object(frappe, "new_doc") as new_doc,
+		):
+			auto_create_voucher_on_submit(transaction)
+			new_doc.assert_not_called()
 
 	def test_confirmed_investment_transfer_uses_share_capital_account(self):
 		with patch(

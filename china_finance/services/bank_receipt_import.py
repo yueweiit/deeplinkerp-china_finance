@@ -367,6 +367,14 @@ def _existing_receipt(doc, data, lock=False):
 
 
 def suggest_account(company, data):
+	from china_finance.services.bank_reconciliation import _customer_advance_review_reason, _resolve_account
+
+	advance_reason = _customer_advance_review_reason(
+		data["summary"], data["direction"], postscript=data.get("postscript")
+	)
+	if advance_reason:
+		return {"account": None, "blocked": True, "reason": advance_reason}
+
 	text = " ".join(
 		[
 			data["summary"],
@@ -477,13 +485,12 @@ def suggest_account(company, data):
 	# Use the same reviewed summary mapping as the XLSX bank-statement flow for
 	# ordinary receipts. Structured receipt rules above remain authoritative for
 	# fees, payroll, taxes and social-insurance allocations.
-	from china_finance.services.bank_reconciliation import _resolve_account
-
 	account = _resolve_account(
 		data["summary"],
 		company,
 		reference_number=data["transaction_id"],
 		counterparty_name=data["counterparty"],
+		direction=data["direction"],
 	)
 	return {
 		"account": account,
@@ -1138,10 +1145,10 @@ def _process_receipt(
 		_check_bt_links(bt)
 		if has_blocking_voucher_candidates(voucher_candidates(doc, data, bank)):
 			frappe.throw(_("存在疑似已有凭证，请先关联核对；若均非本笔业务，请手工制证后关联"))
-		bt = _bank_transaction(doc, data, bank, bt)
 		decision = suggest_account(doc.company, data)
 		if decision.get("blocked"):
 			frappe.throw(decision["reason"])
+		bt = _bank_transaction(doc, data, bank, bt)
 		allocations = None
 		if allocation_action:
 			allocation_label = "公积金" if decision.get("rule_type") == "公积金分摊" else "社保"
