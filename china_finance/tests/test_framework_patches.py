@@ -29,6 +29,45 @@ def _save_error():
     pass
 '''.replace("    ", "\t")
 
+USER_TARGET = Path("frappe/core/doctype/user/user.js")
+# Native v16.23.0 excerpts for offline patch-delivery checks. The JavaScript
+# regression suite exercises the full native User and ModuleEditor scripts.
+USER_SOURCE = '''frappe.ui.form.on("User", {
+    onload: function (frm) {
+            if (!frm.roles_editor) {
+                frm.roles_editor = new frappe.RoleEditor(
+                    role_area,
+                    frm,
+                    frm.doc.role_profiles && frm.doc.role_profiles.length ? 1 : 0
+                );
+
+                if (frm.doc.user_type == "System User") {
+                    var module_area = $("<div>").appendTo(frm.fields_dict.modules_html.wrapper);
+                    frm.module_editor = new frappe.ModuleEditor(
+                        frm,
+                        module_area,
+                        frm.doc.module_profile ? 1 : 0
+                    );
+                }
+            } else {
+                frm.roles_editor.show();
+            }
+    },
+    refresh: function (frm) {
+        if (!frm.is_new()) {
+            if (frm.roles_editor && frm.can_edit_roles) {
+                frm.roles_editor.show();
+            }
+
+            if (frm.module_editor) {
+                frm.module_editor.disable = frm.doc.module_profile ? 1 : 0;
+                frm.module_editor.show();
+            }
+        }
+    },
+});
+'''.replace("    ", "\t")
+
 
 class FrameworkPatchTests(unittest.TestCase):
 	def setUp(self):
@@ -39,6 +78,9 @@ class FrameworkPatchTests(unittest.TestCase):
 		self.target = self.repo / TARGET
 		self.target.parent.mkdir(parents=True)
 		self.target.write_text(SOURCE, encoding="utf-8")
+		self.user_target = self.repo / USER_TARGET
+		self.user_target.parent.mkdir(parents=True)
+		self.user_target.write_text(USER_SOURCE, encoding="utf-8")
 		self.output = redirect_stdout(io.StringIO())
 		self.output.__enter__()
 		self.addCleanup(self.output.__exit__, None, None, None)
@@ -54,7 +96,11 @@ class FrameworkPatchTests(unittest.TestCase):
 		}
 		self.assertEqual(keywords, {"after_commit": True})
 		records = json.loads((self.bench / build.MANIFEST_NAME).read_text())
-		patch_file = build.PATCH_DIR / "prepared-report-after-commit.patch"
+		patch_files = sorted(build.PATCH_DIR.glob("*.patch"))
+		self.assertEqual(
+			{path.name for path in patch_files},
+			{"prepared-report-after-commit.patch", "user-module-editor-refresh.patch"},
+		)
 		self.assertEqual(
 			records,
 			[{
@@ -63,7 +109,7 @@ class FrameworkPatchTests(unittest.TestCase):
 				"patch": patch_file.name,
 				"status": "applied",
 				"sha256": hashlib.sha256(patch_file.read_bytes()).hexdigest(),
-			}],
+			} for patch_file in patch_files],
 		)
 
 	def test_applies_inside_git_checkout(self):
@@ -91,6 +137,25 @@ class FrameworkPatchTests(unittest.TestCase):
 	def test_missing_patch_input_is_rejected(self):
 		with self.assertRaises(ValueError):
 			build.apply_patches(self.repo, self.bench / "missing")
+
+	def test_user_patch_is_idempotent_and_preserves_other_framework_fix(self):
+		self.assertEqual([row["status"] for row in build.apply_patches(self.repo)], ["applied", "applied"])
+		fixed_user = self.user_target.read_text()
+		fixed_report = self.target.read_text()
+		self.assertEqual(
+			[row["status"] for row in build.apply_patches(self.repo)],
+			["already-applied", "already-applied"],
+		)
+		self.assertEqual(self.user_target.read_text(), fixed_user)
+		self.assertEqual(self.target.read_text(), fixed_report)
+
+	def test_incompatible_user_source_rejects_build(self):
+		incompatible = USER_SOURCE.replace("frm.module_editor.show();", "frm.changed_editor.show();")
+		self.user_target.write_text(incompatible, encoding="utf-8")
+		with self.assertRaises(subprocess.CalledProcessError):
+			build.apply_patches(self.repo)
+		self.assertEqual(self.user_target.read_text(), incompatible)
+		self.assertFalse((self.bench / build.MANIFEST_NAME).exists())
 
 	def test_registered_hook_resolves_frappe_location(self):
 		self.assertEqual(hooks.after_build, "china_finance.build.after_build")

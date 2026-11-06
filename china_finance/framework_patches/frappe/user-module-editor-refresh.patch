@@ -1,0 +1,40 @@
+diff --git a/frappe/core/doctype/user/user.js b/frappe/core/doctype/user/user.js
+index 72bd294f0e..b01a7be040 100644
+--- a/frappe/core/doctype/user/user.js
++++ b/frappe/core/doctype/user/user.js
+@@ -86,15 +86,6 @@ frappe.ui.form.on("User", {
+ 					frm,
+ 					frm.doc.role_profiles && frm.doc.role_profiles.length ? 1 : 0
+ 				);
+-
+-				if (frm.doc.user_type == "System User") {
+-					var module_area = $("<div>").appendTo(frm.fields_dict.modules_html.wrapper);
+-					frm.module_editor = new frappe.ModuleEditor(
+-						frm,
+-						module_area,
+-						frm.doc.module_profile ? 1 : 0
+-					);
+-				}
+ 			} else {
+ 				frm.roles_editor.show();
+ 			}
+@@ -248,6 +239,19 @@ frappe.ui.form.on("User", {
+ 				frm.roles_editor.show();
+ 			}
+ 
++			if (
++				frm.can_edit_roles &&
++				frm.doc.user_type === "System User" &&
++				!frm.module_editor
++			) {
++				const module_area = $("<div>").appendTo(frm.fields_dict.modules_html.wrapper);
++				frm.module_editor = new frappe.ModuleEditor(
++					frm,
++					module_area,
++					frm.doc.module_profile ? 1 : 0
++				);
++			}
++
+ 			if (frm.module_editor) {
+ 				frm.module_editor.disable = frm.doc.module_profile ? 1 : 0;
+ 				frm.module_editor.show();

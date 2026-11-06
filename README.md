@@ -82,13 +82,18 @@ bench --site SITE execute china_finance.api.initialize_company --kwargs \
 
 应用必须能够进入现有自定义镜像，并兼容服务器既有的 `deploy_akivision_apps.sh` 更新流程。应用代码不得要求在服务器上执行额外手工 SQL、临时补丁或应用外数据修复。
 
-### 预生成报表通知兼容补丁
+### Frappe 兼容补丁
 
-`china_finance` 通过标准 `after_build` 钩子交付一处 Frappe `v16.23.0` 兼容修复：预生成报表的 `report_generated` 通知在事务提交后发送，避免浏览器收到完成通知时尚不能读取结果附件。代码入口为 `china_finance/build.py`，补丁随 App 保存在 `china_finance/framework_patches/frappe/prepared-report-after-commit.patch`，不改变财务数据、报表计算或权限。
+`china_finance` 通过标准 `after_build` 钩子交付 Frappe `v16.23.0` 兼容修复，入口为 `china_finance/build.py`，补丁随 App 保存在 `china_finance/framework_patches/frappe/`：
 
-这是一处明确维护的 Frappe 源码补丁，不是运行时全局替换。`bench init --apps_path` 获取包含本 App 的应用清单后，会在正常构建中调用该钩子；已有 Bench 的 `bench build --app china_finance` 同样会调用。无需新增根 Docker 仓库的构建步骤，也无需从本地 Frappe 分支拉取代码。必须先将本 App 提交推送到组织仓库，服务器正常构建取得包含该提交的 `main` 并发布新镜像后才会生效；本地提交、仅迁移站点、跳过构建或重启旧镜像均不算完成交付。
+| 补丁 | 触发问题及修复行为 |
+| --- | --- |
+| `prepared-report-after-commit.patch` | 预生成报表的 `report_generated` 通知在事务提交后发送，避免浏览器收到完成通知时尚不能读取结果附件。 |
+| `user-module-editor-refresh.patch` | 网站用户转换为系统用户并保存后，原表单已有角色编辑器，导致“允许模块”的复选框未创建。将模块编辑器移到原生 User 表单 `refresh` 独立初始化，只在已保存的系统用户且当前操作者可编辑权限时创建一次；保留已有模块限制、角色配置和模块集合的禁用逻辑。无需为每次转换强制重载整个网页。 |
 
-补丁已存在时保持源码不变；上游源码不兼容、缺少补丁或无法写入时构建失败，应核对上游修复后更新或移除补丁，不能忽略错误。补丁使用构建环境现有的 Git，不要求保留镜像内的 `.git`。升级 Frappe 时须复核；同一 Bench 共享的 Frappe 预生成报表均受此通知时序修复影响。
+这些是明确维护的 Frappe 源码补丁，不是运行时全局替换，不改变数据库结构、已有权限或财务数据。`bench init --apps_path` 获取包含本 App 的应用清单后，会在正常构建中调用该钩子；已有 Bench 的 `bench build --app china_finance` 同样会调用。无需新增根 Docker 仓库的构建步骤，也无需从本地 Frappe 分支拉取代码。必须先将本 App 提交推送到组织仓库，服务器正常构建取得包含该提交的 `main` 并发布新镜像后才会生效；本地提交、仅迁移站点、跳过构建或重启旧镜像均不算完成交付。
+
+补丁已存在时保持源码不变；上游源码不兼容、缺少补丁或无法写入时构建失败，应核对上游修复后更新或移除补丁，不能忽略错误。补丁使用构建环境现有的 Git，不要求保留镜像内的 `.git`。升级 Frappe 时须复核；同一 Bench 共享的预生成报表通知和 User 表单使用修复后的逻辑。
 
 构建日志和 Bench 根目录的 `china-finance-framework-patches.json` 记录补丁名、SHA-256、交付 App 与应用状态；原 App 源提交记录不包含对 Frappe 的这处修改，验收时应同时核对该清单。例如在主机只读检查新镜像：
 
@@ -102,7 +107,9 @@ docker run --rm --entrypoint cat <本次镜像标签> /home/frappe/frappe-bench/
 ../env/bin/python -m unittest china_finance.tests.test_framework_patches china_finance.tests.test_prepared_report_notification -v
 ```
 
-本地已通过 8 项回归，并使用 Frappe 真实 `run_after_build_hook` 对官方 `v16.23.0` 的完整目标文件验证应用及重复执行；App wheel 构建成功并核对钩子与补丁文件均已打包，CI YAML 和 Bash 步骤语法检查通过。没有运行完整镜像构建或生产发布。实时页面刷新还依赖正常的 Socket.IO 服务，该补丁不调整网络配置。
+用户模块编辑器的行为回归加载实际 Frappe `User` 和 `ModuleEditor` 脚本，在已有角色编辑器的表单上切换用户类型并触发 `refresh`，同时检查重复刷新、权限不足、未保存用户、模块集合、角色配置及切换不同用户时的模块选择。测试命令为 `node --test china_finance/tests/test_user_module_editor.js`，须有已应用兼容补丁的同级 Frappe 源码；CI 在正常 `bench build` 后执行前端回归。该修复没有新增界面文案、字段、API 或翻译键。
+
+2026-11-06 本地验证：226 项前端测试通过（含新增 9 项用户模块编辑器场景），10 项构建补丁及报表通知隔离测试通过；对官方 `v16.23.0` 完整目标文件，在不含 `.git` 的临时目录验证两份补丁首次应用、重复构建保持源码不变，以及用户表单补丁输出与本地源码一致，CI YAML 检查通过。预生成报表补丁此前还使用真实 `run_after_build_hook` 验证。本次环境缺少 `flit_core`，未验证新 wheel；未运行完整镜像构建、真实浏览器验收或生产发布。实时报表刷新仍依赖正常的 Socket.IO 服务，补丁不调整网络配置。
 
 ## 许可证
 
